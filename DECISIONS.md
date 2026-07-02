@@ -17,3 +17,5 @@
 | 2026-07-02 | Tech stack: vanilla JS + canvas (no engine), Capacitor wrapper, Codemagic cloud build | v2 prototype proved engine unnecessary at this scope; browser-first keeps iteration instant on Windows/iPhone |
 | 2026-07-02 | Theme: movie stunt set. Name: **TAKE 47** | Generic flip niche saturated; stunt-set framing turns failure into the joke (takes/outtakes/director) and the niche is open. Name has no collision; "Take Two"/"Stunt Guy"/"Stick the Landing" all blocked |
 | 2026-07-02 | Lifetime take counter as core joke + share hook | Failure count becomes content: "Only took 1,047 takes" writes the share card itself |
+| 2026-07-02 | Levels = scene progression: crash retries the SAME scene, progress persists; seeded so every player's Scene N is identical; endless score-run becomes the daily challenge mode | Dan wanted levels for accomplishment + sharing ("Scene 137"); fits the movie theme natively |
+| 2026-07-02 | Standing rule: accessibility & privacy checked on every change (added to CLAUDE.md) | Dan's directive; cheaper as a habit than a retrofit |

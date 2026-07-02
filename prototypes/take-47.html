@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>TAKE 47 — themed prototype</title>
+<title>TAKE 47 — scene progression prototype</title>
 <style>
   html,body{margin:0;padding:0;background:#191010;height:100%;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
   canvas{display:block;margin:0 auto;touch-action:none}
@@ -17,23 +17,46 @@
 const W = 400, H = 700, GROUND = 600;
 const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
+let SCALE = 1;
 function resize(){
   const dpr = window.devicePixelRatio || 1;
-  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
-  cv.width = Math.round(W * s * dpr);
-  cv.height = Math.round(H * s * dpr);
-  cv.style.width = (W * s) + 'px';
-  cv.style.height = (H * s) + 'px';
-  ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0);
+  SCALE = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.width = Math.round(W * SCALE * dpr);
+  cv.height = Math.round(H * SCALE * dpr);
+  cv.style.width = (W * SCALE) + 'px';
+  cv.style.height = (H * SCALE) + 'px';
+  ctx.setTransform(SCALE * dpr, 0, 0, SCALE * dpr, 0, 0);
 }
 window.addEventListener('resize', resize);
 resize();
 
-let best = 0, takes = 0;
-try {
-  best = parseInt(localStorage.getItem('t47_best') || '0', 10) || 0;
-  takes = parseInt(localStorage.getItem('t47_takes') || '0', 10) || 0;
-} catch (e) {}
+// ---------- persistence ----------
+function loadInt(k, d){ try { return parseInt(localStorage.getItem(k) || String(d), 10) || d; } catch (e) { return d; } }
+function save(k, v){ try { localStorage.setItem(k, String(v)); } catch (e) {} }
+let scene  = loadInt('t47_scene', 1);      // current scene (furthest incomplete) — THE level number
+let takes  = loadInt('t47_takes', 0);      // lifetime takes, the running joke
+let prints = loadInt('t47_prints', 0);     // scenes completed with a PERFECT
+let reduceMotion = loadInt('t47_rm', 0);   // accessibility: no shake/flash
+
+// ---------- seeded per-scene design ----------
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function sceneParams(n){
+  const rnd = mulberry32(n * 2654435761 >>> 0);
+  const dir = rnd() < 0.5 ? 1 : -1;
+  let spinDeg = Math.min(880, 280 + n * 28 + rnd() * 80);
+  const T = 1.15 + rnd() * 0.35;
+  const big = (n % 10 === 0);
+  if (big) spinDeg *= 1.15;
+  const goodDeg = Math.max(15, 30 - n * 1.2);
+  return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, tol: goodDeg * Math.PI / 180};
+}
 
 // ---------- audio ----------
 let AC = null;
@@ -66,16 +89,16 @@ function noise(dur, vol, delay){
   s.start(a.currentTime + (delay || 0));
 }
 const sfx = {
-  clap:   () => { noise(0.03, 0.35); noise(0.05, 0.3, 0.05); },              // clapperboard
-  jump:   () => tone(180, 520, 0.25, 'sine', 0.15, 0.08),
-  lock:   () => tone(950, 700, 0.06, 'square', 0.08),
-  land:   () => { tone(200, 130, 0.14, 'triangle', 0.22); noise(0.06, 0.08); },
-  perfect:() => { tone(660, 660, 0.09, 'sine', 0.14); tone(880, 880, 0.09, 'sine', 0.14, 0.09); tone(1320, 1320, 0.14, 'sine', 0.14, 0.18); },
-  crash:  () => { noise(0.3, 0.3); tone(300, 55, 0.4, 'sawtooth', 0.18); },
-  cut:    () => tone(500, 350, 0.25, 'square', 0.12, 0.25)                    // director's bullhorn-ish
+  clap:    () => { noise(0.03, 0.35); noise(0.05, 0.3, 0.05); },
+  jump:    () => tone(180, 520, 0.25, 'sine', 0.15, 0.08),
+  lock:    () => tone(950, 700, 0.06, 'square', 0.08),
+  land:    () => { tone(200, 130, 0.14, 'triangle', 0.22); noise(0.06, 0.08); },
+  perfect: () => { tone(660, 660, 0.09, 'sine', 0.14); tone(880, 880, 0.09, 'sine', 0.14, 0.09); tone(1320, 1320, 0.14, 'sine', 0.14, 0.18); },
+  advance: () => { tone(523, 523, 0.1, 'sine', 0.12); tone(659, 659, 0.1, 'sine', 0.12, 0.1); tone(784, 784, 0.18, 'sine', 0.12, 0.2); },
+  crash:   () => { noise(0.3, 0.3); tone(300, 55, 0.4, 'sawtooth', 0.18); },
+  cut:     () => tone(500, 350, 0.25, 'square', 0.12, 0.25)
 };
 
-// ---------- director quips ----------
 const QUIPS = [
   '"CUT! Again."',
   '"We\'ll fix it in post."',
@@ -91,35 +114,27 @@ const QUIPS = [
 
 // ---------- state ----------
 const START_X = 70;
-let state = 'menu';
-let score = 0, scene = 1, perfectStreak = 0;
+let state = 'menu';          // menu | ready | air | landed | crash | over
+let takesScene = 1;          // takes on the current scene (session)
+let perfectStreak = 0;
 let p = null;
 let popups = [], particles = [], ragdoll = [];
 let shake = 0, flash = 0, stateT = 0, hitstop = 0;
-let quip = '';
+let quip = '', wasPerfect = false;
+let params = sceneParams(scene);
 
 function newPlayer(x){
   return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, squash: 0, pose: 'stand'};
 }
 p = newPlayer(START_X);
 
-function spinSpeed(){
-  const deg = Math.min(720, 300 + scene * 45);
-  return (scene % 2 === 0 ? -1 : 1) * deg * Math.PI / 180;
-}
-function tolerance(){
-  const deg = Math.max(16, 30 - scene * 1.5);
-  return deg * Math.PI / 180;
-}
-
 function startJump(){
-  takes++;
-  try { localStorage.setItem('t47_takes', String(takes)); } catch (e) {}
-  const T = 1.35, g = 1400;
+  takes++; save('t47_takes', takes);
+  const g = 1400;
   const targetX = 250 + Math.random() * 80;
-  p.vx = (targetX - p.x) / T;
-  p.vy = -g * T / 2;
-  p.om = spinSpeed();
+  p.vx = (targetX - p.x) / params.T;
+  p.vy = -g * params.T / 2;
+  p.om = params.om;
   p.locked = false;
   p.pose = 'tuck';
   state = 'air';
@@ -172,57 +187,73 @@ function evaluateLanding(){
   let a = p.angle % (Math.PI * 2);
   if (a < 0) a += Math.PI * 2;
   const off = Math.min(a, Math.PI * 2 - a);
-  const tol = tolerance();
   hitstop = 0.06;
-  if (off <= tol) {
+  if (off <= params.tol) {
     const perfect = off <= 10 * Math.PI / 180;
+    wasPerfect = perfect;
     p.angle = 0; p.vx = 0; p.vy = 0; p.om = 0; p.squash = 1;
     p.pose = perfect ? 'armsup' : 'stand';
     dust(p.x, GROUND, 8);
     if (perfect) {
       perfectStreak++;
-      const pts = 3 * perfectStreak;
-      score += pts;
+      prints++; save('t47_prints', prints);
       confetti(p.x, GROUND - 40);
-      addPopup('PRINT IT! +' + pts, p.x, GROUND - 100, '#ffd166', 28);
+      addPopup('PRINT IT!', p.x, GROUND - 100, '#ffd166', 28);
       if (perfectStreak >= 2) addPopup('STREAK ×' + perfectStreak, p.x, GROUND - 135, '#c084fc', 20);
       sfx.perfect();
     } else {
       perfectStreak = 0;
-      score += 1;
-      addPopup('CLEAN TAKE +1', p.x, GROUND - 100, '#6ee7b7');
+      addPopup('CLEAN TAKE', p.x, GROUND - 100, '#6ee7b7');
       sfx.land();
     }
     state = 'landed'; stateT = 0;
   } else {
     perfectStreak = 0;
     spawnRagdoll();
-    shake = 1; flash = 1;
+    if (!reduceMotion) { shake = 1; flash = 1; }
     quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
     addPopup('CUT!', p.x, GROUND - 120, '#f87171', 36);
     sfx.crash();
     sfx.cut();
     state = 'crash'; stateT = 0;
-    if (score > best) { best = score; try { localStorage.setItem('t47_best', String(best)); } catch (e) {} }
   }
 }
 
-function resetGame(){
-  score = 0; scene = 1; perfectStreak = 0;
+function retryScene(){
+  takesScene++;
   p = newPlayer(START_X);
   popups = []; ragdoll = [];
   state = 'ready';
 }
 
 // ---------- input ----------
-function onTap(){
-  ac();
-  if (state === 'menu' || state === 'ready') startJump();
-  else if (state === 'air' && !p.locked) { p.locked = true; p.om = 0; p.pose = 'stand'; sfx.lock(); }
-  else if (state === 'over') resetGame();
+function canvasCoords(e){
+  const rect = cv.getBoundingClientRect();
+  return {x: (e.clientX - rect.left) / SCALE, y: (e.clientY - rect.top) / SCALE};
 }
-window.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(); });
-window.addEventListener('keydown', function(e){ if (e.code === 'Space') onTap(); });
+const RM_BOX = {x: 90, y: 520, w: 220, h: 40};   // reduce-motion toggle on menu
+function onTap(e){
+  ac();
+  if (state === 'menu') {
+    if (e && e.clientX !== undefined) {
+      const c = canvasCoords(e);
+      if (c.x >= RM_BOX.x && c.x <= RM_BOX.x + RM_BOX.w && c.y >= RM_BOX.y && c.y <= RM_BOX.y + RM_BOX.h) {
+        reduceMotion = reduceMotion ? 0 : 1;
+        save('t47_rm', reduceMotion);
+        return;
+      }
+    }
+    startJump();
+  }
+  else if (state === 'ready') startJump();
+  else if (state === 'air' && !p.locked) { p.locked = true; p.om = 0; p.pose = 'stand'; sfx.lock(); }
+  else if (state === 'over') retryScene();
+}
+window.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(e); });
+window.addEventListener('keydown', function(e){
+  if (e.code === 'Space') onTap(null);
+  if (e.code === 'KeyM' && state === 'menu') { reduceMotion = reduceMotion ? 0 : 1; save('t47_rm', reduceMotion); }
+});
 
 // ---------- update ----------
 function update(dt){
@@ -240,10 +271,14 @@ function update(dt){
     p.angle += p.om * dt;
     if (p.vy > 0 && p.y >= GROUND) evaluateLanding();
   } else if (state === 'landed') {
-    if (stateT > 0.8) {
-      scene++;
+    if (stateT > 1.0) {                       // scene complete → advance
+      scene++; save('t47_scene', scene);
+      params = sceneParams(scene);
+      takesScene = 1;
       p = newPlayer(START_X);
-      state = 'ready';
+      addPopup('SCENE ' + (scene - 1) + ' COMPLETE', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
+      sfx.advance();
+      state = 'ready'; stateT = 0;
     }
   } else if (state === 'crash') {
     const g = 1400;
@@ -347,7 +382,6 @@ function drawRagdollPart(q){
 
 // ---------- set dressing ----------
 function drawSet(){
-  // warm studio backdrop
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, '#1a0f0d');
   grad.addColorStop(0.7, '#2a1a12');
@@ -355,7 +389,6 @@ function drawSet(){
   ctx.fillStyle = grad;
   ctx.fillRect(-20, -20, W + 40, H + 40);
 
-  // lighting rig at top
   ctx.strokeStyle = '#3a2c22'; ctx.lineWidth = 4;
   ctx.beginPath(); ctx.moveTo(0, 26); ctx.lineTo(W, 26); ctx.stroke();
   ctx.fillStyle = '#4a3626';
@@ -365,7 +398,6 @@ function drawSet(){
     ctx.fillRect(lx - 5, 40, 10, 3);
     ctx.fillStyle = '#4a3626';
   }
-  // spotlight cone over landing area
   const cone = ctx.createLinearGradient(0, 40, 0, GROUND);
   cone.addColorStop(0, 'rgba(255,209,102,0.13)');
   cone.addColorStop(1, 'rgba(255,209,102,0.02)');
@@ -375,22 +407,18 @@ function drawSet(){
   ctx.lineTo(390, GROUND); ctx.lineTo(120, GROUND);
   ctx.closePath(); ctx.fill();
 
-  // camera silhouette (left, behind start mark)
   ctx.fillStyle = '#0d0806';
-  ctx.fillRect(14, GROUND - 78, 34, 22);                       // body
-  ctx.beginPath(); ctx.arc(52, GROUND - 67, 9, 0, Math.PI*2); ctx.fill(); // lens
+  ctx.fillRect(14, GROUND - 78, 34, 22);
+  ctx.beginPath(); ctx.arc(52, GROUND - 67, 9, 0, Math.PI*2); ctx.fill();
   ctx.strokeStyle = '#0d0806'; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.moveTo(31, GROUND - 56); ctx.lineTo(18, GROUND); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(31, GROUND - 56); ctx.lineTo(44, GROUND); ctx.stroke();
 
-  // stage floor
   ctx.fillStyle = '#241811'; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
-  // crash mat under landing zone
   ctx.fillStyle = '#2e4a6b';
   ctx.fillRect(170, GROUND, 220, 16);
   ctx.fillStyle = 'rgba(255,255,255,0.08)';
   ctx.fillRect(170, GROUND, 220, 4);
-  // warning tape edge
   ctx.fillStyle = '#ffd166';
   for (let x = -20; x < W + 20; x += 24) {
     ctx.save();
@@ -398,6 +426,19 @@ function drawSet(){
     ctx.translate(x, GROUND - 3);
     ctx.rotate(0.6);
     ctx.fillRect(0, -6, 8, 16);
+    ctx.restore();
+  }
+}
+
+function slateStripes(x, y, w, h){
+  ctx.fillStyle = '#fff';
+  const n = Math.ceil(w / 44) + 1;
+  for (let i = 0; i < n; i++) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.translate(x + i * 44, y);
+    ctx.rotate(0.5);
+    ctx.fillRect(0, -8, 20, h + 20);
     ctx.restore();
   }
 }
@@ -432,43 +473,41 @@ function draw(){
   }
   ctx.globalAlpha = 1;
 
-  // director quip during crash
   if ((state === 'crash' || state === 'over') && quip) {
     ctx.fillStyle = '#e8d5b5';
-    ctx.font = 'italic 16px Georgia, serif';
+    ctx.font = 'italic 17px Georgia, serif';
     ctx.fillText(quip, W / 2, 180);
-    ctx.font = '12px system-ui, sans-serif';
-    ctx.fillStyle = '#8a7460';
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillStyle = '#a08b72';
     ctx.fillText('— the director', W / 2, 202);
   }
 
-  // HUD
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 44px system-ui, sans-serif';
-  ctx.fillText(String(score), W / 2, 78);
-  ctx.font = '14px system-ui, sans-serif';
+  // HUD — the scene number IS the level
   ctx.fillStyle = '#c9a876';
-  ctx.fillText('SCENE ' + scene + '   ·   TAKE ' + takes + '   ·   BEST ' + best, W / 2, 102);
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillText('SCENE', W / 2, 46);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 48px system-ui, sans-serif';
+  ctx.fillText(String(scene), W / 2, 92);
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillStyle = '#c9a876';
+  ctx.fillText('TAKE ' + takesScene + ' OF THIS SCENE   ·   LIFETIME TAKES ' + takes + '   ·   PRINTS ' + prints, W / 2, 114);
+  if (params.big && (state === 'ready' || state === 'menu')) {
+    ctx.fillStyle = '#ef476f';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('★ BIG STUNT SCENE ★', W / 2, 138);
+  }
   if (perfectStreak >= 2) {
-    ctx.fillStyle = '#c084fc'; ctx.font = 'bold 16px system-ui, sans-serif';
-    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 126);
+    ctx.fillStyle = '#c084fc'; ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 158);
   }
 
   ctx.fillStyle = '#e8d5b5';
   ctx.font = 'bold 20px system-ui, sans-serif';
   if (state === 'menu') {
-    // slate-style title
     ctx.fillStyle = '#111';
     ctx.fillRect(70, 220, W - 140, 130);
-    ctx.fillStyle = '#fff';
-    for (let i = 0; i < 6; i++) {
-      ctx.save();
-      ctx.beginPath(); ctx.rect(70, 220, W - 140, 16); ctx.clip();
-      ctx.translate(70 + i * 44, 220);
-      ctx.rotate(0.5);
-      ctx.fillRect(0, -8, 20, 30);
-      ctx.restore();
-    }
+    slateStripes(70, 220, W - 140, 16);
     ctx.fillStyle = '#ffd166';
     ctx.font = 'bold 44px Georgia, serif';
     ctx.fillText('TAKE 47', W / 2, 292);
@@ -477,42 +516,39 @@ function draw(){
     ctx.fillText('a stunt double\'s life', W / 2, 322);
     ctx.font = '16px system-ui, sans-serif';
     ctx.fillText('Tap to jump. Tap again to stop the spin.', W / 2, 396);
-    ctx.fillText('Land on your feet. The director is watching.', W / 2, 420);
+    ctx.fillText('Land on your feet to finish the scene.', W / 2, 420);
     ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillText('TAP FOR ACTION!', W / 2, 480);
+    ctx.fillText('TAP FOR ACTION!', W / 2, 470);
+    // reduce-motion toggle (accessibility)
+    ctx.strokeStyle = '#a08b72'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(RM_BOX.x, RM_BOX.y, RM_BOX.w, RM_BOX.h);
+    ctx.fillStyle = reduceMotion ? '#6ee7b7' : '#a08b72';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('REDUCE MOTION: ' + (reduceMotion ? 'ON' : 'OFF') + '  (tap / M)', W / 2, RM_BOX.y + 25);
   } else if (state === 'ready') {
     ctx.fillText('ACTION!  (tap to jump)', W / 2, 420);
   } else if (state === 'air' && !p.locked) {
     ctx.fillStyle = 'rgba(232,213,181,0.7)';
     ctx.fillText('TAP TO STOP SPIN', W / 2, 660);
   } else if (state === 'over') {
-    // film slate game-over card
     ctx.fillStyle = 'rgba(10,7,5,0.92)';
-    ctx.fillRect(40, 240, W - 80, 240);
-    ctx.fillStyle = '#fff';
-    for (let i = 0; i < 7; i++) {
-      ctx.save();
-      ctx.beginPath(); ctx.rect(40, 240, W - 80, 18); ctx.clip();
-      ctx.translate(40 + i * 48, 240);
-      ctx.rotate(0.5);
-      ctx.fillRect(0, -8, 22, 34);
-      ctx.restore();
-    }
+    ctx.fillRect(40, 240, W - 80, 230);
+    slateStripes(40, 240, W - 80, 18);
     ctx.fillStyle = '#f87171';
     ctx.font = 'bold 32px Georgia, serif';
     ctx.fillText('CUT!', W / 2, 305);
     ctx.fillStyle = '#e8d5b5';
     ctx.font = '15px system-ui, sans-serif';
-    ctx.fillText('SCENE ' + scene + '  ·  TAKE ' + takes, W / 2, 335);
+    ctx.fillText('SCENE ' + scene + '  ·  TAKE ' + takesScene, W / 2, 335);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px system-ui, sans-serif';
-    ctx.fillText('Score ' + score + '   Best ' + best, W / 2, 375);
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillText('Lifetime takes: ' + takes, W / 2, 372);
     ctx.fillStyle = '#6ee7b7';
     ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillText('TAP FOR ONE MORE TAKE', W / 2, 430);
+    ctx.fillText('TAP FOR ONE MORE TAKE', W / 2, 425);
   }
 
-  if (flash > 0) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+  if (flash > 0 && !reduceMotion) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
   ctx.restore();
 }
 

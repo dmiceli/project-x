@@ -26,7 +26,8 @@ Decide in Phase 0. Leading approach: build the game in web tech (HTML5 canvas, e
 6. App Store submission: metadata, screenshots, privacy policy, age rating, review
 
 ## Working rules
-- Use git from day one; commit at every meaningful step.
+- **Accessibility & privacy by design (standing rule, added 2026-07-02):** every feature/change gets checked against accessibility (color-blind-safe signaling paired with text/shapes, readable text sizes/durations, reduce-motion & flash options, no strobing, sound-optional play) and privacy (data minimization, ATT/privacy-label impact of any SDK, privacy policy kept current). Flag concerns to Dan when they involve tradeoffs.
+- Use git from day one; commit at every meaningful step. Claude provides a brief commit message at the end of every working session (and at any mid-session point worth committing); Dan pastes it into GitHub Desktop.
 - Living docs in this folder: DESIGN.md, DECISIONS.md, STATUS.md.
 - Update STATUS.md at the end of every working session; log every significant choice in DECISIONS.md with the "why."
 - "Viral" is a lottery — design for its ingredients (one-thumb play, instant restart, shareable score, "one more try" loop) and measure against concrete goals: App Store approval, 20+ TestFlight testers.

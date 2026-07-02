@@ -17,10 +17,11 @@
 
 - Git live: repo "project-x" on Dan's GitHub; GitHub Pages enabled; workflow: Claude edits → Dan commits/pushes in GitHub Desktop.
 - iPhone feel-test passed (tap responsive, spin readable; sound = placeholder until themed).
-- Theme + name decided: **TAKE 47** (movie stunt set). Themed prototype built: `prototypes/take-47.html` (take counter, director quips, slate UI, set dressing).
+- Theme + name decided: **TAKE 47** (movie stunt set). Theme confirmed in playtest; quips readable.
+- Core restructured to **scenes-as-levels** (persisted progress, retry same scene, seeded scene design) in `prototypes/take-47.html`; includes first accessibility setting (reduce motion). Standing a11y/privacy rule added to CLAUDE.md.
 
 ## Next steps
-1. Dan: push, then play take-47.html on the phone — does the theme land? Do the quips read?
-2. Phase 4 build: restructure into the real app (menus, unlockable characters, share card, daily challenge, achievements, settings).
-3. Icon + real sound design in the movie-set language (clapperboard, bullhorn, film-score stings).
+1. Dan: push, then play the scene-progression build — does persistent progress feel better than the endless run? Is the per-scene difficulty ramp fair?
+2. Phase 4 build: restructure into the real app (menus, unlockable characters, share card, daily challenge = endless seeded run, achievements, settings screen).
+3. Icon + real sound design in the movie-set language.
 4. Later: verify "TAKE 47" availability when reserving the name in App Store Connect.

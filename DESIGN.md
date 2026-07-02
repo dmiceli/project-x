@@ -10,20 +10,23 @@ A one-tap stunt game. Your character launches into the air spinning; you tap onc
 
 Playtesting the v2 prototype against Squeeze (parked backup concept) confirmed: the "one more try" pull is strong and failure motivates retry rather than quitting; perfect landings are satisfying and streaks are actively chased; the current difficulty ramp feels fair. The whimsical tone works but crashes are not yet *funny* — comedy is a build-phase goal (see Juice).
 
-## Core loop
+## Core loop: scenes as levels (updated 2026-07-02)
 
-The player taps to jump. The character arcs across the screen (airtime ~1.35s) while rotating at a fixed angular speed. A second tap freezes the rotation at its current angle. On touching the ground, the landing angle is measured against upright: within the perfect window it's a PERFECT (+3 × current perfect-streak count, confetti, arms-up pose); within the good window it's STUCK IT (+1, streak resets); outside it's a crash — the character breaks into six ragdoll pieces, the score is banked to best-if-higher, and a tap restarts immediately.
+The movie is the progression. Each **scene** is one designed jump: the player taps ("ACTION!", clapperboard), the character arcs and spins per that scene's parameters, a second tap freezes the rotation, and the landing angle decides the outcome. Land within tolerance and the scene is **complete — forever**: progress persists and the next scene begins. A perfect landing "prints" the scene (PRINT IT!, confetti, persisted prints counter). Crash and the director yells CUT! with a randomized quip — you retry the *same* scene, with the take counters (per-scene and lifetime) climbing. The share hook is the scene number ("I'm stuck on Scene 137") plus the lifetime take count ("1,047 takes so far").
 
-Current tuning (from prototype v2, subject to feel iteration):
+Scene design is deterministic-procedural: a seeded PRNG derives each scene's spin speed/direction, airtime, and landing tolerance from the scene number, so every player faces the identical Scene 137. Every 10th scene is a marked "BIG STUNT SCENE" (faster spin).
+
+Current tuning (prototype, subject to feel iteration):
 
 | Parameter | Value |
 |---|---|
-| Airtime | 1.35 s, gravity 1400 px/s² |
-| Spin speed | 300 + 45×round °/s, capped 720, direction alternates each round |
-| Good window | 30 − 1.5×round degrees, floor 16° |
+| Airtime | 1.15–1.5 s (seeded per scene), gravity 1400 px/s² |
+| Spin speed | 280 + 28×scene °/s + seeded 0–80, capped 880; ×1.15 on big-stunt scenes; direction seeded |
+| Good window | 30 − 1.2×scene degrees, floor 15° |
 | Perfect window | 10° |
-| Perfect streak | consecutive perfects; score +3×streak; good landing keeps the run but resets streak |
+| Perfect streak | session-scoped flair (popup ×n); prints counter persists |
 | Hitstop on landing | 60 ms |
+| Persistence | scene, lifetime takes, prints, reduce-motion setting (local storage) |
 
 ## Juice and feel
 
@@ -31,7 +34,9 @@ Already in: hitstop, screen shake, red flash, landing dust, perfect confetti, ra
 
 ## v1.0 features
 
-**Share button.** After each run, one tap generates a score-card image (score, best, streak, character mid-crash or mid-triumph) and opens the iOS share sheet. This is the primary viral mechanism.
+**Scene progression (the levels system).** Described in Core loop above — the level number is the primary progression, retention, and share metric.
+
+**Share button.** After a CUT! or a milestone, one tap generates a share-card image (scene number, take count, prints, character mid-crash or mid-triumph) and opens the iOS share sheet. This is the primary viral mechanism.
 
 **Unlockable characters.** New stunt characters unlock at score milestones. Each is a reskin of the same rig (art cost stays contained). Rewarded-ad integration: watch an ad to unlock the next character early.
 
@@ -56,6 +61,10 @@ Research notes: the generic flip niche is saturated (Flip Master, Flip Trickster
 ## Tech
 
 Plain HTML5 canvas + vanilla JS (prototype v2 proved we don't need a game engine at this scope), wrapped with Capacitor for iOS, built/signed/submitted through a cloud build service (leading: Codemagic) since there is no Mac. Prototypes remain browser-playable throughout development — the iPhone browser (via GitHub Pages) is the primary feel-testing surface before TestFlight.
+
+## Accessibility (standing rule — checked on every change)
+
+Every color signal is paired with text or shape (CUT!/PRINT IT! labels carry meaning, never color alone) and the palette gets a color-blind pass before launch. One-tap input is motor-friendly; the game is fully playable without sound. Reduce-motion setting (already in the prototype) disables screen shake and the red flash — also the photosensitivity mitigation; no strobing effects anywhere. Text sizes audited at phone scale; director quips persist through the retry screen rather than flashing briefly. Menus, settings, and share UI in the shipped app use real labeled buttons (VoiceOver-navigable); canvas gameplay itself is acknowledged as not screen-reader playable.
 
 ## Success metrics
 
