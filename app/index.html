@@ -1370,6 +1370,31 @@ function drawMechanics(){
     ctx.fillRect(params.matL, GROUND, params.matR - params.matL, 16);
     ctx.strokeStyle = '#6ee7b7'; ctx.lineWidth = 2;
     ctx.strokeRect(params.matL, GROUND, params.matR - params.matL, 6);
+    // live trajectory preview (Dan: launch timing must be AIMED, not guessed) —
+    // dotted arc + landing marker track the cart in real time; launch on green
+    if (state === 'ready') {
+      const vx = (params.matL + params.matR) / 2 - 95;
+      const pvx = vx / params.T + ((armedItem === 'chock') ? 0 : cartVx(mechT));
+      const pvy = -grav() * params.T / 2;
+      const landX = p.x + pvx * params.T;
+      const onMat = landX >= params.matL && landX <= params.matR;
+      ctx.fillStyle = 'rgba(232,213,181,0.5)';
+      for (let k = 1; k <= 10; k++) {
+        const t = params.T * k / 10;
+        const dx = p.x + pvx * t, dy = (GROUND) + pvy * t + 0.5 * grav() * t * t;
+        ctx.beginPath(); ctx.arc(dx, dy - 22, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+      // marker: green ring on the mat, red X off it (color + shape, never color alone)
+      if (onMat) {
+        ctx.strokeStyle = '#6ee7b7'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(landX, GROUND - 8, 12, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(landX, GROUND - 8, 4, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        ctx.strokeStyle = '#f87171'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(landX - 10, GROUND - 18); ctx.lineTo(landX + 10, GROUND + 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(landX + 10, GROUND - 18); ctx.lineTo(landX - 10, GROUND + 2); ctx.stroke();
+      }
+    }
   }
   if (m.boom) {
     const tip = boomTip(mechT);

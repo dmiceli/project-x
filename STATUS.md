@@ -53,8 +53,14 @@
 
 - 2026-07-03 (final quick wins): share card carries the play link ON the image; app icon (180 + 1024px placeholder) + iOS home-screen meta (standalone, status bar, title); take-counter milestone quips (100/250/1000/2000); version stamp in Settings + global error handler that saves progress. Regression green.
 
+- 2026-07-03: cart fairness fix — live trajectory preview (dotted arc, green-ring-on-mat / red-X-off marker) so launch timing is aimed, not guessed. Verified headlessly.
+
+- 2026-07-03: **Polish phase opened with the brand kit** — BRAND.md (research-grounded: single-focal icon data, gold-reward psychology, roles-not-vibes palette; full WCAG contrast audit — all pairings AA+, most AAA) + assets/brand-sheet.png. Kit codifies the shipped identity; all polish assets now build from it.
+
 ## Next steps
-1. Dan: push + BIG play session — ideally on a fresh save (private tab) to feel the new-player experience. Note: re-add to home screen to pick up the new icon + standalone mode.
+1. Dan: review BRAND.md + brand sheet; push + play session (fresh save; re-add to home screen; re-judge the cart with the preview).
+2. Polish continues per kit: icon art refinement, App Store screenshot set, sound design in the movie-set language, crash comedy pass.
+3. Then PIPELINE.md runbook → hello-world TestFlight build (incl. save-durability gate).
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.
