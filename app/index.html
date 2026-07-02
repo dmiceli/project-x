@@ -1255,89 +1255,114 @@ function limb(x1, y1, x2, y2, x3, y3, color, w){
   ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke();
 }
-function drawAccessory(cst, headY){
+function drawAccessory(cst, headY, c){
+  c = c || ctx;
   if (cst.acc === 'pony' || cst.acc === 'grayhair') {
-    ctx.strokeStyle = cst.acc === 'pony' ? '#7c2d12' : '#d4d4d8';
-    ctx.lineWidth = 4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(6, headY - 4); ctx.quadraticCurveTo(14, headY + 2, 12, headY + 10); ctx.stroke();
+    c.strokeStyle = cst.acc === 'pony' ? '#7c2d12' : '#d4d4d8';
+    c.lineWidth = 4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(6, headY - 4); c.quadraticCurveTo(14, headY + 2, 12, headY + 10); c.stroke();
   } else if (cst.acc === 'dummy') {                     // crash-test target mark
-    ctx.fillStyle = '#111';
-    ctx.beginPath(); ctx.arc(0, headY, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath(); ctx.moveTo(0, headY); ctx.arc(0, headY, 4, 0, Math.PI / 2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0, headY); ctx.arc(0, headY, 4, Math.PI, Math.PI * 1.5); ctx.closePath(); ctx.fill();
+    c.fillStyle = '#111';
+    c.beginPath(); c.arc(0, headY - 5, 3, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fbbf24';
+    c.beginPath(); c.moveTo(0, headY - 5); c.arc(0, headY - 5, 3, 0, Math.PI / 2); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(0, headY - 5); c.arc(0, headY - 5, 3, Math.PI, Math.PI * 1.5); c.closePath(); c.fill();
   } else if (cst.acc === 'bun') {                       // hot-dog bun halves
-    ctx.fillStyle = '#eab308';
-    ctx.beginPath(); ctx.ellipse(-9, 0, 4, 15, 0.1, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(9, 0, 4, 15, -0.1, 0, Math.PI * 2); ctx.fill();
+    c.fillStyle = '#eab308';
+    c.beginPath(); c.ellipse(-9, 0, 4, 15, 0.1, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(9, 0, 4, 15, -0.1, 0, Math.PI * 2); c.fill();
   } else if (cst.acc === 'glasses') {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(-7, headY - 2, 5, 3); ctx.fillRect(2, headY - 2, 5, 3); ctx.fillRect(-2, headY - 1, 4, 1);
+    c.fillStyle = '#111';
+    c.fillRect(-7, headY - 6, 5, 3); c.fillRect(2, headY - 6, 5, 3); c.fillRect(-2, headY - 5, 4, 1);
   }
 }
-function drawGuy(x, y, angle, pose, squash){
+// the franchise face (per DESIGN doctrine): wide white terror eyes + pupils,
+// open "AAAAH" mouth in flight; relieved line-mouth standing; grin on perfects
+function drawFace(c, headY, mood){
+  for (const exl of [-3, 3]) {
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.arc(exl, headY - 1.5, 2.6, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = LINE; c.lineWidth = 0.6;
+    c.beginPath(); c.arc(exl, headY - 1.5, 2.6, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = LINE;
+    c.beginPath(); c.arc(exl, headY - 0.7, 1.2, 0, Math.PI * 2); c.fill();
+  }
+  if (mood === 'terror') {
+    c.fillStyle = '#4a1c1c';
+    c.beginPath(); c.ellipse(0, headY + 4.2, 2.2, 1.7, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = LINE; c.lineWidth = 0.6;
+    c.beginPath(); c.ellipse(0, headY + 4.2, 2.2, 1.7, 0, 0, Math.PI * 2); c.stroke();
+  } else if (mood === 'grin') {
+    c.strokeStyle = LINE; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(0, headY + 2.5, 3.5, 0.1 * Math.PI, 0.9 * Math.PI); c.stroke();
+  } else {
+    c.strokeStyle = LINE; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(-1.8, headY + 4); c.lineTo(1.8, headY + 4); c.stroke();
+  }
+}
+// c param lets the share card reuse the exact same star (default: game canvas)
+function drawGuy(x, y, angle, pose, squash, c){
+  c = c || ctx;
   const cst = costume();
+  const _limb = (x1,y1,x2,y2,x3,y3,col,w) => {
+    c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineTo(x3, y3); c.stroke();
+  };
   if (pose === 'faceplant') {          // the near-miss outcome: flat, dignified
-    ctx.save();
-    ctx.translate(x, y - 8);
-    limb(-24, 0, -16, -2, -8, 0, cst.skin, 5);              // arms splayed
-    limb(24, 0, 16, -2, 8, 0, cst.skin, 5);
-    ctx.fillStyle = cst.suit;
-    ctx.beginPath(); ctx.ellipse(0, 0, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
-    limb(8, 2, 16, 4, 24, 2, cst.suit, 6);                  // legs out the back
-    ctx.fillStyle = cst.shoe; ctx.fillRect(22, -1, 7, 5);
-    ctx.fillStyle = cst.skin;
-    ctx.beginPath(); ctx.arc(-18, -3, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = LINE;
-    ctx.font = 'bold 8px system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('- -', -18, -1);                            // eyes shut, processing
-    ctx.restore();
+    c.save();
+    c.translate(x, y - 8);
+    _limb(-24, 0, -16, -2, -8, 0, cst.skin, 5);             // arms splayed
+    _limb(24, 0, 16, -2, 8, 0, cst.skin, 5);
+    c.fillStyle = cst.suit;
+    c.beginPath(); c.ellipse(0, 0, 14, 8, 0, 0, Math.PI * 2); c.fill();
+    _limb(8, 2, 16, 4, 24, 2, cst.suit, 6);                 // legs out the back
+    c.fillStyle = cst.shoe; c.fillRect(22, -1, 7, 5);
+    c.fillStyle = cst.skin;
+    c.beginPath(); c.arc(-18, -3, 8, 0, Math.PI * 2); c.fill();
+    c.fillStyle = LINE;
+    c.font = 'bold 8px system-ui, sans-serif'; c.textAlign = 'center';
+    c.fillText('- -', -18, -1);                              // eyes shut, processing
+    c.restore();
     return;
   }
-  ctx.save();
-  ctx.translate(x, y - 22);
-  ctx.rotate(angle);
+  c.save();
+  c.translate(x, y - 22);
+  c.rotate(angle);
   const sq = (squash || 0) * 0.25;
-  ctx.scale(1 + sq, 1 - sq);
+  c.scale(1 + sq, 1 - sq);
   if (pose === 'tuck') {
-    limb(-4, 10, -10, 16, 2, 20, cst.suit, 6);
-    limb(4, 10, 12, 14, 4, 20, cst.suit, 6);
-    ctx.fillStyle = cst.shoe;
-    ctx.fillRect(-2, 17, 8, 6); ctx.fillRect(0, 17, 8, 6);
-    ctx.fillStyle = cst.suit;
-    ctx.beginPath(); ctx.ellipse(0, 0, 11, 14, 0, 0, Math.PI * 2); ctx.fill();
-    limb(-8, -4, -12, 8, 0, 14, cst.skin, 5);
-    limb(8, -4, 12, 8, 4, 14, cst.skin, 5);
-    ctx.fillStyle = cst.skin;
-    ctx.beginPath(); ctx.arc(0, -19, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = LINE;
-    ctx.beginPath(); ctx.arc(-3, -20, 1.5, 0, Math.PI*2); ctx.arc(3, -20, 1.5, 0, Math.PI*2); ctx.fill();
-    drawAccessory(cst, -19);
+    _limb(-4, 10, -10, 16, 2, 20, cst.suit, 6);
+    _limb(4, 10, 12, 14, 4, 20, cst.suit, 6);
+    c.fillStyle = cst.shoe;
+    c.fillRect(-2, 17, 8, 6); c.fillRect(0, 17, 8, 6);
+    c.fillStyle = cst.suit;
+    c.beginPath(); c.ellipse(0, 0, 11, 14, 0, 0, Math.PI * 2); c.fill();
+    _limb(-8, -4, -12, 8, 0, 14, cst.skin, 5);
+    _limb(8, -4, 12, 8, 4, 14, cst.skin, 5);
+    c.fillStyle = cst.skin;
+    c.beginPath(); c.arc(0, -19, 8, 0, Math.PI * 2); c.fill();
+    drawFace(c, -19, 'terror');                              // mid-flip = mid-scream
+    drawAccessory(cst, -19, c);
   } else {
-    limb(-4, 8, -5, 15, -5, 22, cst.suit, 6);
-    limb(4, 8, 5, 15, 5, 22, cst.suit, 6);
-    ctx.fillStyle = cst.shoe;
-    ctx.fillRect(-10, 19, 9, 5); ctx.fillRect(2, 19, 9, 5);
-    ctx.fillStyle = cst.suit;
-    ctx.beginPath(); ctx.ellipse(0, -2, 9, 13, 0, 0, Math.PI * 2); ctx.fill();
+    _limb(-4, 8, -5, 15, -5, 22, cst.suit, 6);
+    _limb(4, 8, 5, 15, 5, 22, cst.suit, 6);
+    c.fillStyle = cst.shoe;
+    c.fillRect(-10, 19, 9, 5); c.fillRect(2, 19, 9, 5);
+    c.fillStyle = cst.suit;
+    c.beginPath(); c.ellipse(0, -2, 9, 13, 0, 0, Math.PI * 2); c.fill();
     if (pose === 'armsup') {
-      limb(-7, -8, -13, -16, -12, -26, cst.skin, 5);
-      limb(7, -8, 13, -16, 12, -26, cst.skin, 5);
+      _limb(-7, -8, -13, -16, -12, -26, cst.skin, 5);
+      _limb(7, -8, 13, -16, 12, -26, cst.skin, 5);
     } else {
-      limb(-7, -8, -11, 0, -10, 8, cst.skin, 5);
-      limb(7, -8, 11, 0, 10, 8, cst.skin, 5);
+      _limb(-7, -8, -11, 0, -10, 8, cst.skin, 5);
+      _limb(7, -8, 11, 0, 10, 8, cst.skin, 5);
     }
-    ctx.fillStyle = cst.skin;
-    ctx.beginPath(); ctx.arc(0, -21, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = LINE;
-    ctx.beginPath(); ctx.arc(-3, -22, 1.5, 0, Math.PI*2); ctx.arc(3, -22, 1.5, 0, Math.PI*2); ctx.fill();
-    if (pose === 'armsup') {
-      ctx.strokeStyle = LINE; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(0, -19, 3.5, 0.1*Math.PI, 0.9*Math.PI); ctx.stroke();
-    }
-    drawAccessory(cst, -21);
+    c.fillStyle = cst.skin;
+    c.beginPath(); c.arc(0, -21, 8, 0, Math.PI * 2); c.fill();
+    drawFace(c, -21, pose === 'armsup' ? 'grin' : 'relief');
+    drawAccessory(cst, -21, c);
   }
-  ctx.restore();
+  c.restore();
 }
 function drawRagdollPart(q){
   const cst = costume();
@@ -1620,6 +1645,13 @@ function buildShareCard(){
     c.fillStyle = '#a08b72'; c.font = '40px system-ui, sans-serif';
     c.fillText(S.takes + ' takes and counting.', 500, 800);
   }
+  // the star himself, mid-scream, beside the number (one character, everywhere)
+  c.save();
+  c.translate(810, 610);
+  c.scale(5.5, 5.5);
+  drawGuy(0, 22, 3.42, 'tuck', 0, c);          // ~196° — matches the icon pose
+  c.restore();
+  c.textAlign = 'center';
   c.fillStyle = '#a08b72'; c.font = 'italic 38px Georgia, serif';
   c.fillText(quip || '"One more take."', 500, 950);
   c.fillText('— the director', 500, 1005);
