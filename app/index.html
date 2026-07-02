@@ -57,6 +57,21 @@
   .card.locked{opacity:.5}
   .card.done{border-color:var(--gold)}
   .card .who{float:right;font-size:26px;line-height:1}
+  .chips{margin-top:8px}
+  .chips button{display:inline-block;width:auto;min-height:34px;margin:2px 4px 2px 0;
+    padding:4px 10px;font-size:12px;border-radius:16px}
+  .reelgrid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:min(360px,90vw)}
+  .reelgrid button{display:inline-block;width:54px;min-height:48px;margin:0;font-size:13px;padding:4px}
+  .reelgrid button.printed{border-color:var(--gold);color:var(--gold)}
+  .reelgrid button.golden{background:#3a2c10}
+  .poster{width:min(340px,88vw);background:var(--panel);border:2px solid #3a2a22;border-radius:12px;
+    padding:14px 16px;margin:6px auto;text-align:center}
+  .poster .art{font-size:44px}
+  .poster.gold{border-color:var(--gold);background:#2a2010}
+  .poster p{margin:2px 0;font-size:13px;color:var(--dim)}
+  #csList{width:min(340px,88vw);margin:0 auto 10px;text-align:left}
+  #csList div{font-size:14px;color:var(--dim);padding:3px 0}
+  #csList div.done{color:var(--good)}
 
   /* ---- in-game bottom bar (share/home on the CUT screen) ---- */
   #gameBar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));
@@ -91,11 +106,28 @@
   <p class="tag">a stunt double's life</p>
   <p class="stats" id="homeStats"></p>
   <button id="btnPlay" class="primary">ACTION!</button>
+  <div id="csList" aria-label="Today's call sheet"></div>
   <button id="btnDaily">🎬 DAILY CHALLENGE</button>
+  <button id="btnReel">🎞️ THE REEL (reshoot scenes)</button>
+  <button id="btnPosters">🖼️ POSTER WALL</button>
   <button id="btnCast">🎭 THE CAST</button>
   <button id="btnTrophies">🏆 BLOOPER REEL</button>
   <button id="btnShareHome">📤 SHARE MY PROGRESS</button>
   <button id="btnSettings">⚙️ SETTINGS</button>
+</section>
+
+<section id="scr-reel" class="screen" aria-label="Reshoot completed scenes">
+  <h2>THE REEL</h2>
+  <p class="stats">Reshoot any completed scene. Land a perfect to PRINT it.<br>Print all ten scenes of a set to gild its poster.</p>
+  <div id="reelGrid" class="reelgrid"></div>
+  <button class="back" data-to="home">← BACK</button>
+</section>
+
+<section id="scr-posters" class="screen" aria-label="Poster wall">
+  <h2>POSTER WALL</h2>
+  <p class="stats">One poster per wrapped set. Gold = every scene printed.</p>
+  <div id="posterList"></div>
+  <button class="back" data-to="home">← BACK</button>
 </section>
 
 <section id="scr-daily" class="screen" aria-label="Daily challenge">
@@ -155,6 +187,9 @@ const HITSTOP = 0.06;
 const START_X = 70;
 const DT_MAX = 0.033;
 const DAILY_FREE = 3, DAILY_AD_MAX = 3;
+// Where "challenge a friend" sends people. Beta: the Pages URL (instantly
+// playable). Swap to the App Store link at launch.
+const GAME_URL = 'https://SET-GITHUB-USERNAME.github.io/project-x/app/';
 // Anti-cheese: lock is unavailable until this much rotation has happened.
 // Without it, tap-tap instantly freezes the angle at ~0° for a free landing.
 const MIN_SPIN = 200 * Math.PI / 180;
@@ -166,6 +201,11 @@ const DEFAULTS = {
   bestStreak: 0, firstTakeChain: 0,
   selected: 'guy', unlocked: ['guy'],
   setTakes: 0,                                // takes spent on the current set (wrap-card stat)
+  printed: {},                                // sceneNo -> 1 (perfect landed ever; drives posters)
+  printsSpent: 0,                             // wardrobe purchases (wallet = prints - printsSpent)
+  variants: {},                               // costumeId -> selected colorway index
+  ownedVariants: {},                          // costumeId -> [indices owned] (0 always owned)
+  cs: {date: '', goals: [], prog: [], done: [], rewarded: false},   // daily call sheet
   ach: {},                                    // id -> timestamp
   daily: {date: '', used: 0, adExtras: 0, best: 0, todayBest: 0},
   set: {sound: 1, haptics: 1, rm: 0}
@@ -177,6 +217,8 @@ function loadSave(){
     if (raw) { S = Object.assign({}, DEFAULTS, JSON.parse(raw));
       S.daily = Object.assign({}, DEFAULTS.daily, S.daily);
       S.set = Object.assign({}, DEFAULTS.set, S.set);
+      S.cs = Object.assign({}, DEFAULTS.cs, S.cs);
+      S.printed = S.printed || {}; S.variants = S.variants || {}; S.ownedVariants = S.ownedVariants || {};
       return; }
     // migrate from prototype's scattered keys, then start clean
     S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -209,7 +251,10 @@ function sceneParams(n){
   const big = (n % 10 === 0);
   if (big) spinDeg *= 1.15;
   const goodDeg = Math.max(15, 30 - n * 1.2);
-  return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, tol: goodDeg * Math.PI / 180};
+  // golden takes: ~1 in 20 scenes (seeded — everyone's goldens match), never on
+  // big stunts. NOTE: drawn 4th so existing scenes keep their exact spin/airtime.
+  const golden = !big && rnd() < 0.05;
+  return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, golden: golden, tol: goodDeg * Math.PI / 180};
 }
 // daily: seeded by date + step so the whole world shoots the same gauntlet;
 // ramps faster than campaign because attempts are scarce
@@ -391,7 +436,37 @@ const COSTUMES = [
   {id:'legend', name:'The Aging Legend', icon:'🦳', unlock:75,  bio:'Broke every bone twice. Came back after lunch.',                 suit:'#9ca3af', skin:'#e8c9a0', shoe:'#78350f', acc:'grayhair'},
   {id:'diva',   name:'The Diva',         icon:'🕶️', unlock:100, bio:'Insisted on doing her own stunts. Regrets nothing, publicly.',   suit:'#c084fc', skin:'#ffd9a0', shoe:'#fbbf24', acc:'glasses'}
 ];
-function costume(){ return COSTUMES.find(x => x.id === S.selected) || COSTUMES[0]; }
+// Wardrobe: three colorways per character, bought with prints (cosmetic only —
+// the prints economy never touches progression, same principle as ads).
+const WARDROBE = {
+  guy:    [{name:'Classic', suit:'#ffd166', shoe:'#ef476f', price:0}, {name:'Midnight', suit:'#38bdf8', shoe:'#ffffff', price:15}, {name:'Inferno', suit:'#ef4444', shoe:'#111111', price:30}],
+  gal:    [{name:'Classic', suit:'#f472b6', shoe:'#ffffff', price:0}, {name:'Emerald',  suit:'#34d399', shoe:'#111111', price:15}, {name:'Royal',   suit:'#818cf8', shoe:'#ffd166', price:30}],
+  dummy:  [{name:'Classic', suit:'#e5e7eb', shoe:'#111111', price:0}, {name:'Caution',  suit:'#fbbf24', shoe:'#111111', price:15}, {name:'Stealth', suit:'#374151', shoe:'#ef4444', price:30}],
+  hotdog: [{name:'Classic', suit:'#f59e0b', shoe:'#dc2626', price:0}, {name:'Ketchup',  suit:'#dc2626', shoe:'#fbbf24', price:15}, {name:'Mustard', suit:'#eab308', shoe:'#dc2626', price:30}],
+  legend: [{name:'Classic', suit:'#9ca3af', shoe:'#78350f', price:0}, {name:'Denim',    suit:'#3b82f6', shoe:'#78350f', price:15}, {name:'Tuxedo',  suit:'#111827', shoe:'#ffffff', price:30}],
+  diva:   [{name:'Classic', suit:'#c084fc', shoe:'#fbbf24', price:0}, {name:'Gold',     suit:'#fbbf24', shoe:'#ffffff', price:15}, {name:'Scarlet', suit:'#ef4444', shoe:'#111111', price:30}]
+};
+function wallet(){ return S.prints - S.printsSpent; }
+function ownedIdx(id){ return S.ownedVariants[id] || [0]; }
+function costume(){
+  const base = COSTUMES.find(x => x.id === S.selected) || COSTUMES[0];
+  const v = (WARDROBE[base.id] || [])[S.variants[base.id] || 0];
+  return v ? Object.assign({}, base, {suit: v.suit, shoe: v.shoe}) : base;
+}
+function buyOrSelectVariant(id, idx){
+  const v = WARDROBE[id][idx];
+  if (ownedIdx(id).includes(idx)) {
+    S.variants[id] = idx; persist(); toast('Wardrobe: ' + v.name);
+  } else if (wallet() >= v.price) {
+    S.printsSpent += v.price;
+    S.ownedVariants[id] = ownedIdx(id).concat([idx]);
+    S.variants[id] = idx; persist();
+    toast('🧵 ' + v.name + ' tailored — ' + v.price + ' prints');
+  } else {
+    toast('Need ' + (v.price - wallet()) + ' more prints for ' + v.name);
+  }
+  refreshHome();
+}
 // returns newly unlocked costumes so advance() can celebrate them properly
 function checkUnlocks(){
   const fresh = [];
@@ -467,6 +542,20 @@ const QUIPS = [
   '"In my day we landed twice on Sundays."',
   '"Um. The light was perfect, and you were... not."'
 ];
+// near-miss quips: pained, not angry — the director WANTED it to work
+const NEAR_QUIPS = [
+  '"We almost had it. ALMOST."',
+  '"I was already standing up to applaud."',
+  '"So close I printed it in my heart."',
+  '"One degree. ONE. DEGREE."',
+  '"The trailer editor wept. Again, please."'
+];
+// rare perfect-landing reaction (~2%): the director is, briefly, human
+const IMPRESSED = [
+  '"...I have no notes."',
+  '"Print it twice."',
+  '"Somebody call my agent. I found one."'
+];
 
 // ========== achievements ==========
 const ACH = [
@@ -493,10 +582,12 @@ function award(id){
 // ========== engine state ==========
 // mode: 'campaign' (persistent scenes) | 'daily' (one life, date-seeded)
 // state: home | ready | air | landed | crash | over
-let mode = 'campaign';
+let mode = 'campaign';               // campaign | daily | reshoot
 let state = 'home';                  // + 'card' while an interstitial is up
 let dStep = 1;                       // daily: current gauntlet step
 let dLives = 3;                      // daily: crashes left in this attempt
+let rScene = 1;                      // reshoot: which completed scene
+let crashKind = 'full';              // full ragdoll vs near-miss stumble
 let cardQueue = [];                  // pending interstitial celebrations
 let takesScene = 1;                  // campaign: attempts on current scene
 let perfectStreak = 0;
@@ -506,11 +597,53 @@ let shake = 0, flash = 0, stateT = 0, hitstop = 0;
 let quip = '', wasPerfect = false;
 let params = sceneParams(S.scene);
 
-function currentGenre(){ return mode === 'daily' ? GENRES[dailySeed() % GENRES.length] : genreForScene(S.scene); }
-function currentSceneNo(){ return mode === 'daily' ? dStep : S.scene; }
+function currentGenre(){
+  if (mode === 'daily') return GENRES[dailySeed() % GENRES.length];
+  return genreForScene(mode === 'reshoot' ? rScene : S.scene);
+}
+function currentSceneNo(){ return mode === 'daily' ? dStep : (mode === 'reshoot' ? rScene : S.scene); }
 function refreshParams(){
-  params = mode === 'daily' ? dailyParams(dStep) : sceneParams(S.scene);
+  params = mode === 'daily' ? dailyParams(dStep) : sceneParams(currentSceneNo());
   if (setCache && currentGenre().id !== cachedGenreId) buildSetCache(currentGenre());
+}
+
+// ========== call sheet (3 themed daily goals) ==========
+const CS_POOL = [
+  {id: 'clean3', text: 'Land 3 clean takes',            n: 3, ev: 'clean'},
+  {id: 'print1', text: 'Print a scene (perfect)',       n: 1, ev: 'perfect'},
+  {id: 'adv3',   text: 'Complete 3 scenes',             n: 3, ev: 'advance'},
+  {id: 'big1',   text: 'Wrap a BIG STUNT scene',        n: 1, ev: 'big'},
+  {id: 'take8',  text: 'Roll 8 takes',                  n: 8, ev: 'take'},
+  {id: 'daily2', text: 'Clear 2 scenes in the gauntlet',n: 2, ev: 'daily'}
+];
+function csRollover(){
+  if (S.cs.date === todayStr()) return;
+  const rnd = mulberry32((dailySeed() ^ 0x9E3779B9) >>> 0);
+  const idx = CS_POOL.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  S.cs = {date: todayStr(), goals: idx.slice(0, 3).map(i => CS_POOL[i].id), prog: [0, 0, 0], done: [false, false, false], rewarded: false};
+  persist();
+}
+function csEvent(ev){
+  csRollover();
+  let changed = false;
+  S.cs.goals.forEach((gid, i) => {
+    const g = CS_POOL.find(x => x.id === gid);
+    if (!g || g.ev !== ev || S.cs.done[i]) return;
+    S.cs.prog[i]++;
+    if (S.cs.prog[i] >= g.n) {
+      S.cs.done[i] = true;
+      S.prints += 2;                             // small, immediate, themed reward
+      toast('📋 ' + g.text + ' ✓  (+2 prints)');
+    }
+    changed = true;
+  });
+  if (S.cs.done.every(Boolean) && !S.cs.rewarded) {
+    S.cs.rewarded = true;
+    S.prints += 5;
+    toast('📋 CALL SHEET WRAPPED — +5 prints. The director nods once.');
+  }
+  if (changed) persist();
 }
 function newPlayer(x){
   return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, squash: 0, pose: 'stand'};
@@ -521,6 +654,7 @@ p = newPlayer(START_X);
 function startJump(){
   S.takes++;
   if (mode === 'campaign') S.setTakes++;
+  csEvent('take');
   const targetX = 250 + Math.random() * 80;
   p.vx = (targetX - p.x) / params.T;
   p.vy = -GRAVITY * params.T / 2;
@@ -571,18 +705,30 @@ function evaluateLanding(){
     if (wasPerfect) {
       perfectStreak++;
       S.prints++;
+      if (mode !== 'daily') S.printed[currentSceneNo()] = 1;   // collection flag (posters)
       S.bestStreak = Math.max(S.bestStreak, perfectStreak);
       confetti(p.x, GROUND - 40);
       addPopup('PRINT IT!', p.x, GROUND - 100, '#ffd166', 28);
       if (perfectStreak >= 2) addPopup('STREAK ×' + perfectStreak, p.x, GROUND - 135, '#c084fc', 20);
+      if (Math.random() < 0.02) {                              // the director is briefly human
+        quip = '';
+        addPopup(IMPRESSED[Math.floor(Math.random() * IMPRESSED.length)], W / 2, 210, '#e8d5b5', 20);
+      }
       sfx.perfect();
       award('firstPrint');
       if (perfectStreak >= 3) award('hatTrick');
       if (perfectStreak >= 5) award('onFire');
+      csEvent('perfect');
     } else {
       perfectStreak = 0;
       addPopup('CLEAN TAKE', p.x, GROUND - 100, '#6ee7b7');
       sfx.land();
+      csEvent('clean');
+    }
+    if (params.golden) {                                       // golden take bonus
+      S.prints += 3;
+      confetti(p.x, GROUND - 80);
+      addPopup('★ GOLDEN TAKE +3 ★', W / 2, 250, '#ffd166', 24);
     }
     persist();
     state = 'landed'; stateT = 0;
@@ -590,12 +736,28 @@ function evaluateLanding(){
     perfectStreak = 0;
     S.crashes++;
     if (S.crashes >= 100) award('frequentFlyer');
-    spawnRagdoll();
-    if (!S.set.rm) { shake = 1; flash = 1; }
-    haptic([40, 40, 60]);
-    quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
-    addPopup('CUT!', p.x, GROUND - 120, '#f87171', 36);
-    sfx.crash(); sfx.cut();
+    const nearMiss = off <= params.tol + 8 * Math.PI / 180;    // the SO CLOSE tier
+    crashKind = nearMiss ? 'near' : 'full';
+    if (nearMiss) {
+      // stays on his feet... briefly. No ragdoll — a stumble and a faceplant.
+      p.angle = 0; p.vx = 0; p.vy = 0; p.om = 0;
+      p.pose = 'faceplant';
+      dust(p.x, GROUND, 12);
+      if (!S.set.rm) shake = 0.4;
+      haptic(30);
+      ragdoll = [];                                            // stumble, not explosion
+      quip = NEAR_QUIPS[Math.floor(Math.random() * NEAR_QUIPS.length)];
+      addPopup('SO CLOSE!', p.x, GROUND - 120, '#fbbf24', 34);
+      tone(340, 240, 0.3, 'triangle', 0.16);                   // groan, not crash
+      sfx.cut();
+    } else {
+      spawnRagdoll();
+      if (!S.set.rm) { shake = 1; flash = 1; }
+      haptic([40, 40, 60]);
+      quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
+      addPopup('CUT!', p.x, GROUND - 120, '#f87171', 36);
+      sfx.crash(); sfx.cut();
+    }
     persist();
     state = 'crash'; stateT = 0;
   }
@@ -634,6 +796,13 @@ function showNextCard(){
 
 // scene/step advance after a landing settles (called from update)
 function advance(){
+  if (mode === 'reshoot') {
+    // reshoots don't advance the campaign — they polish history
+    toast(wasPerfect ? '🎞️ Scene ' + rScene + ' PRINTED' : '🎞️ Scene ' + rScene + ' reshot clean (print needs a perfect)');
+    persist();
+    showScreen('reel');
+    return;
+  }
   if (mode === 'campaign') {
     if (takesScene === 1) {                          // first-take bookkeeping
       S.firstTakeChain++;
@@ -647,6 +816,8 @@ function advance(){
     if (S.scene >= 100) award('franchise');
     const fresh = checkUnlocks();
     takesScene = 1;
+    csEvent('advance');
+    if (params.big) csEvent('big');
     addPopup('SCENE ' + (S.scene - 1) + ' COMPLETE', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
     for (const cst of fresh) {
       queueCard({kicker: 'NEW CAST MEMBER', icon: cst.icon, title: cst.name,
@@ -668,6 +839,7 @@ function advance(){
     persist();
   } else {
     dStep++;
+    csEvent('daily');
     addPopup('SCENE ' + (dStep - 1) + ' IN THE CAN', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
   }
   refreshParams();
@@ -707,9 +879,21 @@ function retry(){
     return;
   }
   takesScene++;
-  S.firstTakeChain = 0;
+  if (mode === 'campaign') S.firstTakeChain = 0;
   p = newPlayer(START_X);
   popups = []; ragdoll = [];
+  state = 'ready';
+}
+
+// reshoot mode: replay any completed scene to print it (mastery loop)
+function playReshoot(n){
+  mode = 'reshoot';
+  rScene = n;
+  refreshParams();
+  takesScene = 1; perfectStreak = 0;
+  p = newPlayer(START_X);
+  popups = []; ragdoll = []; quip = '';
+  showScreen(null);
   state = 'ready';
 }
 
@@ -792,7 +976,7 @@ function update(dt){
         else { q.vy = 0; q.vx *= 0.85; q.om *= 0.8; }
       }
     }
-    if (stateT > 1.2) afterCrash();
+    if (stateT > (crashKind === 'near' ? 0.9 : 1.2)) afterCrash();   // stumbles resolve faster
   }
 
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -834,6 +1018,23 @@ function drawAccessory(cst, headY){
 }
 function drawGuy(x, y, angle, pose, squash){
   const cst = costume();
+  if (pose === 'faceplant') {          // the near-miss outcome: flat, dignified
+    ctx.save();
+    ctx.translate(x, y - 8);
+    limb(-24, 0, -16, -2, -8, 0, cst.skin, 5);              // arms splayed
+    limb(24, 0, 16, -2, 8, 0, cst.skin, 5);
+    ctx.fillStyle = cst.suit;
+    ctx.beginPath(); ctx.ellipse(0, 0, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
+    limb(8, 2, 16, 4, 24, 2, cst.suit, 6);                  // legs out the back
+    ctx.fillStyle = cst.shoe; ctx.fillRect(22, -1, 7, 5);
+    ctx.fillStyle = cst.skin;
+    ctx.beginPath(); ctx.arc(-18, -3, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = LINE;
+    ctx.font = 'bold 8px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('- -', -18, -1);                            // eyes shut, processing
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.translate(x, y - 22);
   ctx.rotate(angle);
@@ -919,10 +1120,10 @@ function draw(){
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
   if (setCache) ctx.drawImage(setCache, 0, 0, W, H);
 
-  if (state === 'crash' || (state === 'over' && ragdoll.length)) {
+  if (ragdoll.length && (state === 'crash' || state === 'over')) {
     for (const q of ragdoll) drawRagdollPart(q);
-  } else if (state !== 'over') {
-    drawGuy(p.x, p.y, p.angle, p.pose, p.squash);
+  } else if (state !== 'over' || crashKind === 'near') {
+    drawGuy(p.x, p.y, p.angle, p.pose, p.squash);   // near-miss keeps him on stage, flat
   }
 
   for (const q of particles) {
@@ -952,7 +1153,7 @@ function draw(){
   // HUD
   const g = currentGenre();
   ctx.fillStyle = '#c9a876'; ctx.font = 'bold 15px system-ui, sans-serif';
-  ctx.fillText(mode === 'daily' ? 'DAILY · SCENE' : 'SCENE', W / 2, 46);
+  ctx.fillText(mode === 'daily' ? 'DAILY · SCENE' : (mode === 'reshoot' ? 'RESHOOT · SCENE' : 'SCENE'), W / 2, 46);
   ctx.fillStyle = '#fff'; ctx.font = 'bold 48px system-ui, sans-serif';
   ctx.fillText(String(currentSceneNo()), W / 2, 92);
   ctx.fillStyle = '#c9a876'; ctx.font = '14px system-ui, sans-serif';
@@ -969,6 +1170,10 @@ function draw(){
     ctx.fillStyle = '#ef476f'; ctx.font = 'bold 16px system-ui, sans-serif';
     ctx.fillText('★ BIG STUNT SCENE ★', W / 2, 156);
   }
+  if (params.golden && state === 'ready') {
+    ctx.fillStyle = '#ffd166'; ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('★ GOLDEN TAKE — BONUS PRINTS ★', W / 2, 156);
+  }
   if (perfectStreak >= 2) {
     ctx.fillStyle = '#c084fc'; ctx.font = 'bold 15px system-ui, sans-serif';
     ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 176);
@@ -984,11 +1189,16 @@ function draw(){
     ctx.fillStyle = 'rgba(10,7,5,0.92)';
     ctx.fillRect(40, 240, W - 80, 220);
     slateStripes(40, 240, W - 80, 18);
-    ctx.fillStyle = '#f87171'; ctx.font = 'bold 32px Georgia, serif';
-    ctx.fillText('CUT!', W / 2, 305);
+    if (crashKind === 'near') {
+      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 30px Georgia, serif';
+      ctx.fillText('SO CLOSE!', W / 2, 305);
+    } else {
+      ctx.fillStyle = '#f87171'; ctx.font = 'bold 32px Georgia, serif';
+      ctx.fillText('CUT!', W / 2, 305);
+    }
     ctx.fillStyle = '#e8d5b5'; ctx.font = '15px system-ui, sans-serif';
-    if (mode === 'campaign') {
-      ctx.fillText('SCENE ' + S.scene + '  ·  TAKE ' + takesScene, W / 2, 335);
+    if (mode !== 'daily') {
+      ctx.fillText('SCENE ' + currentSceneNo() + '  ·  TAKE ' + takesScene, W / 2, 335);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
       ctx.fillText('Lifetime takes: ' + S.takes, W / 2, 372);
       ctx.fillStyle = '#6ee7b7';
@@ -1021,34 +1231,43 @@ function buildShareCard(){
   c.fillStyle = '#fff';
   for (let i = 0; i < 12; i++) { c.save(); c.translate(i * 96, 0); c.rotate(0.5); c.fillRect(0, -20, 44, 130); c.restore(); }
   c.textAlign = 'center';
-  c.fillStyle = '#ffd166'; c.font = 'bold 110px Georgia, serif';
-  c.fillText('TAKE 47', 500, 320);
-  c.fillStyle = '#e8d5b5'; c.font = '42px system-ui, sans-serif';
+  // challenge-first layout (Dan: the card is a taunt, not a trophy)
+  c.fillStyle = '#f87171'; c.font = 'bold 150px Georgia, serif';
+  c.fillText('BEAT THIS.', 500, 340);
+  c.fillStyle = '#e8d5b5'; c.font = '44px system-ui, sans-serif';
   if (mode === 'daily') {
-    c.fillText('TODAY\'S SHOOT', 500, 480);
-    c.fillStyle = '#fff'; c.font = 'bold 180px system-ui, sans-serif';
-    c.fillText(String(S.daily.todayBest), 500, 700);
-    c.fillStyle = '#e8d5b5'; c.font = '42px system-ui, sans-serif';
-    c.fillText('SCENES CLEARED · ONE LIFE', 500, 790);
+    c.fillText('TODAY\'S GAUNTLET · SCENES CLEARED', 500, 500);
+    c.fillStyle = '#fff'; c.font = 'bold 190px system-ui, sans-serif';
+    c.fillText(String(S.daily.todayBest), 500, 720);
+    c.fillStyle = '#a08b72'; c.font = '40px system-ui, sans-serif';
+    c.fillText('Same gauntlet for everyone. Three lives.', 500, 800);
   } else {
-    c.fillText('STUCK ON SCENE', 500, 480);
-    c.fillStyle = '#fff'; c.font = 'bold 180px system-ui, sans-serif';
-    c.fillText(String(S.scene), 500, 700);
-    c.fillStyle = '#e8d5b5'; c.font = '42px system-ui, sans-serif';
-    c.fillText(S.takes + ' TAKES AND COUNTING', 500, 790);
+    c.fillText('STUCK ON SCENE', 500, 500);
+    c.fillStyle = '#fff'; c.font = 'bold 190px system-ui, sans-serif';
+    c.fillText(String(S.scene), 500, 720);
+    c.fillStyle = '#a08b72'; c.font = '40px system-ui, sans-serif';
+    c.fillText(S.takes + ' takes and counting.', 500, 800);
   }
-  c.fillStyle = '#a08b72'; c.font = 'italic 40px Georgia, serif';
-  c.fillText(quip || '"One more take."', 500, 940);
-  c.fillStyle = '#6ee7b7'; c.font = 'bold 44px system-ui, sans-serif';
-  c.fillText('Your turn.', 500, 1090);
+  c.fillStyle = '#a08b72'; c.font = 'italic 38px Georgia, serif';
+  c.fillText(quip || '"One more take."', 500, 950);
+  c.fillText('— the director', 500, 1005);
+  c.fillStyle = '#ffd166'; c.font = 'bold 64px Georgia, serif';
+  c.fillText('TAKE 47', 500, 1140);
   return s;
+}
+// Challenge text travels WITH the image so the recipient can actually play —
+// a taunt without a link is a dead end.
+function shareText(){
+  return mode === 'daily'
+    ? 'TAKE 47 daily gauntlet: I cleared ' + S.daily.todayBest + ' scenes. Your move: ' + GAME_URL
+    : 'I\'m stuck on Scene ' + S.scene + ' of TAKE 47 (' + S.takes + ' takes so far). Beat that: ' + GAME_URL;
 }
 async function shareCard(){
   try {
     const blob = await new Promise(res => buildShareCard().toBlob(res, 'image/png'));
     const file = new File([blob], 'take47.png', {type: 'image/png'});
     if (navigator.canShare && navigator.canShare({files: [file]})) {
-      await navigator.share({files: [file], text: 'TAKE 47'});
+      await navigator.share({files: [file], title: 'TAKE 47', text: shareText()});
     } else {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob); a.download = 'take47.png'; a.click();
@@ -1073,24 +1292,81 @@ function toast(msg){
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 function refreshHome(){
-  $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  ' + S.prints + ' prints' +
+  $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  wallet: ' + wallet() + ' prints' +
     (S.furthest > S.scene ? '  ·  record: Scene ' + S.furthest : '');
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
   dailyRollover();
+  csRollover();
+  // call sheet (today's 3 goals)
+  const cs = $('csList'); cs.innerHTML = '';
+  S.cs.goals.forEach((gid, i) => {
+    const gDef = CS_POOL.find(x => x.id === gid);
+    if (!gDef) return;
+    const row = document.createElement('div');
+    row.className = S.cs.done[i] ? 'done' : '';
+    row.textContent = (S.cs.done[i] ? '✓ ' : '☐ ') + gDef.text + '  (' + Math.min(S.cs.prog[i], gDef.n) + '/' + gDef.n + ')';
+    cs.appendChild(row);
+  });
+  // the reel: every completed scene is reshootable
+  const rg = $('reelGrid'); rg.innerHTML = '';
+  for (let n = 1; n < S.scene; n++) {
+    const b = document.createElement('button');
+    const pr = !!S.printed[n];
+    b.className = (pr ? 'printed' : '') + (sceneParams(n).golden ? ' golden' : '');
+    b.textContent = (pr ? '★' : '') + n;
+    b.setAttribute('aria-label', 'Reshoot scene ' + n + (pr ? ' (printed)' : ''));
+    b.onclick = () => { ac(); playReshoot(n); };
+    rg.appendChild(b);
+  }
+  // poster wall: one per wrapped set; gold when all ten scenes are printed
+  const pl = $('posterList'); pl.innerHTML = '';
+  const ART = ['🎬', '🤠', '🏴‍☠️', '🛸', '🌧️', '🦖'];
+  const wrapped = Math.floor((S.scene - 1) / 10);
+  for (let k = 0; k < wrapped; k++) {
+    const gen = GENRES[k % GENRES.length];
+    let printedCount = 0;
+    for (let n = k * 10 + 1; n <= k * 10 + 10; n++) if (S.printed[n]) printedCount++;
+    const gold = printedCount === 10;
+    const div = document.createElement('div');
+    div.className = 'poster' + (gold ? ' gold' : '');
+    div.innerHTML = '<div class="art">' + ART[k % ART.length] + '</div><h3>' + gen.name + '</h3>' +
+      '<p>Scenes ' + (k * 10 + 1) + '–' + (k * 10 + 10) + '</p>' +
+      '<p>' + (gold ? '★ DIRECTOR\'S CUT — all ten printed ★' : printedCount + '/10 printed — reshoot to gild it') + '</p>';
+    pl.appendChild(div);
+  }
+  if (wrapped === 0) pl.innerHTML = '<p class="stats">Wrap your first set (10 scenes) to hang a poster.</p>';
   const left = DAILY_FREE + S.daily.adExtras - S.daily.used;
   $('dailyInfo').textContent = 'Attempts left today: ' + left + '  ·  Today\'s best: ' + S.daily.todayBest + '  ·  All-time: ' + S.daily.best;
   $('btnDailyPlay').disabled = left <= 0;
   $('btnDailyAd').disabled = S.daily.adExtras >= DAILY_AD_MAX;
-  // cast
+  // cast + wardrobe (variant chips bought with print wallet)
   const cl = $('castList'); cl.innerHTML = '';
   for (const cst of COSTUMES) {
     const owned = S.unlocked.includes(cst.id);
-    const div = document.createElement('button');
+    const div = document.createElement('div');
     div.className = 'card' + (owned ? '' : ' locked') + (S.selected === cst.id ? ' done' : '');
     div.innerHTML = '<span class="who">' + cst.icon + '</span><h3>' + cst.name + (S.selected === cst.id ? ' ✓' : '') + '</h3><p>' +
-      (owned ? 'Tap to select' : 'Unlocks at Scene ' + cst.unlock) + '</p>';
-    div.disabled = !owned;
-    div.onclick = () => { S.selected = cst.id; persist(); refreshHome(); toast('Now starring: ' + cst.name); };
+      (owned ? cst.bio : 'Unlocks at Scene ' + cst.unlock) + '</p>';
+    if (owned) {
+      const sel = document.createElement('button');
+      sel.textContent = S.selected === cst.id ? 'STARRING' : 'SELECT';
+      sel.disabled = S.selected === cst.id;
+      sel.className = 'chips-select';
+      sel.onclick = () => { S.selected = cst.id; persist(); refreshHome(); toast('Now starring: ' + cst.name); };
+      div.appendChild(sel);
+      const chips = document.createElement('div');
+      chips.className = 'chips';
+      WARDROBE[cst.id].forEach((v, idx) => {
+        const c = document.createElement('button');
+        const own = ownedIdx(cst.id).includes(idx);
+        const active = (S.variants[cst.id] || 0) === idx;
+        c.textContent = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + '🖨'));
+        c.setAttribute('aria-label', v.name + (own ? (active ? ', worn' : ', owned') : ', costs ' + v.price + ' prints'));
+        c.onclick = () => buyOrSelectVariant(cst.id, idx);
+        chips.appendChild(c);
+      });
+      div.appendChild(chips);
+    }
     cl.appendChild(div);
   }
   // trophies
@@ -1125,6 +1401,8 @@ $('btnDailyAd').onclick = () => {
   }, 3000);
 };
 $('btnCast').onclick = () => showScreen('cast');
+$('btnReel').onclick = () => showScreen('reel');
+$('btnPosters').onclick = () => showScreen('posters');
 $('btnTrophies').onclick = () => showScreen('trophies');
 $('btnSettings').onclick = () => showScreen('settings');
 $('tglSound').onclick = () => { S.set.sound = S.set.sound ? 0 : 1; persist(); refreshHome(); };
@@ -1148,8 +1426,13 @@ $('btnShareHome').onclick = () => { mode = 'campaign'; shareCard(); };
 $('btnHome').onclick = () => { gameBar(false); popups = []; ragdoll = []; showScreen('home'); };
 for (const b of document.querySelectorAll('.back')) b.onclick = () => showScreen(b.dataset.to);
 
-// dev/test hook: lets the headless test driver inspect state (harmless in prod)
-window.__t47 = { get: () => ({state, mode, dStep, dLives, takesScene, perfectStreak, cards: cardQueue.length, S}) };
+// dev/test hooks: state inspection + action handles for the headless driver
+window.__t47 = {
+  get: () => ({state, mode, dStep, dLives, rScene, crashKind, takesScene, perfectStreak, cards: cardQueue.length, wallet: wallet(), S}),
+  reshoot: playReshoot,
+  buy: buyOrSelectVariant,
+  cs: csEvent
+};
 
 // ========== main loop ==========
 let last = performance.now();

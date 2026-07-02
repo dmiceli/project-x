@@ -46,6 +46,8 @@ Already in: hitstop, screen shake, red flash, landing dust, perfect confetti, ra
 
 **Settings.** Sound effects, haptics, reduce motion, Reshoot from Scene 1, restore purchases, privacy policy link — all real labeled buttons (VoiceOver-navigable).
 
+**The joy package (added 2026-07-03 after Dan's replayability session).** Six interlocking systems: (1) **Near-miss tier** — landing within 8° outside tolerance is "SO CLOSE!": no ragdoll, a dignified faceplant, pained director quips; the strongest retry-driver in the genre. (2) **The Reel** — reshoot any completed scene; perfect it to *print* it. The mastery loop: forward-only becomes beat-your-own-history. (3) **Poster Wall** — one poster per wrapped set; printing all ten of its scenes gilds it to a Director's Cut. (4) **Call Sheet** — three seeded daily goals (+2 prints each, +5 for the sweep); gives sessions a finish line. (5) **Golden takes** — ~1 in 20 scenes (seeded, never big stunts) pays +3 prints. (6) **Rare director approval** — 2% of perfects, he has no notes. Prints economy: perfects earn prints (+call sheet+goldens); prints spend on **wardrobe** — three colorways per character (0/15/30) — cosmetic only, never progression (the no-pay-to-win principle extends to earned currency).
+
 **Scene genres (added 2026-07-03, Dan: full v1).** The set changes genre every 10 scenes, cycling: The Backlot → Dust Gulch (western) → The High Seas (swashbuckler) → Saucer Stage (50s sci-fi) → Rain Street (noir) → Miniature City (kaiju). All trope-level per THEME.md IP guardrails; every set keeps the film-set framing (rig, spotlight, camera, crash mat). Genre transitions announced with a toast; each genre's 10th scene is its BIG STUNT finale.
 
 Explicitly out of v1.0: Game Center leaderboard (revisit for 1.1), cloud saves, multiplayer, level/world structure.
@@ -53,6 +55,10 @@ Explicitly out of v1.0: Game Center leaderboard (revisit for 1.1), cloud saves, 
 ## Monetization
 
 Free download. **Principle (Dan, 2026-07-02): ads never buy progress.** No scene skips, no pay-to-win — main-mode scene progression cannot be advanced by watching or paying for anything. Rewarded ads (opt-in only) live where they don't touch progression: extra attempts in the daily challenge (base allowance ~3 attempts/day, which also makes the daily score meaningful), and early cosmetic character unlocks. Interstitials: full-screen ad between takes, at most one per 3 crashes and never less than 90 seconds apart, never mid-jump. No banners — they earn little and clutter the screen. "Remove Ads" IAP at $1.99–2.99 removes interstitials but keeps opt-in rewarded ads available. Ad SDK choice (AdMob vs. alternatives) is a build-phase decision; whichever we pick brings Apple's App Tracking Transparency prompt and privacy-label requirements — accounted for in the App Store phase.
+
+## Voice (Dan, 2026-07-03): whimsical, never cheesy
+
+All game copy — quips, cards, bios, achievements, share cards — aims for deadpan film-industry humor. The joke is always that the crew takes absurd things completely seriously ("one nervous insurance guy," "a city of shoeboxes," "files no complaints"). Whimsy comes from *specificity*, not wackiness. Guardrails: no pun pile-ups, no fourth-wall mugging, no exclamation-point enthusiasm outside the director's yells, no random-lol humor. If a line would fit a minion meme, cut it.
 
 ## Theme and name: TAKE 47 (decided 2026-07-02)
 

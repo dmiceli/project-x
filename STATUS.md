@@ -40,8 +40,14 @@
 
 - 2026-07-03 (later still): interstitial cards given context per Dan's feedback — set changes are now wrap parties with stats ("THE BACKLOT — WRAPPED. All ten scenes shot in 43 takes") + a flavor tease of the next set; cast unlocks carry character bios + what the player survived to earn them. Re-verified headlessly.
 
+- 2026-07-03: playtest verdicts — milestone cards land ✓; 3-lives daily locked ✓; share rebuilt as a challenge ("BEAT THIS." card + taunt text + playable link via native share sheet; beta link = Pages URL, swaps to App Store at launch). "TOO SOON!" confirmed working (only shows on premature lock taps). **Open: GAME_URL needs Dan's GitHub username.**
+
+- 2026-07-03: **Joy package shipped** after guided replayability session — near-miss tier, the Reel (reshoot/print), Poster Wall, Call Sheet dailies, golden takes, director approval, prints wallet + wardrobe (18 colorways). All flows verified headlessly (near-miss trigger, scene-21 run, reshoot isolation, wallet math, call-sheet payout, golden seeding).
+
 ## Next steps
-1. Dan: push + replay. Feel checklist: do the cards land as earned moments now? Does "TOO SOON!" feel fair or annoying? Daily with 3 lives — right tension? Share card visible and worth sending?
+1. **Still open: GAME_URL needs Dan's GitHub username** (share link is a placeholder until then).
+2. Dan: push + play the joy build. Watch for: does SO CLOSE! sting correctly? Is the Reel inviting? Wardrobe prices fair?
+3. Then: polish phase (icon, real sound in movie-set language, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.
 4. Later: verify "TAKE 47" name in App Store Connect.
