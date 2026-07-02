@@ -71,9 +71,11 @@
 
 - 2026-07-03: sound approved MVP; **crash comedy pass shipped** — per-part ragdoll restitution + one "launcher" part that gets famous, brief slow-mo (0.35×, ~0.5s) on spectacular crashes (>92° miss or any hazard hit), and the 12% delayed falling-light gag: a stage lamp gives up half a beat after the crash, BONK., lens dies on impact. Regression green.
 
+- 2026-07-03: **Comedy & Clarity batch shipped** (all four of Dan's points): crashes now prominent (launcher part rockets, wide scatter, slow-mo every wipeout, impact puffs, longer beat); the falling light is a proper 3-act gag (creak → lazy fall on a cable → BONK., lens dies) drawn above everything; game-wide art pass (outlined recognizable props — lamps/camera/mat/genre sets, kaiju arm has a zipper now); verdict stamps (rotating word pools on slate chips, tilt + pop, never clipped off-screen). Art code relocated to file tail (head stability). Full regression green.
+
 ## Next steps (polish)
-1. Dan: push + crash a lot, deliberately — judge slow-mo dosage, launcher-part comedy, whether BONK. lands (it's a 1-in-8 surprise; give it a few tries). Also: sound pass + face all live now — one big feel session.
-2. App Store screenshot set per BRAND.md ("the fail is the ad").
+1. Dan: push + a big crash session — this build is Dan-feedback made flesh. Judge: crash spectacle, gag visibility (1-in-7ish), verdict variety/treatment, whether the sets finally read (camera = camera, lamp = lamp).
+2. App Store screenshot set per BRAND.md ("the fail is the ad") — the game finally looks like its screenshots should.
 3. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save gate) → TestFlight.
 3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
 4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate) → hello-world TestFlight build.
