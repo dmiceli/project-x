@@ -69,11 +69,12 @@
 
 - 2026-07-03: **Sound pass v2 shipped** ("deadpan delivery, cartoon heart" — codified in BRAND art direction per Dan's kid-friendly note): filtered-noise foley (wood-crack clapper, whoosh, body thud, dry tumble), warm accents kept cartoonish-lite (perfect sting + sparkle, golden coin-glint, one honest boing on bounces, faint sad-trombone tail on crashes). New fnoise (bandpass) helper; golden takes and bounces got dedicated sounds. Regression green.
 
+- 2026-07-03: sound approved MVP; **crash comedy pass shipped** — per-part ragdoll restitution + one "launcher" part that gets famous, brief slow-mo (0.35×, ~0.5s) on spectacular crashes (>92° miss or any hazard hit), and the 12% delayed falling-light gag: a stage lamp gives up half a beat after the crash, BONK., lens dies on impact. Regression green.
+
 ## Next steps (polish)
-1. Dan: push + play WITH SOUND ON — the whole pass is ears-only. Judge: does the clapper crack like wood? Is the crash funny-dry? Boing too much / not enough?
-2. Crash comedy pass (ragdoll variety, prop-fall gags) — the last feel item.
-3. App Store screenshot set per BRAND.md ("the fail is the ad").
-4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save gate) → TestFlight.
+1. Dan: push + crash a lot, deliberately — judge slow-mo dosage, launcher-part comedy, whether BONK. lands (it's a 1-in-8 surprise; give it a few tries). Also: sound pass + face all live now — one big feel session.
+2. App Store screenshot set per BRAND.md ("the fail is the ad").
+3. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save gate) → TestFlight.
 3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
 4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate) → hello-world TestFlight build.
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.

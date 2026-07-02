@@ -746,6 +746,8 @@ let dStep = 1;                       // daily: current gauntlet step
 let dLives = 3;                      // daily: crashes left in this attempt
 let rScene = 1;                      // reshoot: which completed scene
 let crashKind = 'full';              // full ragdoll vs near-miss stumble
+let slowmoT = 0;                     // brief slow-motion on spectacular crashes
+let gag = null;                      // the delayed falling-light BONK (comedy beat)
 let cardQueue = [];                  // pending interstitial celebrations
 let mechT = 0;                       // scene clock driving cart/boom/arm animation
 let bounced = false;                 // double-bounce stunts: second phase flag
@@ -823,7 +825,7 @@ function newPlayer(x){
   return {x: x, y: GROUND - h, vx: 0, vy: 0, angle: 0, om: 0, locked: false, spun: 0, squash: 0, pose: 'stand'};
 }
 p = freshPlayer();
-function freshPlayer(){ bounced = false; mechT = Math.random() * 10; return newPlayer(params.startX || START_X); }
+function freshPlayer(){ bounced = false; gag = null; slowmoT = 0; mechT = Math.random() * 10; return newPlayer(params.startX || START_X); }
 
 // ========== gameplay ==========
 function grav(){ return GRAVITY * (params.mech ? params.mech.grav : 1); }
@@ -836,6 +838,7 @@ function crashAir(popupText, quipText){
   if (S.crashes >= 100) award('frequentFlyer');
   crashKind = 'full';
   spawnRagdoll();
+  slowmoT = 0.55;                      // hazard hits are always spectacular
   if (!S.set.rm) { shake = 1; flash = 1; }
   haptic([40, 40, 60]);
   quip = quipText;
@@ -894,11 +897,14 @@ function confetti(x, y){
 function spawnRagdoll(){
   ragdoll = [];
   const parts = [{type:'head',ox:0,oy:-22},{type:'torso',ox:0,oy:0},{type:'arm',ox:-10,oy:-8},{type:'arm',ox:10,oy:-8},{type:'leg',ox:-6,oy:14},{type:'leg',ox:6,oy:14}];
-  for (const pt of parts) {
+  const launcher = Math.floor(Math.random() * parts.length);   // one part gets famous
+  parts.forEach((pt, i) => {
     ragdoll.push({type: pt.type, x: p.x + pt.ox, y: p.y - 20 + pt.oy,
-      vx: p.vx * 0.5 + (Math.random()-0.5)*260, vy: -120 - Math.random()*220,
-      a: Math.random()*Math.PI*2, om: (Math.random()-0.5)*18});
-  }
+      vx: p.vx * 0.5 + (Math.random()-0.5)*280,
+      vy: (i === launcher ? -430 : -120) - Math.random()*240,
+      a: Math.random()*Math.PI*2, om: (Math.random()-0.5)*26,
+      rest: 0.35 + Math.random()*0.25});                       // per-part bounciness
+  });
 }
 
 function evaluateLanding(){
@@ -976,6 +982,8 @@ function evaluateLanding(){
       sfx.cut();
     } else {
       spawnRagdoll();
+      if (off > 1.6) slowmoT = 0.5;                            // spectacular = savored
+      if (Math.random() < 0.12) gag = {x: p.x + Math.random()*60 - 30, y: -40, vy: 0, delay: 0.55, done: false};
       if (!S.set.rm) { shake = 1; flash = 1; }
       haptic([40, 40, 60]);
       quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
@@ -1198,6 +1206,7 @@ window.addEventListener('resize', resize);
 // ========== update ==========
 function update(dt){
   if (hitstop > 0) { hitstop -= dt; return; }
+  if (slowmoT > 0) { slowmoT -= dt; dt *= 0.35; }   // slow-mo: the crash, savored
   stateT += dt;
   shake = Math.max(0, shake - dt * 3);
   flash = Math.max(0, flash - dt * 4);
@@ -1256,11 +1265,26 @@ function update(dt){
       q.x += q.vx * dt; q.y += q.vy * dt; q.a += q.om * dt;
       if (q.y > GROUND - 4) {
         q.y = GROUND - 4;
-        if (Math.abs(q.vy) > 40) { q.vy = -q.vy * 0.4; q.vx *= 0.6; q.om *= 0.6; }
+        if (Math.abs(q.vy) > 40) { q.vy = -q.vy * (q.rest || 0.4); q.vx *= 0.6; q.om *= 0.6; }
         else { q.vy = 0; q.vx *= 0.85; q.om *= 0.8; }
       }
     }
     if (stateT > (crashKind === 'near' ? 0.9 : 1.2)) afterCrash();   // stumbles resolve faster
+  }
+
+  // the light that gives up: falls a comedic beat after the crash settles
+  if (gag && (state === 'crash' || state === 'over')) {
+    if (gag.delay > 0) gag.delay -= dt;
+    else if (!gag.done) {
+      gag.vy += GRAVITY * dt;
+      gag.y += gag.vy * dt;
+      if (gag.y >= GROUND - 8) {
+        gag.y = GROUND - 8; gag.done = true;
+        dust(gag.x, GROUND, 6);
+        fnoise(0.08, 0.4, 0, 800, 2); tone(520, 300, 0.1, 'square', 0.06);
+        addPopup('BONK.', gag.x, GROUND - 60, '#a08b72', 16);
+      }
+    }
   }
 
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -1511,6 +1535,12 @@ function draw(){
     for (const q of ragdoll) drawRagdollPart(q);
   } else if (state !== 'over' || crashKind === 'near') {
     drawGuy(p.x, p.y, p.angle, p.pose, p.squash);   // near-miss keeps him on stage, flat
+  }
+  if (gag && gag.delay <= 0 && (state === 'crash' || state === 'over')) {
+    ctx.fillStyle = '#4a3626'; ctx.fillRect(gag.x - 3, gag.y - 18, 6, 8);
+    ctx.fillStyle = '#2c2018'; ctx.fillRect(gag.x - 14, gag.y - 12, 28, 15);
+    ctx.fillStyle = gag.done ? '#7a6a4a' : '#fff3cf';   // lens dies on impact
+    ctx.fillRect(gag.x - 9, gag.y + 1, 18, 4);
   }
 
   for (const q of particles) {
