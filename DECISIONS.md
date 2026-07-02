@@ -21,3 +21,4 @@
 | 2026-07-02 | Standing rule: accessibility & privacy checked on every change (added to CLAUDE.md) | Dan's directive; cheaper as a habit than a retrofit |
 | 2026-07-02 | "Reshoot from Scene 1" voluntary restart; furthest-scene record survives reset | Dan: persistent progress + escape valve for frustration; record preservation keeps restarts painless |
 | 2026-07-02 | Ads never buy progress (no scene skips). Rewarded ads → daily-challenge extra attempts (~3 free/day) + cosmetic unlocks only | Dan rejected pay-to-win; limited daily attempts make the daily score meaningful and give rewarded ads a fair home |
+| 2026-07-02 | Phase 4 batch: 6 characters at launch (milestones 10-100); 10-achievement starter set locked; daily-challenge ad attempts capped +3/day; analytics = Apple built-in only | Settled in one batched discussion per new working rule; details in DESIGN.md |

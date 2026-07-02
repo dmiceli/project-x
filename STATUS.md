@@ -23,8 +23,9 @@
 - Scene progression refined: "Reshoot from Scene 1" restart (record preserved); monetization principle locked — ads never buy progress; daily challenge = ~3 attempts/day, rewarded ads for extra attempts.
 - Working style: batch decisions via discussion, implement at logical stopping points (see CLAUDE.md).
 
+- Phase 4 design batch settled: 6-character roster, 10 achievements, daily challenge (3 attempts + max 3 ad extras), settings scope, Apple-only analytics. DESIGN.md is now the complete build spec.
+
 ## Next steps
 1. Dan: push + play the scene-progression build (ramp fairness, restart flow).
-2. Settle remaining Phase 4 design questions in one discussion batch (characters roster, achievements list, daily-challenge details, settings scope, analytics yes/no).
-3. Then one implementation pass: restructure prototype into the real app skeleton.
-4. Icon + real sound design; later verify "TAKE 47" name in App Store Connect.
+2. Implementation pass: build the full app from DESIGN.md (screens, characters, daily challenge, achievements, settings, share card).
+3. Icon + real sound design; later verify "TAKE 47" name in App Store Connect.

@@ -38,11 +38,13 @@ Already in: hitstop, screen shake, red flash, landing dust, perfect confetti, ra
 
 **Share button.** After a CUT! or a milestone, one tap generates a share-card image (scene number, take count, prints, character mid-crash or mid-triumph) and opens the iOS share sheet. This is the primary viral mechanism.
 
-**Unlockable characters.** New stunt characters unlock at score milestones. Each is a reskin of the same rig (art cost stays contained). Rewarded-ad integration: watch an ad to unlock the next character early.
+**Unlockable characters (6 at launch, locked 2026-07-02).** Stunt Guy (default), Stunt Gal, Crash-Test Dummy, Hot-Dog-Costume Guy, The Aging Legend, The Diva. All reskins of the same rig. Unlock at scene milestones (10/25/50/75/100); rewarded-ad early unlock. Robot Double and Grandma reserved for post-launch.
 
-**Daily challenge.** One fixed seed per day — same jump sequence for everyone. Separate daily score, shareable via the same score-card ("Today's run: 14. Beat me."). Social competition happens through shared images rather than a server.
+**Daily challenge (locked 2026-07-02).** Seeded from the date — everyone worldwide faces the same gauntlet of consecutive scenes, one life: a crash ends the attempt, score = scenes cleared. 3 free attempts per day; rewarded ads grant extras, capped at +3/day (6 total), keeping daily scores comparable. Shareable via the score card ("Today's shoot: 14 scenes. Beat me.").
 
-**Initial achievements.** A starter set of in-game badges (no server, no Game Center dependency): first perfect, streak ×3, streak ×5, survive round 10, 100 total crashes ("Frequent Flyer"), unlock all characters. Achievements surface in a simple trophy screen and feed the share card.
+**Initial achievements (10, locked 2026-07-02).** First Print (first perfect); Hat Trick (streak ×3); On Fire (streak ×5); Director's Cut (big-stunt scene on the first take); One-Take Wonder (5 consecutive scenes, first take each); Frequent Flyer (100 lifetime crashes); Method Actor (500 lifetime takes); The Long Haul (Scene 50); Franchise Material (Scene 100); Full Cast (all characters). Client-side, no Game Center dependency; trophy-room screen; each feeds the share card.
+
+**Settings.** Sound effects, haptics, reduce motion, Reshoot from Scene 1, restore purchases, privacy policy link — all real labeled buttons (VoiceOver-navigable).
 
 Explicitly out of v1.0: Game Center leaderboard (revisit for 1.1), cloud saves, multiplayer, level/world structure.
 
@@ -68,4 +70,4 @@ Every color signal is paired with text or shape (CUT!/PRINT IT! labels carry mea
 
 ## Success metrics
 
-Concrete goals: App Store approval; 20+ TestFlight testers; instant restart under 1 second; a share card people actually post (qualitative). Stretch: measurable D1 retention once analytics exist (build-phase decision on whether/what to add).
+Concrete goals: App Store approval; 20+ TestFlight testers; instant restart under 1 second; a share card people actually post (qualitative). Measurement: Apple's built-in App Analytics only (downloads, retention, crashes) — no third-party analytics SDK in v1 (decided 2026-07-02; keeps privacy surface minimal). Per-scene difficulty tuning comes from TestFlight feedback.
