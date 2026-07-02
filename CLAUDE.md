@@ -1,20 +1,29 @@
-# Project X — iOS Game
+# Project X — iOS Game: TAKE 47
 
 ## Goal
 Dan (product owner) and Claude (lead developer) build a low-complexity iOS game and publish it to the Apple App Store. This is also a test of whether a non-developer can ship a real product with Claude.
+
+## The game
+**TAKE 47** — one-tap stunt game, movie-set theme: every attempt is a "take," crashes are outtakes (director quips), levels are scenes with persistent progress. Full spec in DESIGN.md; every decision and its rationale in DECISIONS.md. Standing product principle (Dan): **ads never buy progress** — no scene skips, no pay-to-win; rewarded ads only for daily-challenge attempts and cosmetics.
 
 ## Who's who
 - **Dan**: technically savvy, zero development experience. Makes all product decisions. Explain every technical concept in plain language — never assume coding knowledge.
 - **Claude**: lead developer and translator. Always present tradeoffs with a clear recommendation. Ask before anything costly, irreversible, or account-related (Apple ID, payments, publishing actions).
 
-## Environment (confirmed 2026-07-02)
+## Environment (updated 2026-07-02)
 - Windows PC only — **no Mac**. All iOS compilation/signing/upload goes through a cloud build service.
-- iPhone available for on-device testing.
-- Apple Developer Program ($99/yr): Dan will enroll early, during design phase.
+- iPhone available for on-device testing; feel-tests via GitHub Pages URL saved to home screen.
+- Apple Developer Program: **enrolled** ✓
+- GitHub: repo **project-x** (public), managed by Dan via GitHub Desktop; Pages enabled. GitHub connector available — reserved for CI status/issues/releases later, NOT for commits.
 - Pace: sprint mode (near-daily sessions). Target: TestFlight beta in ~2 weeks.
 
-## Tech direction
-Decide in Phase 0. Leading approach: build the game in web tech (HTML5 canvas, e.g. Phaser) so prototypes run instantly in the iPhone browser, then wrap with Capacitor and build/sign/submit via a cloud service (e.g. Codemagic). Alternative: Expo + EAS. Log the final choice in DECISIONS.md.
+## Tech stack (decided 2026-07-02)
+Vanilla JS + HTML5 canvas, single-file during prototyping (no game engine — proven unnecessary at this scope) → Capacitor wrapper for iOS → Codemagic cloud build/sign/submit. Browser-playable at every stage.
+
+## Operational notes for Claude (learned 2026-07-02)
+- **Claude never commits.** Dan commits/pushes via GitHub Desktop after reviewing diffs — this review step is deliberate. Claude supplies the commit message.
+- Claude's sandbox cannot run git on the shared folder (lock-file restrictions) and its mounted view may truncate larger files (~18KB seen) — the Write/Edit/Read file tools are authoritative; don't trust `wc`/`cat` on the mount for big files.
+- **Verify before handing over:** test game-logic changes headlessly (logic mirror + simulated input driver lives in the session scratchpad under `test/`; recreate as needed). Visual changes still need Dan's eyes.
 
 ## Phases
 0. Environment + stack decision; start Apple Developer enrollment
