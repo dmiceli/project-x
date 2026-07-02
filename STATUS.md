@@ -73,10 +73,11 @@
 
 - 2026-07-03: **Comedy & Clarity batch shipped** (all four of Dan's points): crashes now prominent (launcher part rockets, wide scatter, slow-mo every wipeout, impact puffs, longer beat); the falling light is a proper 3-act gag (creak → lazy fall on a cable → BONK., lens dies) drawn above everything; game-wide art pass (outlined recognizable props — lamps/camera/mat/genre sets, kaiju arm has a zipper now); verdict stamps (rotating word pools on slate chips, tilt + pop, never clipped off-screen). Art code relocated to file tail (head stability). Full regression green.
 
-## Next steps (polish)
-1. Dan: push + a big crash session — this build is Dan-feedback made flesh. Judge: crash spectacle, gag visibility (1-in-7ish), verdict variety/treatment, whether the sets finally read (camera = camera, lamp = lamp).
-2. App Store screenshot set per BRAND.md ("the fail is the ad") — the game finally looks like its screenshots should.
-3. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save gate) → TestFlight.
+- 2026-07-03: **Pace reset (Dan):** no rushing between phases; validation gets equal energy to construction. Rule added to CLAUDE.md; **BETA-READINESS.md created** — the no-stone-unturned checklist (8 sections, honest statuses) that now governs the path to TestFlight.
+
+## Next steps
+1. Dan: review/amend BETA-READINESS.md — add stones, challenge statuses, pick what we tackle first.
+2. Work the checklist together, at whatever depth each item deserves. Screenshots and pipeline happen when the list says so, not before.
 3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
 4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate) → hello-world TestFlight build.
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.
