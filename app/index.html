@@ -635,15 +635,37 @@ function noise(dur, vol, delay){
   s.connect(g); g.connect(a.destination);
   s.start(a.currentTime + (delay || 0));
 }
+// filtered noise: the honest-foley workhorse (wood cracks, whooshes, tumbles)
+function fnoise(dur, vol, delay, freq, q){
+  if (!S.set.sound) return;
+  const a = ac(); if (!a) return;
+  const n = Math.floor(a.sampleRate * dur);
+  const b = a.createBuffer(1, n, a.sampleRate);
+  const dd = b.getChannelData(0);
+  for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = a.createBufferSource(); s.buffer = b;
+  const f = a.createBiquadFilter(); f.type = 'bandpass';
+  f.frequency.value = freq; f.Q.value = q || 1;
+  const g = a.createGain(); g.gain.value = vol;
+  s.connect(f); f.connect(g); g.connect(a.destination);
+  s.start(a.currentTime + (delay || 0));
+}
+// Sound direction (BRAND): deadpan delivery, cartoon heart — dry foley base,
+// a few warm accents (boing on bounces, sparkle on perfects), no wall-to-wall zany.
 const sfx = {
-  clap:    () => { noise(0.03, 0.35); noise(0.05, 0.3, 0.05); },
-  jump:    () => tone(180, 520, 0.25, 'sine', 0.15, 0.08),
-  lock:    () => tone(950, 700, 0.06, 'square', 0.08),
-  land:    () => { tone(200, 130, 0.14, 'triangle', 0.22); noise(0.06, 0.08); },
-  perfect: () => { tone(660, 660, 0.09, 'sine', 0.14); tone(880, 880, 0.09, 'sine', 0.14, 0.09); tone(1320, 1320, 0.14, 'sine', 0.14, 0.18); },
-  advance: () => { tone(523, 523, 0.1, 'sine', 0.12); tone(659, 659, 0.1, 'sine', 0.12, 0.1); tone(784, 784, 0.18, 'sine', 0.12, 0.2); },
-  crash:   () => { noise(0.3, 0.3); tone(300, 55, 0.4, 'sawtooth', 0.18); },
-  cut:     () => tone(500, 350, 0.25, 'square', 0.12, 0.25)
+  clap:    () => { fnoise(0.035, 0.5, 0, 2500, 2); fnoise(0.05, 0.4, 0.045, 1200, 1.5); },   // wood on wood
+  jump:    () => { fnoise(0.22, 0.12, 0, 900, 0.8); tone(140, 320, 0.18, 'sine', 0.10, 0.02); }, // whoosh + springy lift
+  lock:    () => tone(1100, 900, 0.045, 'square', 0.07),                                      // dry click
+  land:    () => { tone(150, 95, 0.12, 'sine', 0.26); fnoise(0.05, 0.18, 0, 300, 1); },       // body thud
+  perfect: () => { tone(523, 523, 0.09, 'triangle', 0.16); tone(659, 659, 0.09, 'triangle', 0.16, 0.08);
+                   tone(784, 784, 0.16, 'triangle', 0.16, 0.16); tone(1568, 1568, 0.10, 'sine', 0.08, 0.24); }, // warm sting + sparkle
+  advance: () => { tone(392, 392, 0.08, 'triangle', 0.12); tone(523, 523, 0.12, 'triangle', 0.12, 0.09); },
+  crash:   () => { fnoise(0.28, 0.30, 0, 500, 0.7); tone(180, 70, 0.35, 'triangle', 0.16, 0.02);
+                   tone(233, 155, 0.18, 'sawtooth', 0.05, 0.30); tone(196, 130, 0.22, 'sawtooth', 0.05, 0.46); }, // tumble + faint sad-trombone
+  cut:     () => tone(460, 320, 0.22, 'square', 0.11, 0.12),                                  // brief bullhorn
+  golden:  () => { tone(988, 988, 0.07, 'sine', 0.12); tone(1319, 1319, 0.07, 'sine', 0.12, 0.07);
+                   tone(1976, 1976, 0.12, 'sine', 0.12, 0.14); },                             // coin glint
+  bounce:  () => tone(220, 520, 0.22, 'sine', 0.14)                                           // the one honest boing
 };
 // Haptics: web vibrate where it exists (Android); iOS gets Capacitor Haptics in Phase 5.
 function haptic(ms){ if (S.set.haptics && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
@@ -927,6 +949,7 @@ function evaluateLanding(){
       S.prints += 3;
       confetti(p.x, GROUND - 80);
       addPopup('★ GOLDEN TAKE +3 ★', W / 2, 250, '#ffd166', 24);
+      sfx.golden();
       grantItem(ITEMS[Math.floor(Math.random() * ITEMS.length)].id, 'golden take');
     }
     persist();
@@ -1220,7 +1243,7 @@ function update(dt){
         p.pose = 'tuck';
         dust(p.x, GROUND, 10);
         addPopup('BOUNCE!', p.x, GROUND - 90, '#38bdf8', 26);
-        sfx.jump();
+        sfx.bounce();
       } else {
         evaluateLanding();
       }

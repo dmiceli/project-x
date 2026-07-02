@@ -34,7 +34,7 @@ Rules: gold is precious — one gold element per composition (it's the reward co
 
 ## Art direction reference (added 2026-07-03, Dan)
 
-Tonal north star: **"The Life and Times of Tim"-adjacent** — flat, deadpan line-art; understated expressions doing heavy lifting; muted, unglamorous color fields; matter-of-fact framing of absurd events. Inspiration only, never imitation: we borrow the *register* (flatness, dryness, restraint), no characters, likenesses, or traceable compositions. Practical implications for our art: keep line weights honest and even, resist gloss and bounce, let the terror-face stay small and matter-of-fact rather than rubber-hose exaggerated, and let backgrounds stay quiet.
+Tonal north star: **"The Life and Times of Tim"-adjacent, with a cartoon heart (Dan, 2026-07-03)** — flat, deadpan line-art; understated framing of absurd events; muted, unglamorous color fields — BUT deliberately kid-friendly warmth retained: rounded friendly shapes, the big expressive scream-face, playful reward feedback. The formula: *deadpan delivery, cartoon heart.* Inspiration only, never imitation: we borrow the register (flatness, dryness, restraint), no characters, likenesses, or traceable compositions. Practical: honest even line weights, no gloss, quiet backgrounds — and in sound, dry foley as the base with a few warm cartoon accents (a soft boing on trampoline bounces, a sparkle on perfects) rather than wall-to-wall zaniness.
 
 ## Copy rules (added 2026-07-03 after in-app capitalization audit)
 
