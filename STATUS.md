@@ -27,6 +27,7 @@
 - Pre-build cleanup pass on take-47.html (2026-07-02): static set cached (per-frame cost ~45 canvas calls → 1), constants extracted, full comment pass, a11y additions (sound toggle, 44px touch targets, HUD split to ≥14px lines, keyboard S key), privacy audit documented in file header (fully offline, localStorage only). Old prototypes archived via prototypes/README.md. Logic regression-tested headlessly.
 
 ## Watch list (known risks, none blocking yet)
+- **Phase 5 gate:** migrate save data to Capacitor Preferences (WebView localStorage can be purged by iOS). Must land before TestFlight.
 - Codemagic signing/upload without a Mac is designed but unproven — de-risk with a build early in Phase 5, before the game is "done."
 - Ad SDK choice (Phase 4/5) brings ATT prompt + privacy-label work; budget a session for it.
 - "TAKE 47" name must be reserved in App Store Connect — verify availability when we first touch App Store Connect, not at submission.
@@ -46,8 +47,12 @@
 
 - 2026-07-03: **Depth pass shipped** — economy baseline logged; "every set teaches a stunt" (cart/boom/gravity/wind/arm/double-bounce, full v1 per Dan); logarithmic ramp w/ brutal-but-fair ceiling (floor 12° @ ~scene 72); launch platforms everywhere; cycle-2 combos. Headless verification caught + fixed an untouchable-boom placement bug. Sub-frame lock timing noted in BACKLOG as pre-beta fairness candidate.
 
+- 2026-07-03 (late): **Incentives batch shipped** — Prop Department (6 earned-only consumables w/ belt + shop, assisted-takes-don't-print, barred from daily), daily personal-best pay, visible call-sheet rewards, achievement progress + halfway toasts. All verified headlessly.
+
+- 2026-07-03 (pre-polish audit): FTUE package (guided first takes + progressive home disclosure), miss-angle crash lessons, midnight-reset hook, interstitial placeholder on real caps. All verified headlessly. Save-durability gate added to watch list.
+
 ## Next steps
-1. Dan: push + BIG play session. This build changes how the whole game feels — judge: mechanic introductions (Scene 11 cart, 21 boom...), ramp pace, and whether variation kills the "same scene faster" fatigue.
+1. Dan: push + BIG play session — ideally ALSO on a fresh save (clear website data or private tab) to feel the new-player experience: coached first takes, home screen unfolding as you earn it.
 2. Then: polish phase (icon, real sound, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.

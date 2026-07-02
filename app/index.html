@@ -73,6 +73,13 @@
   #csList div{font-size:14px;color:var(--dim);padding:3px 0}
   #csList div.done{color:var(--good)}
 
+  /* ---- prop belt: consumables armed from the ready screen ---- */
+  #propBar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));
+    display:none;justify-content:center;gap:8px;z-index:5;flex-wrap:wrap;padding:0 10px}
+  #propBar.active{display:flex}
+  #propBar button{width:auto;min-height:48px;margin:0;padding:6px 12px;font-size:13px;border-radius:12px}
+  #propBar button.armed{border-color:var(--gold);color:var(--gold)}
+
   /* ---- in-game bottom bar (share/home on the CUT screen) ---- */
   #gameBar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));
     display:none;justify-content:center;gap:12px;z-index:5}
@@ -111,6 +118,7 @@
   <button id="btnReel">🎞️ THE REEL (reshoot scenes)</button>
   <button id="btnPosters">🖼️ POSTER WALL</button>
   <button id="btnCast">🎭 THE CAST</button>
+  <button id="btnProps">📦 PROP DEPARTMENT</button>
   <button id="btnTrophies">🏆 BLOOPER REEL</button>
   <button id="btnShareHome">📤 SHARE MY PROGRESS</button>
   <button id="btnSettings">⚙️ SETTINGS</button>
@@ -146,6 +154,14 @@
   <button class="back" data-to="home">← BACK</button>
 </section>
 
+<section id="scr-props" class="screen" aria-label="Prop department">
+  <h2>PROP DEPARTMENT</h2>
+  <p class="stats">One prop per take. Earned with prints — never with money.<br>Assisted takes finish the scene but don't PRINT it.</p>
+  <p class="stats" id="propWallet"></p>
+  <div id="propList"></div>
+  <button class="back" data-to="home">← BACK</button>
+</section>
+
 <section id="scr-trophies" class="screen" aria-label="Achievements">
   <h2>BLOOPER REEL</h2>
   <div id="trophyList"></div>
@@ -174,6 +190,7 @@
   <button id="btnShare" class="primary">📤 SHARE</button>
   <button id="btnHome">🏠 HOME</button>
 </div>
+<div id="propBar" aria-label="Prop belt"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -206,7 +223,11 @@ const DEFAULTS = {
   variants: {},                               // costumeId -> selected colorway index
   ownedVariants: {},                          // costumeId -> [indices owned] (0 always owned)
   cs: {date: '', goals: [], prog: [], done: [], rewarded: false},   // daily call sheet
+  items: {},                                  // prop department inventory: id -> count
   ach: {},                                    // id -> timestamp
+  ach50: {},                                  // id -> 1 once the halfway toast fired
+  ftue: 0,                                    // 1 once the first scene is completed
+  reveals: {},                                // home buttons already announced
   daily: {date: '', used: 0, adExtras: 0, best: 0, todayBest: 0},
   set: {sound: 1, haptics: 1, rm: 0}
 };
@@ -219,6 +240,7 @@ function loadSave(){
       S.set = Object.assign({}, DEFAULTS.set, S.set);
       S.cs = Object.assign({}, DEFAULTS.cs, S.cs);
       S.printed = S.printed || {}; S.variants = S.variants || {}; S.ownedVariants = S.ownedVariants || {};
+      S.items = S.items || {}; S.ach50 = S.ach50 || {}; S.reveals = S.reveals || {};
       return; }
     // migrate from prototype's scattered keys, then start clean
     S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -483,6 +505,42 @@ const WARDROBE = {
   diva:   [{name:'Classic', suit:'#c084fc', shoe:'#fbbf24', price:0}, {name:'Gold',     suit:'#fbbf24', shoe:'#ffffff', price:15}, {name:'Scarlet', suit:'#ef4444', shoe:'#111111', price:30}]
 };
 function wallet(){ return S.prints - S.printsSpent; }
+
+// ========== the prop department (utility consumables) ==========
+// Earned-only (prints or drops), one per take, relief valve for the ceiling.
+// Assisted takes complete scenes but never PRINT them — perfects are earned raw.
+const ITEMS = [
+  {id:'slowmo',    name:'Slow-Mo Rig',  icon:'🎥', price:3, desc:'Spin ×0.7 for one take'},
+  {id:'chock',     name:'Wheel Chock',  icon:'🪵', price:2, desc:'The cart holds still for one take'},
+  {id:'windbreak', name:'Wind Break',   icon:'🌂', price:2, desc:'Wind machine off for one take'},
+  {id:'griptape',  name:'Grip Tape',    icon:'🩹', price:4, desc:'Landing window +5° for one take'},
+  {id:'boombrake', name:'Boom Brake',   icon:'⚓', price:3, desc:'Boom parked for one take'},
+  {id:'trapdoor',  name:'Trap Door',    icon:'🕳️', price:3, desc:'Arm sweep skipped for one take'}
+];
+let armedItem = null;                 // chosen on the ready screen
+let activeItem = null;                // consumed; in effect for the current take
+function itemCount(id){ return S.items[id] || 0; }
+function buyItem(id){
+  const it = ITEMS.find(x => x.id === id);
+  if (wallet() >= it.price) {
+    S.printsSpent += it.price;
+    S.items[id] = itemCount(id) + 1;
+    persist();
+    toast(it.icon + ' ' + it.name + ' added to the prop truck');
+  } else toast('Need ' + (it.price - wallet()) + ' more prints for ' + it.name);
+  refreshHome();
+}
+function grantItem(id, why){
+  const it = ITEMS.find(x => x.id === id);
+  S.items[id] = itemCount(id) + 1;
+  persist();
+  toast(it.icon + ' Prop dept sends a ' + it.name + (why ? ' — ' + why : ''));
+}
+function armItem(id){
+  if (mode === 'daily') { toast('No props in the gauntlet — fair fight.'); return; }
+  armedItem = (armedItem === id) ? null : (itemCount(id) > 0 ? id : null);
+  refreshPropBar();
+}
 function ownedIdx(id){ return S.ownedVariants[id] || [0]; }
 function costume(){
   const base = COSTUMES.find(x => x.id === S.selected) || COSTUMES[0];
@@ -594,17 +652,18 @@ const IMPRESSED = [
 ];
 
 // ========== achievements ==========
+// prog: () => [current, goal] — drives trophy-room progress + halfway toasts
 const ACH = [
   {id:'firstPrint',    name:'First Print',       desc:'Land your first perfect'},
-  {id:'hatTrick',      name:'Hat Trick',         desc:'Perfect streak ×3'},
-  {id:'onFire',        name:'On Fire',           desc:'Perfect streak ×5'},
+  {id:'hatTrick',      name:'Hat Trick',         desc:'Perfect streak ×3',                prog: () => [S.bestStreak, 3]},
+  {id:'onFire',        name:'On Fire',           desc:'Perfect streak ×5',                prog: () => [S.bestStreak, 5]},
   {id:'directorsCut',  name:"Director's Cut",    desc:'Finish a BIG STUNT scene on the first take'},
-  {id:'oneTake',       name:'One-Take Wonder',   desc:'5 scenes in a row, first take each'},
-  {id:'frequentFlyer', name:'Frequent Flyer',    desc:'Crash 100 times (lifetime)'},
-  {id:'methodActor',   name:'Method Actor',      desc:'500 lifetime takes'},
-  {id:'longHaul',      name:'The Long Haul',     desc:'Reach Scene 50'},
-  {id:'franchise',     name:'Franchise Material',desc:'Reach Scene 100'},
-  {id:'fullCast',      name:'Full Cast',         desc:'Unlock all six characters'}
+  {id:'oneTake',       name:'One-Take Wonder',   desc:'5 scenes in a row, first take each', prog: () => [S.firstTakeChain, 5]},
+  {id:'frequentFlyer', name:'Frequent Flyer',    desc:'Crash 100 times (lifetime)',       prog: () => [S.crashes, 100]},
+  {id:'methodActor',   name:'Method Actor',      desc:'500 lifetime takes',               prog: () => [S.takes, 500]},
+  {id:'longHaul',      name:'The Long Haul',     desc:'Reach Scene 50',                   prog: () => [S.scene, 50]},
+  {id:'franchise',     name:'Franchise Material',desc:'Reach Scene 100',                  prog: () => [S.scene, 100]},
+  {id:'fullCast',      name:'Full Cast',         desc:'Unlock all six characters',        prog: () => [S.unlocked.length, 6]}
 ];
 function award(id){
   if (S.ach[id]) return;
@@ -613,6 +672,18 @@ function award(id){
   toast('🏆 ' + (a ? a.name : id));
   sfx.advance();
   persist();
+}
+// halfway-there encouragement, once per achievement (Dan: progress at milestones)
+function checkAchProgress(){
+  for (const a of ACH) {
+    if (!a.prog || S.ach[a.id] || S.ach50[a.id]) continue;
+    const [cur, goal] = a.prog();
+    if (goal >= 4 && cur >= goal / 2) {
+      S.ach50[a.id] = 1;
+      toast('🏆 Halfway to ' + a.name + ' — ' + (goal - cur) + ' to go');
+      persist();
+    }
+  }
 }
 
 // ========== engine state ==========
@@ -627,6 +698,8 @@ let crashKind = 'full';              // full ragdoll vs near-miss stumble
 let cardQueue = [];                  // pending interstitial celebrations
 let mechT = 0;                       // scene clock driving cart/boom/arm animation
 let bounced = false;                 // double-bounce stunts: second phase flag
+let lastMiss = null;                 // degrees off upright on the last angle-crash (CUT-screen lesson)
+let crashesSinceAd = 0, lastAdMs = -1e9;   // interstitial pacing (placeholder in beta)
 
 // mechanic positions as functions of the scene clock (all telegraphed visually)
 function cartX(t){ return 55 + 70 * (0.5 + 0.5 * Math.sin(t * 2.2)); }
@@ -690,6 +763,7 @@ function csEvent(ev){
     S.cs.rewarded = true;
     S.prints += 5;
     toast('📋 CALL SHEET WRAPPED — +5 prints. The director nods once.');
+    grantItem(ITEMS[Math.floor(Math.random() * ITEMS.length)].id, 'call sheet wrapped');
   }
   if (changed) persist();
 }
@@ -706,6 +780,8 @@ function grav(){ return GRAVITY * (params.mech ? params.mech.grav : 1); }
 function crashAir(popupText, quipText){
   perfectStreak = 0;
   S.crashes++;
+  crashesSinceAd++;
+  lastMiss = null;                     // hazard crash: no angle lesson to teach
   if (S.crashes >= 100) award('frequentFlyer');
   crashKind = 'full';
   spawnRagdoll();
@@ -721,18 +797,27 @@ function startJump(){
   S.takes++;
   if (mode === 'campaign') S.setTakes++;
   csEvent('take');
+  // props: consume the armed item; its effect lasts exactly this take
+  activeItem = null;
+  if (armedItem && itemCount(armedItem) > 0 && mode !== 'daily') {
+    activeItem = armedItem;
+    S.items[armedItem]--;
+    armedItem = null;
+    refreshPropBar();
+    addPopup('PROP: ' + ITEMS.find(x => x.id === activeItem).name.toUpperCase(), W / 2, 220, '#93c5fd', 18);
+  }
   const g = grav();
   if (params.mech.cart) {
     // launch inherits the cart's velocity — the mat is where timing cashes out
     const base = ((params.matL + params.matR) / 2 - 95) / params.T;
-    p.vx = base + cartVx(mechT);
+    p.vx = base + (activeItem === 'chock' ? 0 : cartVx(mechT));
   } else {
     const targetX = 250 + Math.random() * 80;    // landing spot varies; angle is what's judged
     p.vx = (targetX - p.x) / params.T;
   }
   // arc solved so airtime ≈ T even when launching from a platform (fall = h)
   p.vy = (params.h || 0) / params.T - g * params.T / 2;
-  p.om = params.om;
+  p.om = params.om * (activeItem === 'slowmo' ? 0.7 : 1);
   p.locked = false;
   p.spun = 0;                          // rotation accrued (gates the lock)
   p.pose = 'tuck';
@@ -775,12 +860,16 @@ function evaluateLanding(){
   if (a < 0) a += Math.PI * 2;
   const off = Math.min(a, Math.PI * 2 - a);
   hitstop = HITSTOP;
-  if (off <= params.tol) {
-    wasPerfect = off <= PERFECT_RAD;
+  const tol = params.tol + (activeItem === 'griptape' ? 5 * Math.PI / 180 : 0);
+  const assisted = !!activeItem;       // assisted takes complete scenes, never print
+  if (off <= tol) {
+    wasPerfect = off <= PERFECT_RAD && !assisted;
     p.angle = 0; p.vx = 0; p.vy = 0; p.om = 0; p.squash = 1;
     p.pose = wasPerfect ? 'armsup' : 'stand';
     dust(p.x, GROUND, 8);
     haptic(30);
+    lastMiss = null;
+    if (!S.ftue) { S.ftue = 1; }         // first landed scene: coaching retires
     if (wasPerfect) {
       perfectStreak++;
       S.prints++;
@@ -800,22 +889,25 @@ function evaluateLanding(){
       csEvent('perfect');
     } else {
       perfectStreak = 0;
-      addPopup('CLEAN TAKE', p.x, GROUND - 100, '#6ee7b7');
+      addPopup(assisted && off <= PERFECT_RAD ? 'CLEAN (ASSISTED — NO PRINT)' : 'CLEAN TAKE', p.x, GROUND - 100, '#6ee7b7');
       sfx.land();
       csEvent('clean');
     }
-    if (params.golden) {                                       // golden take bonus
+    if (params.golden) {                                       // golden take: prints + a prop drop
       S.prints += 3;
       confetti(p.x, GROUND - 80);
       addPopup('★ GOLDEN TAKE +3 ★', W / 2, 250, '#ffd166', 24);
+      grantItem(ITEMS[Math.floor(Math.random() * ITEMS.length)].id, 'golden take');
     }
     persist();
     state = 'landed'; stateT = 0;
   } else {
     perfectStreak = 0;
     S.crashes++;
+    crashesSinceAd++;
+    lastMiss = Math.round(off * 180 / Math.PI);                // the CUT-screen lesson
     if (S.crashes >= 100) award('frequentFlyer');
-    const nearMiss = off <= params.tol + 8 * Math.PI / 180;    // the SO CLOSE tier
+    const nearMiss = off <= tol + 8 * Math.PI / 180;           // the SO CLOSE tier
     crashKind = nearMiss ? 'near' : 'full';
     if (nearMiss) {
       // stays on his feet... briefly. No ragdoll — a stumble and a faceplant.
@@ -924,6 +1016,7 @@ function advance(){
   refreshParams();
   p = freshPlayer();
   sfx.advance();
+  checkAchProgress();
   if (cardQueue.length) showNextCard();
   else { state = 'ready'; stateT = 0; }
 }
@@ -938,6 +1031,12 @@ function afterCrash(){
     dLives--;
     if (dLives <= 0) {
       const cleared = dStep - 1;
+      // daily pays on personal best: +1 print per scene of improvement (un-farmable)
+      const delta = cleared - S.daily.todayBest;
+      if (delta > 0) {
+        S.prints += delta;
+        toast('🖨 Personal best — +' + delta + ' print' + (delta > 1 ? 's' : ''));
+      }
       S.daily.todayBest = Math.max(S.daily.todayBest, cleared);
       S.daily.best = Math.max(S.daily.best, cleared);
       persist();
@@ -946,6 +1045,7 @@ function afterCrash(){
   } else {
     gameBar(true);
   }
+  checkAchProgress();
 }
 function retry(){
   gameBar(false);
@@ -962,6 +1062,20 @@ function retry(){
   p = freshPlayer();
   popups = []; ragdoll = [];
   state = 'ready';
+  maybeAdBreak();
+}
+
+// interstitial pacing (PLACEHOLDER — real SDK in Phase 5, same caps):
+// campaign only, never mid-take, at most 1 per 3 crashes and 90s apart
+function maybeAdBreak(){
+  if (mode !== 'campaign' || crashesSinceAd < 3) return;
+  if (performance.now() - lastAdMs < 90000) return;
+  crashesSinceAd = 0;
+  lastAdMs = performance.now();
+  queueCard({kicker: 'AD BREAK', icon: '📺', title: 'PLACEHOLDER',
+    body: 'A real ad appears here in the App Store build — testing the pacing, not selling you anything yet.',
+    buttons: [{label: 'CONTINUE', primary: true}]});
+  showNextCard();
 }
 
 // reshoot mode: replay any completed scene to print it (mastery loop)
@@ -1039,12 +1153,12 @@ function update(dt){
   if (state !== 'home' && state !== 'card') mechT += dt;   // scene clock (hazards animate even pre-jump)
 
   if (state === 'ready' && params.mech.cart) {             // the cart carries you until you jump
-    p.x = cartX(mechT);
+    p.x = (armedItem === 'chock') ? p.x : cartX(mechT);    // chock: cart holds still
   }
 
   if (state === 'air') {
     p.vy += grav() * dt;
-    if (params.mech.wind) {
+    if (params.mech.wind && activeItem !== 'windbreak') {
       p.vx += params.mech.wind * 0.35 * dt;                          // visible drift
       if (!p.locked) p.om += params.mech.wind * (Math.PI / 180) * dt; // spin drift: the real skill test
     }
@@ -1053,7 +1167,7 @@ function update(dt){
     p.angle += p.om * dt;
     p.spun += Math.abs(p.om) * dt;
     // aerial hazards (both telegraphed by constant visible motion)
-    if (params.mech.boom) {
+    if (params.mech.boom && activeItem !== 'boombrake') {
       const tip = boomTip(mechT);
       const mx = (280 + tip.x) / 2, my = (80 + tip.y) / 2;           // outer half of the boom
       if (Math.hypot(p.x - tip.x, p.y - tip.y) < 30 || Math.hypot(p.x - mx, p.y - my) < 26) {
@@ -1061,7 +1175,7 @@ function update(dt){
         return;
       }
     }
-    if (params.mech.arm && p.y > GROUND - 70 && Math.abs(p.x - armX(mechT)) < 45) {
+    if (params.mech.arm && activeItem !== 'trapdoor' && p.y > GROUND - 70 && Math.abs(p.x - armX(mechT)) < 45) {
       crashAir('SWATTED!', '"The monster is a PROP. He is not. Was not."');
       return;
     }
@@ -1345,6 +1459,8 @@ function draw(){
   if (params.mech.grav !== 1) badges.push([params.mech.grav < 1 ? 'WIRE WORK: LOW-G' : 'WIRE WORK: HIGH-G', '#c084fc']);
   if (params.mech.wind) badges.push(['WIND MACHINE — SPIN DRIFT', '#93c5fd']);
   if (params.mech.arm) badges.push(['TIME THE SWEEP', '#6ee7b7']);
+  if (state === 'ready' && armedItem) badges.push(['PROP ARMED: ' + ITEMS.find(x => x.id === armedItem).name.toUpperCase(), '#93c5fd']);
+  if (state === 'air' && activeItem) badges.push(['PROP: ' + ITEMS.find(x => x.id === activeItem).name.toUpperCase() + ' (NO PRINT)', '#93c5fd']);
   let by = 156;
   if (state === 'ready' || state === 'air') {
     ctx.font = 'bold 15px system-ui, sans-serif';
@@ -1357,9 +1473,29 @@ function draw(){
 
   ctx.fillStyle = '#e8d5b5'; ctx.font = 'bold 20px system-ui, sans-serif';
   if (state === 'ready') {
-    ctx.fillText(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), W / 2, 420);
+    if (!S.ftue) {                       // first-time coaching: two plain lines
+      ctx.fillText('TAP to jump.', W / 2, 400);
+      ctx.fillText('TAP AGAIN to stop the spin — land feet-down.', W / 2, 428);
+    } else {
+      ctx.fillText(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), W / 2, 420);
+    }
   } else if (state === 'air' && !p.locked) {
+    // FTUE: pulse a TAP NOW! cue when the rookie is near upright
+    if (!S.ftue) {
+      let fa = p.angle % (Math.PI * 2); if (fa < 0) fa += Math.PI * 2;
+      const foff = Math.min(fa, Math.PI * 2 - fa);
+      if (p.spun > MIN_SPIN && foff < params.tol * 0.9) {
+        ctx.fillStyle = '#ffd166';
+        ctx.font = 'bold ' + (30 + Math.sin(mechT * 20) * 5) + 'px system-ui, sans-serif';
+        ctx.fillText('TAP NOW!', W / 2, 480);
+      } else if (p.spun <= MIN_SPIN) {
+        ctx.fillStyle = 'rgba(232,213,181,0.7)';
+        ctx.font = 'bold 18px system-ui, sans-serif';
+        ctx.fillText('wait for the spin…', W / 2, 480);
+      }
+    }
     ctx.fillStyle = 'rgba(232,213,181,0.7)';
+    ctx.font = 'bold 20px system-ui, sans-serif';
     ctx.fillText('TAP TO STOP SPIN', W / 2, 660);
   } else if (state === 'over') {
     ctx.fillStyle = 'rgba(10,7,5,0.92)';
@@ -1373,10 +1509,16 @@ function draw(){
       ctx.fillText('CUT!', W / 2, 305);
     }
     ctx.fillStyle = '#e8d5b5'; ctx.font = '15px system-ui, sans-serif';
+    // the lesson: how far off upright was that? (angle crashes only)
+    if (lastMiss !== null) {
+      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 15px system-ui, sans-serif';
+      ctx.fillText('↺ missed upright by ' + lastMiss + '°', W / 2, 352);
+      ctx.fillStyle = '#e8d5b5'; ctx.font = '15px system-ui, sans-serif';
+    }
     if (mode !== 'daily') {
       ctx.fillText('SCENE ' + currentSceneNo() + '  ·  TAKE ' + takesScene, W / 2, 335);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
-      ctx.fillText('Lifetime takes: ' + S.takes, W / 2, 372);
+      ctx.fillText('Lifetime takes: ' + S.takes, W / 2, 380);
       ctx.fillStyle = '#6ee7b7';
       ctx.fillText('TAP FOR ONE MORE TAKE', W / 2, 420);
     } else if (dLives > 0) {
@@ -1459,6 +1601,23 @@ function showScreen(name){
   if (name) { $('scr-' + name).classList.add('active'); state = 'home'; refreshHome(); }
 }
 function gameBar(on){ $('gameBar').classList.toggle('active', !!on); }
+// prop belt: shown on the ready screen (campaign/reshoot only), lists owned props
+function refreshPropBar(){
+  const bar = $('propBar');
+  const show = state === 'ready' && mode !== 'daily' && ITEMS.some(it => itemCount(it.id) > 0);
+  bar.classList.toggle('active', show);
+  if (!show) { bar.innerHTML = ''; return; }
+  bar.innerHTML = '';
+  for (const it of ITEMS) {
+    if (itemCount(it.id) === 0) continue;
+    const b = document.createElement('button');
+    b.className = armedItem === it.id ? 'armed' : '';
+    b.textContent = it.icon + ' ' + it.name + ' ×' + itemCount(it.id) + (armedItem === it.id ? ' ✓' : '');
+    b.setAttribute('aria-pressed', String(armedItem === it.id));
+    b.onclick = () => armItem(it.id);
+    bar.appendChild(b);
+  }
+}
 let toastTimer = null;
 function toast(msg){
   const t = $('toast');
@@ -1467,10 +1626,32 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
+// progressive disclosure: the home screen reveals itself as the player earns it
+// (FTUE research: nine buttons on first launch = cognitive overload = churn)
+function revealRules(){
+  return [
+    ['btnDaily',     S.furthest >= 3,               '🎬 Daily Challenge'],
+    ['csList',       S.furthest >= 5,               '📋 The Call Sheet'],
+    ['btnShareHome', S.furthest >= 5,               null],
+    ['btnReel',      S.furthest >= 11,              '🎞️ The Reel'],
+    ['btnPosters',   S.furthest >= 11,              '🖼️ The Poster Wall'],
+    ['btnProps',     S.prints >= 1,                 '📦 The Prop Department'],
+    ['btnCast',      S.unlocked.length > 1,         '🎭 The Cast'],
+    ['btnTrophies',  Object.keys(S.ach).length > 0, '🏆 The Blooper Reel']
+  ];
+}
 function refreshHome(){
+  const tomorrow = S.furthest >= 3 ? '  ·  new gauntlet & call sheet at midnight 🌙' : '';
   $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  wallet: ' + wallet() + ' prints' +
-    (S.furthest > S.scene ? '  ·  record: Scene ' + S.furthest : '');
+    (S.furthest > S.scene ? '  ·  record: Scene ' + S.furthest : '') + tomorrow;
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
+  for (const [id, cond, label] of revealRules()) {
+    $(id).style.display = cond ? '' : 'none';
+    if (cond && label && !S.reveals[id]) {
+      S.reveals[id] = 1; persist();
+      toast('🆕 ' + label + ' — now on the home screen');
+    }
+  }
   dailyRollover();
   csRollover();
   // call sheet (today's 3 goals)
@@ -1480,7 +1661,7 @@ function refreshHome(){
     if (!gDef) return;
     const row = document.createElement('div');
     row.className = S.cs.done[i] ? 'done' : '';
-    row.textContent = (S.cs.done[i] ? '✓ ' : '☐ ') + gDef.text + '  (' + Math.min(S.cs.prog[i], gDef.n) + '/' + gDef.n + ')';
+    row.textContent = (S.cs.done[i] ? '✓ ' : '☐ ') + gDef.text + '  (' + Math.min(S.cs.prog[i], gDef.n) + '/' + gDef.n + ')  ·  +2🖨';
     cs.appendChild(row);
   });
   // the reel: every completed scene is reshootable
@@ -1545,14 +1726,34 @@ function refreshHome(){
     }
     cl.appendChild(div);
   }
-  // trophies
+  // trophies (with live progress — Dan: show the journey, not just the arrival)
   const tl = $('trophyList'); tl.innerHTML = '';
   for (const a of ACH) {
     const got = !!S.ach[a.id];
+    let progTxt = '';
+    if (!got && a.prog) {
+      const [cur, goal] = a.prog();
+      progTxt = ' — ' + Math.min(cur, goal) + '/' + goal;
+    }
     const div = document.createElement('div');
     div.className = 'card' + (got ? ' done' : ' locked');
-    div.innerHTML = '<span class="who">' + (got ? '🏆' : '🔒') + '</span><h3>' + a.name + '</h3><p>' + a.desc + '</p>';
+    div.innerHTML = '<span class="who">' + (got ? '🏆' : '🔒') + '</span><h3>' + a.name + progTxt + '</h3><p>' + a.desc + '</p>';
     tl.appendChild(div);
+  }
+  // prop department shop
+  const pw = $('propWallet'); pw.textContent = 'Wallet: ' + wallet() + ' prints';
+  const plist = $('propList'); plist.innerHTML = '';
+  for (const it of ITEMS) {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = '<span class="who">' + it.icon + '</span><h3>' + it.name + '  ×' + itemCount(it.id) + '</h3><p>' + it.desc + '</p>';
+    const buy = document.createElement('button');
+    buy.className = 'chips-select';
+    buy.textContent = 'BUY — ' + it.price + '🖨';
+    buy.disabled = wallet() < it.price;
+    buy.onclick = () => buyItem(it.id);
+    div.appendChild(buy);
+    plist.appendChild(div);
   }
   // settings labels
   $('tglSound').textContent = 'SOUND: ' + (S.set.sound ? 'ON' : 'OFF');
@@ -1577,6 +1778,7 @@ $('btnDailyAd').onclick = () => {
   }, 3000);
 };
 $('btnCast').onclick = () => showScreen('cast');
+$('btnProps').onclick = () => showScreen('props');
 $('btnReel').onclick = () => showScreen('reel');
 $('btnPosters').onclick = () => showScreen('posters');
 $('btnTrophies').onclick = () => showScreen('trophies');
@@ -1604,19 +1806,23 @@ for (const b of document.querySelectorAll('.back')) b.onclick = () => showScreen
 
 // dev/test hooks: state inspection + action handles for the headless driver
 window.__t47 = {
-  get: () => ({state, mode, dStep, dLives, rScene, crashKind, takesScene, perfectStreak, cards: cardQueue.length, wallet: wallet(), mech: params.mech, h: params.h, matL: params.matL, matR: params.matR, S}),
+  get: () => ({state, mode, dStep, dLives, rScene, crashKind, takesScene, perfectStreak, cards: cardQueue.length, wallet: wallet(), mech: params.mech, h: params.h, matL: params.matL, matR: params.matR, armedItem, activeItem, lastMiss, crashesSinceAd, S}),
   reshoot: playReshoot,
   buy: buyOrSelectVariant,
+  buyItem: buyItem,
+  arm: armItem,
   cs: csEvent
 };
 
 // ========== main loop ==========
 let last = performance.now();
+let lastState = '';
 function frame(now){
   const dt = Math.min(DT_MAX, (now - last) / 1000);
   last = now;
   update(dt);
   draw();
+  if (state !== lastState) { lastState = state; refreshPropBar(); }   // belt follows game state
   requestAnimationFrame(frame);
 }
 resize();
