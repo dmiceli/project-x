@@ -38,8 +38,10 @@
 
 - 2026-07-03 (later): feedback batch implemented — milestone interstitial cards (set changes + cast unlocks with STAR THEM choice), daily = 3 lives/attempt, share button prominent on CUT screen (+ home screen) with 0.6s lockout so it's seen. Bonus: headless testing caught a game-breaking exploit (instant-lock = free landing) — fixed with a 200° spin gate ("TOO SOON!"). All flows re-verified headlessly, including a skilled-play run to Scene 12.
 
+- 2026-07-03 (later still): interstitial cards given context per Dan's feedback — set changes are now wrap parties with stats ("THE BACKLOT — WRAPPED. All ten scenes shot in 43 takes") + a flavor tease of the next set; cast unlocks carry character bios + what the player survived to earn them. Re-verified headlessly.
+
 ## Next steps
-1. Dan: push + replay. Feel checklist: do the cards land as moments now? Does "TOO SOON!" feel fair or annoying (it changes early-tap feel)? Daily with 3 lives — right tension? Share card visible and worth sending?
+1. Dan: push + replay. Feel checklist: do the cards land as earned moments now? Does "TOO SOON!" feel fair or annoying? Daily with 3 lives — right tension? Share card visible and worth sending?
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.
 4. Later: verify "TAKE 47" name in App Store Connect.

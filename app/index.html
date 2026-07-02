@@ -165,6 +165,7 @@ const DEFAULTS = {
   scene: 1, furthest: 1, takes: 0, prints: 0, crashes: 0,
   bestStreak: 0, firstTakeChain: 0,
   selected: 'guy', unlocked: ['guy'],
+  setTakes: 0,                                // takes spent on the current set (wrap-card stat)
   ach: {},                                    // id -> timestamp
   daily: {date: '', used: 0, adExtras: 0, best: 0, todayBest: 0},
   set: {sound: 1, haptics: 1, rm: 0}
@@ -238,12 +239,12 @@ function dailyRollover(){                      // reset counters on a new day
 // floor are drawn for every genre — it's always a film set; only the
 // backdrop and props change. Set switches every 10 scenes, cycling.
 const GENRES = [
-  {id:'studio',  name:'THE BACKLOT',      sky:['#1a0f0d','#2a1a12','#191010'], floor:'#241811', props: propsStudio},
-  {id:'western', name:'DUST GULCH',       sky:['#2b1608','#4a2410','#241208'], floor:'#3a2a14', props: propsWestern},
-  {id:'pirate',  name:'THE HIGH SEAS',    sky:['#0a1a2f','#14304f','#0d1626'], floor:'#2a2118', props: propsPirate},
-  {id:'scifi',   name:'SAUCER STAGE',     sky:['#120b24','#251448','#0f0a1c'], floor:'#1e1830', props: propsScifi},
-  {id:'noir',    name:'RAIN STREET',      sky:['#0d0d12','#1a1a24','#0b0b10'], floor:'#15151d', props: propsNoir},
-  {id:'kaiju',   name:'MINIATURE CITY',   sky:['#0c1a12','#173626','#0a140e'], floor:'#1c2418', props: propsKaiju}
+  {id:'studio',  name:'THE BACKLOT',    flavor:'painted flats, pyrotechnics, and one nervous insurance guy', sky:['#1a0f0d','#2a1a12','#191010'], floor:'#241811', props: propsStudio},
+  {id:'western', name:'DUST GULCH',     flavor:'saloons, tumbleweeds, and six-shooters (props, obviously)',  sky:['#2b1608','#4a2410','#241208'], floor:'#3a2a14', props: propsWestern},
+  {id:'pirate',  name:'THE HIGH SEAS',  flavor:'rigging, rum barrels, and a very wobbly mast',               sky:['#0a1a2f','#14304f','#0d1626'], floor:'#2a2118', props: propsPirate},
+  {id:'scifi',   name:'SAUCER STAGE',   flavor:'a saucer on strings and a cardboard cosmos',                 sky:['#120b24','#251448','#0f0a1c'], floor:'#1e1830', props: propsScifi},
+  {id:'noir',    name:'RAIN STREET',    flavor:'rain machines and one moody neon sign',                      sky:['#0d0d12','#1a1a24','#0b0b10'], floor:'#15151d', props: propsNoir},
+  {id:'kaiju',   name:'MINIATURE CITY', flavor:'a rubber suit and a city of shoeboxes',                      sky:['#0c1a12','#173626','#0a140e'], floor:'#1c2418', props: propsKaiju}
 ];
 function genreForScene(n){ return GENRES[Math.floor((n - 1) / 10) % GENRES.length]; }
 
@@ -383,12 +384,12 @@ function resize(){
 
 // ========== characters: one rig, six costumes ==========
 const COSTUMES = [
-  {id:'guy',    name:'Stunt Guy',        icon:'🤸', unlock:0,   suit:'#ffd166', skin:'#ffd9a0', shoe:'#ef476f', acc:null},
-  {id:'gal',    name:'Stunt Gal',        icon:'💫', unlock:10,  suit:'#f472b6', skin:'#ffd9a0', shoe:'#ffffff', acc:'pony'},
-  {id:'dummy',  name:'Crash-Test Dummy', icon:'🎯', unlock:25,  suit:'#e5e7eb', skin:'#e5e7eb', shoe:'#111111', acc:'dummy'},
-  {id:'hotdog', name:'Hot-Dog Guy',      icon:'🌭', unlock:50,  suit:'#f59e0b', skin:'#ffd9a0', shoe:'#dc2626', acc:'bun'},
-  {id:'legend', name:'The Aging Legend', icon:'🦳', unlock:75,  suit:'#9ca3af', skin:'#e8c9a0', shoe:'#78350f', acc:'grayhair'},
-  {id:'diva',   name:'The Diva',         icon:'🕶️', unlock:100, suit:'#c084fc', skin:'#ffd9a0', shoe:'#fbbf24', acc:'glasses'}
+  {id:'guy',    name:'Stunt Guy',        icon:'🤸', unlock:0,   bio:'Union card, coffee breath, zero fear.',                          suit:'#ffd166', skin:'#ffd9a0', shoe:'#ef476f', acc:null},
+  {id:'gal',    name:'Stunt Gal',        icon:'💫', unlock:10,  bio:'Does her own stunts AND her stunt double\'s.',                   suit:'#f472b6', skin:'#ffd9a0', shoe:'#ffffff', acc:'pony'},
+  {id:'dummy',  name:'Crash-Test Dummy', icon:'🎯', unlock:25,  bio:'Feels nothing. Fears nothing. Files no complaints.',             suit:'#e5e7eb', skin:'#e5e7eb', shoe:'#111111', acc:'dummy'},
+  {id:'hotdog', name:'Hot-Dog Guy',      icon:'🌭', unlock:50,  bio:'A promotional tie-in that went too far and never went home.',    suit:'#f59e0b', skin:'#ffd9a0', shoe:'#dc2626', acc:'bun'},
+  {id:'legend', name:'The Aging Legend', icon:'🦳', unlock:75,  bio:'Broke every bone twice. Came back after lunch.',                 suit:'#9ca3af', skin:'#e8c9a0', shoe:'#78350f', acc:'grayhair'},
+  {id:'diva',   name:'The Diva',         icon:'🕶️', unlock:100, bio:'Insisted on doing her own stunts. Regrets nothing, publicly.',   suit:'#c084fc', skin:'#ffd9a0', shoe:'#fbbf24', acc:'glasses'}
 ];
 function costume(){ return COSTUMES.find(x => x.id === S.selected) || COSTUMES[0]; }
 // returns newly unlocked costumes so advance() can celebrate them properly
@@ -519,6 +520,7 @@ p = newPlayer(START_X);
 // ========== gameplay ==========
 function startJump(){
   S.takes++;
+  if (mode === 'campaign') S.setTakes++;
   const targetX = 250 + Math.random() * 80;
   p.vx = (targetX - p.x) / params.T;
   p.vy = -GRAVITY * params.T / 2;
@@ -648,17 +650,20 @@ function advance(){
     addPopup('SCENE ' + (S.scene - 1) + ' COMPLETE', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
     for (const cst of fresh) {
       queueCard({kicker: 'NEW CAST MEMBER', icon: cst.icon, title: cst.name,
-        body: 'Earned at Scene ' + cst.unlock + '. Put them in the spotlight?',
+        body: cst.bio + ' — Surviving ' + cst.unlock + ' scenes earned their respect. Put them in the spotlight?',
         buttons: [
           {label: '⭐ STAR THEM', primary: true, action: () => { S.selected = cst.id; persist(); }},
           {label: 'KEEP CURRENT'}
         ]});
     }
     const g = genreForScene(S.scene);
-    if (genreForScene(S.scene - 1).id !== g.id) {
-      queueCard({kicker: 'COMPANY MOVE', icon: '🎬', title: 'NEW SET: ' + g.name,
-        body: 'The production moves on. The next ten scenes shoot here.',
+    const oldG = genreForScene(S.scene - 1);
+    if (oldG.id !== g.id) {
+      // wrap party: honor what was just finished, then tease the new set
+      queueCard({kicker: "THAT'S A WRAP", icon: '🎉', title: oldG.name + ' — WRAPPED',
+        body: 'All ten scenes shot in ' + S.setTakes + ' takes. The company moves to ' + g.name + ': ' + g.flavor + '.',
         buttons: [{label: 'ACTION!', primary: true}]});
+      S.setTakes = 0;
     }
     persist();
   } else {
