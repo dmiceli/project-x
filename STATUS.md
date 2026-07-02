@@ -36,8 +36,10 @@
 
 - 2026-07-03: **v1 app built** at `app/index.html` — six genre sets (Dan: full v1), six characters with milestone unlocks, daily challenge (one life, 3 attempts + ad-stub extras), 10 achievements + trophy room, HTML settings/menus (VoiceOver-able), share card via Web Share API, versioned save blob with legacy migration. Full flow verified headlessly (campaign progression, reset-keeps-record, daily attempt limits, settings persistence).
 
+- 2026-07-03 (later): feedback batch implemented — milestone interstitial cards (set changes + cast unlocks with STAR THEM choice), daily = 3 lives/attempt, share button prominent on CUT screen (+ home screen) with 0.6s lockout so it's seen. Bonus: headless testing caught a game-breaking exploit (instant-lock = free landing) — fixed with a 200° spin gate ("TOO SOON!"). All flows re-verified headlessly, including a skilled-play run to Scene 12.
+
 ## Next steps
-1. Dan: push, then play `app/index.html` on the phone (Pages URL: `.../project-x/app/index.html`). Feel checklist: genre variety, character unlock pacing (first at Scene 10), daily one-life tension, share card output.
-2. Feedback batch → tuning/polish pass (quips timing, difficulty, juice).
-3. Icon + real sound design; then PIPELINE.md runbook → first hello-world TestFlight build.
+1. Dan: push + replay. Feel checklist: do the cards land as moments now? Does "TOO SOON!" feel fair or annoying (it changes early-tap feel)? Daily with 3 lives — right tension? Share card visible and worth sending?
+2. Then: tuning/polish batch → icon + real sound design.
+3. PIPELINE.md runbook → first hello-world TestFlight build.
 4. Later: verify "TAKE 47" name in App Store Connect.

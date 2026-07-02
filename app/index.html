@@ -72,6 +72,15 @@
     max-width:86vw;text-align:center}
   #toast.show{transform:translateX(-50%) translateY(0)}
   @media (prefers-reduced-motion: reduce){ #toast{transition:none} }
+
+  /* ---- interstitial celebration cards (genre moves, cast unlocks) ---- */
+  #interstitial{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;
+    justify-content:center;background:rgba(10,7,5,.94);z-index:15;text-align:center;padding:24px}
+  #interstitial.active{display:flex}
+  #interstitial .kicker{color:var(--dim);letter-spacing:3px;font-size:13px;margin:0}
+  #interstitial .big{font-size:72px;margin:10px 0;line-height:1}
+  #interstitial h2{margin:4px 0 6px;font-size:34px}
+  #interstitial p{color:var(--dim);margin:0 0 22px;font-size:15px;max-width:320px}
 </style>
 </head>
 <body>
@@ -85,12 +94,13 @@
   <button id="btnDaily">🎬 DAILY CHALLENGE</button>
   <button id="btnCast">🎭 THE CAST</button>
   <button id="btnTrophies">🏆 BLOOPER REEL</button>
+  <button id="btnShareHome">📤 SHARE MY PROGRESS</button>
   <button id="btnSettings">⚙️ SETTINGS</button>
 </section>
 
 <section id="scr-daily" class="screen" aria-label="Daily challenge">
   <h2>DAILY CHALLENGE</h2>
-  <p class="stats">One life. Same gauntlet as the whole world.<br>Crash once and the attempt is over.</p>
+  <p class="stats">Three lives per attempt. Same gauntlet as the whole world.<br>Three crashes and it's a wrap.</p>
   <p class="stats" id="dailyInfo"></p>
   <button id="btnDailyPlay" class="primary">SHOOT TODAY'S GAUNTLET</button>
   <button id="btnDailyAd">🎞️ EXTRA ATTEMPT (ad — placeholder in beta)</button>
@@ -121,8 +131,15 @@
   <button class="back" data-to="home">← BACK</button>
 </section>
 
+<div id="interstitial" role="dialog" aria-modal="true" aria-label="Milestone">
+  <p class="kicker" id="cardKicker"></p>
+  <div class="big" id="cardIcon">🎬</div>
+  <h2 id="cardTitle"></h2>
+  <p id="cardBody"></p>
+  <div id="cardButtons"></div>
+</div>
 <div id="gameBar">
-  <button id="btnShare">📤 SHARE</button>
+  <button id="btnShare" class="primary">📤 SHARE</button>
   <button id="btnHome">🏠 HOME</button>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -138,6 +155,9 @@ const HITSTOP = 0.06;
 const START_X = 70;
 const DT_MAX = 0.033;
 const DAILY_FREE = 3, DAILY_AD_MAX = 3;
+// Anti-cheese: lock is unavailable until this much rotation has happened.
+// Without it, tap-tap instantly freezes the angle at ~0° for a free landing.
+const MIN_SPIN = 200 * Math.PI / 180;
 
 // ========== save system (single versioned blob; local-only) ==========
 const SAVE_KEY = 't47_save_v1';
@@ -371,15 +391,17 @@ const COSTUMES = [
   {id:'diva',   name:'The Diva',         icon:'🕶️', unlock:100, suit:'#c084fc', skin:'#ffd9a0', shoe:'#fbbf24', acc:'glasses'}
 ];
 function costume(){ return COSTUMES.find(x => x.id === S.selected) || COSTUMES[0]; }
+// returns newly unlocked costumes so advance() can celebrate them properly
 function checkUnlocks(){
+  const fresh = [];
   for (const cst of COSTUMES) {
     if (cst.unlock > 0 && S.scene >= cst.unlock && !S.unlocked.includes(cst.id)) {
       S.unlocked.push(cst.id);
-      toast('🎭 NEW CAST MEMBER: ' + cst.name);
-      sfx.advance();
+      fresh.push(cst);
     }
   }
   if (S.unlocked.length === COSTUMES.length) award('fullCast');
+  return fresh;
 }
 
 // ========== audio (synth placeholder; unlocks on first gesture) ==========
@@ -471,8 +493,10 @@ function award(id){
 // mode: 'campaign' (persistent scenes) | 'daily' (one life, date-seeded)
 // state: home | ready | air | landed | crash | over
 let mode = 'campaign';
-let state = 'home';
+let state = 'home';                  // + 'card' while an interstitial is up
 let dStep = 1;                       // daily: current gauntlet step
+let dLives = 3;                      // daily: crashes left in this attempt
+let cardQueue = [];                  // pending interstitial celebrations
 let takesScene = 1;                  // campaign: attempts on current scene
 let perfectStreak = 0;
 let p = null;
@@ -500,6 +524,7 @@ function startJump(){
   p.vy = -GRAVITY * params.T / 2;
   p.om = params.om;
   p.locked = false;
+  p.spun = 0;                          // rotation accrued (gates the lock)
   p.pose = 'tuck';
   state = 'air';
   persist();
@@ -574,6 +599,37 @@ function evaluateLanding(){
   }
 }
 
+// ========== interstitial cards ==========
+// Big moments (set changes, cast unlocks) pause the flow behind a modal card
+// the player must tap through — Dan's feedback: milestones were getting lost
+// in the gameplay chaos. Cards queue so unlock + set-change both show.
+function queueCard(cfg){ cardQueue.push(cfg); }
+function showNextCard(){
+  const el = document.getElementById('interstitial');
+  if (!cardQueue.length) {
+    el.classList.remove('active');
+    state = 'ready'; stateT = 0;
+    return;
+  }
+  state = 'card';
+  const cfg = cardQueue.shift();
+  document.getElementById('cardKicker').textContent = cfg.kicker || '';
+  document.getElementById('cardIcon').textContent = cfg.icon || '🎬';
+  document.getElementById('cardTitle').textContent = cfg.title;
+  document.getElementById('cardBody').textContent = cfg.body || '';
+  const bb = document.getElementById('cardButtons');
+  bb.innerHTML = '';
+  for (const btn of cfg.buttons) {
+    const b = document.createElement('button');
+    b.textContent = btn.label;
+    if (btn.primary) b.className = 'primary';
+    b.onclick = () => { if (btn.action) btn.action(); showNextCard(); };
+    bb.appendChild(b);
+  }
+  el.classList.add('active');
+  sfx.advance();
+}
+
 // scene/step advance after a landing settles (called from update)
 function advance(){
   if (mode === 'campaign') {
@@ -587,11 +643,23 @@ function advance(){
     if (S.takes >= 500) award('methodActor');
     if (S.scene >= 50) award('longHaul');
     if (S.scene >= 100) award('franchise');
-    checkUnlocks();
+    const fresh = checkUnlocks();
     takesScene = 1;
     addPopup('SCENE ' + (S.scene - 1) + ' COMPLETE', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
+    for (const cst of fresh) {
+      queueCard({kicker: 'NEW CAST MEMBER', icon: cst.icon, title: cst.name,
+        body: 'Earned at Scene ' + cst.unlock + '. Put them in the spotlight?',
+        buttons: [
+          {label: '⭐ STAR THEM', primary: true, action: () => { S.selected = cst.id; persist(); }},
+          {label: 'KEEP CURRENT'}
+        ]});
+    }
     const g = genreForScene(S.scene);
-    if (genreForScene(S.scene - 1).id !== g.id) { toast('🎬 NEW SET: ' + g.name); }
+    if (genreForScene(S.scene - 1).id !== g.id) {
+      queueCard({kicker: 'COMPANY MOVE', icon: '🎬', title: 'NEW SET: ' + g.name,
+        body: 'The production moves on. The next ten scenes shoot here.',
+        buttons: [{label: 'ACTION!', primary: true}]});
+    }
     persist();
   } else {
     dStep++;
@@ -600,24 +668,39 @@ function advance(){
   refreshParams();
   p = newPlayer(START_X);
   sfx.advance();
-  state = 'ready'; stateT = 0;
+  if (cardQueue.length) showNextCard();
+  else { state = 'ready'; stateT = 0; }
 }
 
 // crash resolution differs by mode: campaign retries the same scene forever;
-// a daily attempt simply ends (that's what makes the daily score mean something)
+// a daily attempt burns one of 3 lives, then ends (scarcity keeps the score
+// meaningful; 3 lives — Dan's call — keeps it replayable)
 function afterCrash(){
-  state = 'over';
-  gameBar(true);
+  state = 'over'; stateT = 0;          // stateT reset: 0.6s input lockout on the
+                                       // CUT screen so it can't be tapped past blind
   if (mode === 'daily') {
-    const cleared = dStep - 1;
-    S.daily.todayBest = Math.max(S.daily.todayBest, cleared);
-    S.daily.best = Math.max(S.daily.best, cleared);
-    persist();
+    dLives--;
+    if (dLives <= 0) {
+      const cleared = dStep - 1;
+      S.daily.todayBest = Math.max(S.daily.todayBest, cleared);
+      S.daily.best = Math.max(S.daily.best, cleared);
+      persist();
+      gameBar(true);                   // attempt over: share/home offered
+    }
+  } else {
+    gameBar(true);
   }
 }
 function retry(){
   gameBar(false);
-  if (mode === 'daily') { showScreen('daily'); state = 'home'; return; }
+  if (mode === 'daily') {
+    if (dLives > 0) {                  // lives remain: same run continues
+      p = newPlayer(START_X);
+      popups = []; ragdoll = [];
+      state = 'ready';
+    } else { showScreen('daily'); state = 'home'; }
+    return;
+  }
   takesScene++;
   S.firstTakeChain = 0;
   p = newPlayer(START_X);
@@ -643,6 +726,7 @@ function playDaily(){
   persist();
   mode = 'daily';
   dStep = 1;
+  dLives = 3;
   refreshParams();
   perfectStreak = 0;
   p = newPlayer(START_X);
@@ -663,8 +747,14 @@ function resetProgress(){                            // "Reshoot from Scene 1"
 function onTap(){
   ac();
   if (state === 'ready') startJump();
-  else if (state === 'air' && !p.locked) { p.locked = true; p.om = 0; p.pose = 'stand'; sfx.lock(); haptic(10); }
-  else if (state === 'over') retry();
+  else if (state === 'air' && !p.locked) {
+    if (p.spun < MIN_SPIN) {           // no flip, no trick — reject the early lock
+      addPopup('TOO SOON!', p.x, p.y - 55, '#f87171', 18);
+      tone(220, 150, 0.08, 'square', 0.07);
+    } else { p.locked = true; p.om = 0; p.pose = 'stand'; sfx.lock(); haptic(10); }
+  }
+  else if (state === 'over' && stateT > 0.6) retry();   // lockout: let the CUT screen land
+  // state 'card': canvas taps ignored — the card's HTML buttons own the flow
 }
 cv.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(); });
 window.addEventListener('keydown', function(e){ if (e.code === 'Space' && state !== 'home') onTap(); });
@@ -683,6 +773,7 @@ function update(dt){
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.angle += p.om * dt;
+    p.spun += Math.abs(p.om) * dt;
     if (p.vy > 0 && p.y >= GROUND) evaluateLanding();
   } else if (state === 'landed') {
     if (stateT > 1.0) advance();
@@ -866,7 +957,8 @@ function draw(){
     if (S.furthest > S.scene) line2 += '   ·   FURTHEST ' + S.furthest;
     ctx.fillText(line2, W / 2, 133);
   } else {
-    ctx.fillText('ONE LIFE  ·  CLEARED ' + (dStep - 1) + '  ·  TODAY\'S BEST ' + S.daily.todayBest, W / 2, 114);
+    // lives shown as hearts AND a number — never color/symbol alone (a11y)
+    ctx.fillText('LIVES ' + '♥'.repeat(Math.max(0, dLives)) + ' (' + dLives + ')  ·  CLEARED ' + (dStep - 1) + '  ·  TODAY\'S BEST ' + S.daily.todayBest, W / 2, 114);
   }
   if (params.big && state === 'ready') {
     ctx.fillStyle = '#ef476f'; ctx.font = 'bold 16px system-ui, sans-serif';
@@ -896,6 +988,12 @@ function draw(){
       ctx.fillText('Lifetime takes: ' + S.takes, W / 2, 372);
       ctx.fillStyle = '#6ee7b7';
       ctx.fillText('TAP FOR ONE MORE TAKE', W / 2, 420);
+    } else if (dLives > 0) {
+      ctx.fillText('LIVES LEFT: ' + dLives, W / 2, 335);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText('Cleared so far: ' + (dStep - 1), W / 2, 372);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.fillText('TAP TO KEEP SHOOTING', W / 2, 420);
     } else {
       ctx.fillText('THAT\'S A WRAP ON THIS ATTEMPT', W / 2, 335);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
@@ -1041,11 +1139,12 @@ $('btnReset').onclick = () => {
   refreshHome();
 };
 $('btnShare').onclick = shareCard;
+$('btnShareHome').onclick = () => { mode = 'campaign'; shareCard(); };
 $('btnHome').onclick = () => { gameBar(false); popups = []; ragdoll = []; showScreen('home'); };
 for (const b of document.querySelectorAll('.back')) b.onclick = () => showScreen(b.dataset.to);
 
 // dev/test hook: lets the headless test driver inspect state (harmless in prod)
-window.__t47 = { get: () => ({state, mode, dStep, takesScene, perfectStreak, S}) };
+window.__t47 = { get: () => ({state, mode, dStep, dLives, takesScene, perfectStreak, cards: cardQueue.length, S}) };
 
 // ========== main loop ==========
 let last = performance.now();
