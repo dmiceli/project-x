@@ -75,9 +75,16 @@
 
 - 2026-07-03: **Pace reset (Dan):** no rushing between phases; validation gets equal energy to construction. Rule added to CLAUDE.md; **BETA-READINESS.md created** — the no-stone-unturned checklist (8 sections, honest statuses) that now governs the path to TestFlight.
 
-## Next steps
-1. Dan: review/amend BETA-READINESS.md — add stones, challenge statuses, pick what we tackle first.
-2. Work the checklist together, at whatever depth each item deserves. Screenshots and pipeline happen when the list says so, not before.
+- 2026-07-03: **Dan's screenshot defect report fixed** (all three): HUD gets a cinematic top scrim + prompts on pill backings (text never fights lighting; rig lamps moved clear of the HUD zone); launch platform is now stacked APPLE BOXES (real film gear) and all launch spots/cart path moved clear of a more compact camera; backlot flats are now an obvious painted-sky backdrop + raw flat with braces; full-width floor tape (the "checkerboard") replaced by hazard tabs at the mat ends. Verified by full line-by-line inspection of the real file; mirror chain retired after drift (lesson in CLAUDE.md).
+
+## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
+1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
+2. **Fresh-save FTUE run** (~10 min, private tab).
+3. **Combined a11y sweep** (~15 min).
+4. **Full copy read** (~15 min).
+5. **Daily rollover** (passive, next midnight).
+6. **The big feel session** (one sitting).
+7. **Cold playtest** (needs a volunteer — schedule when you can).
 3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
 4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate) → hello-world TestFlight build.
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.

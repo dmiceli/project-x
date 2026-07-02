@@ -326,7 +326,7 @@ function sceneParams(n){
   const golden = !big && rnd() < 0.05;
   const mech = assembleMech(rnd, gi, cycle, big);
   const h = mech.cart ? 0 : [0, 60, 120][Math.floor(rnd() * 3)];     // launch platform height
-  const startX = mech.cart ? 90 : 55 + Math.floor(rnd() * 40);
+  const startX = mech.cart ? 110 : 92 + Math.floor(rnd() * 36);      // clear of the camera (stage left)
   const matC = 250 + rnd() * 60;                                     // cart scenes: the mat matters
   return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, golden: golden, breather: breather,
           tol: goodDeg * Math.PI / 180, h: h, startX: startX, gi: gi, cycle: cycle, mech: mech,
@@ -350,7 +350,7 @@ function dailyParams(step){
   // gauntlet gets spicy from step 4: one seeded mechanic per scene
   const mech = step >= 4 ? assembleMech(rnd, 1 + Math.floor(rnd() * 5), 0, big) : {cart:0, boom:0, grav:1, wind:0, arm:0, bounce:0};
   const h = mech.cart ? 0 : [0, 60, 120][Math.floor(rnd() * 3)];
-  const startX = mech.cart ? 90 : 55 + Math.floor(rnd() * 40);
+  const startX = mech.cart ? 110 : 92 + Math.floor(rnd() * 36);
   const matC = 250 + rnd() * 60;
   return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, golden: false, breather: false,
           tol: goodDeg * Math.PI / 180, h: h, startX: startX, gi: 0, cycle: 0, mech: mech,
@@ -647,7 +647,7 @@ let lastMiss = null;                 // degrees off upright on the last angle-cr
 let crashesSinceAd = 0, lastAdMs = -1e9;   // interstitial pacing (placeholder in beta)
 
 // mechanic positions as functions of the scene clock (all telegraphed visually)
-function cartX(t){ return 55 + 70 * (0.5 + 0.5 * Math.sin(t * 2.2)); }
+function cartX(t){ return 75 + 70 * (0.5 + 0.5 * Math.sin(t * 2.2)); }   // rolls clear of the camera
 function cartVx(t){ return 70 * 0.5 * 2.2 * Math.cos(t * 2.2); }
 // boom geometry: pivot high, arm long — the tip sweeps through the descent
 // corridor (y≈350-400) so it genuinely threatens flights. Watching its rhythm
@@ -756,7 +756,7 @@ function startJump(){
   const g = grav();
   if (params.mech.cart) {
     // launch inherits the cart's velocity — the mat is where timing cashes out
-    const base = ((params.matL + params.matR) / 2 - 95) / params.T;
+    const base = ((params.matL + params.matR) / 2 - 110) / params.T;
     p.vx = base + (activeItem === 'chock' ? 0 : cartVx(mechT));
   } else {
     const targetX = 250 + Math.random() * 80;    // landing spot varies; angle is what's judged
@@ -1350,11 +1350,18 @@ function drawRagdollPart(q){
 // ========== render: mechanics (all hazards telegraph by constant motion) ==========
 function drawMechanics(){
   const m = params.mech;
-  if (params.h > 0) {                                       // launch scaffold
-    ctx.fillStyle = '#2c2018';
-    ctx.fillRect(params.startX - 26, GROUND - params.h, 52, params.h);
-    ctx.strokeStyle = '#4a3626'; ctx.lineWidth = 2;
-    ctx.strokeRect(params.startX - 26, GROUND - params.h, 52, params.h);
+  if (params.h > 0) {                                       // apple boxes: real film gear
+    const bx = params.startX;
+    const stack = params.h >= 120 ? 3 : 2;
+    for (let i = 0; i < stack; i++) {
+      const bw = 58 - i * 7, bh = params.h / stack;
+      const by = GROUND - bh * (i + 1);
+      oRect(ctx, bx - bw / 2, by, bw, bh, '#3a2a18', 3);
+      ctx.strokeStyle = '#241808'; ctx.lineWidth = 2;       // plank seam + grab slot
+      ctx.beginPath(); ctx.moveTo(bx - bw / 2 + 6, by + bh / 2); ctx.lineTo(bx + bw / 2 - 6, by + bh / 2); ctx.stroke();
+      ctx.fillStyle = '#241808';
+      ctx.fillRect(bx - 9, by + bh / 2 - 3, 18, 6);
+    }
   }
   if (m.cart) {
     const cx = cartX(mechT);                                // keeps rolling after launch
@@ -1369,7 +1376,7 @@ function drawMechanics(){
     // live trajectory preview (Dan: launch timing must be AIMED, not guessed) —
     // dotted arc + landing marker track the cart in real time; launch on green
     if (state === 'ready') {
-      const vx = (params.matL + params.matR) / 2 - 95;
+      const vx = (params.matL + params.matR) / 2 - 110;
       const pvx = vx / params.T + ((armedItem === 'chock') ? 0 : cartVx(mechT));
       const pvy = -grav() * params.T / 2;
       const landX = p.x + pvx * params.T;
@@ -1425,6 +1432,16 @@ function drawMechanics(){
 }
 
 // ========== render: frame ==========
+// gameplay prompts sit on quiet pills so they read over any set (Dan defect)
+function drawPrompt(text, y, color){
+  const w = text.length * 11 + 40;
+  ctx.fillStyle = 'rgba(10,7,5,0.72)';
+  ctx.beginPath(); ctx.roundRect(W / 2 - w / 2, y - 24, w, 36, 18); ctx.fill();
+  ctx.fillStyle = color || '#e8d5b5';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, W / 2, y);
+}
 function slateStripes(x, y, w, h){
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
@@ -1509,6 +1526,13 @@ function draw(){
     ctx.fillText('— the director', W / 2, 202);
   }
 
+  // HUD scrim: dedicated text zone — type never fights the lighting (Dan defect)
+  const scrim = ctx.createLinearGradient(0, 0, 0, 155);
+  scrim.addColorStop(0, 'rgba(12,9,8,0.92)');
+  scrim.addColorStop(0.7, 'rgba(12,9,8,0.55)');
+  scrim.addColorStop(1, 'rgba(12,9,8,0)');
+  ctx.fillStyle = scrim; ctx.fillRect(0, 0, W, 155);
+
   // HUD
   const g = currentGenre();
   ctx.fillStyle = '#c9a876'; ctx.font = 'bold 15px system-ui, sans-serif';
@@ -1546,13 +1570,12 @@ function draw(){
     ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, by);
   }
 
-  ctx.fillStyle = '#e8d5b5'; ctx.font = 'bold 20px system-ui, sans-serif';
   if (state === 'ready') {
-    if (!S.ftue) {                       // first-time coaching: two plain lines
-      ctx.fillText('TAP to jump.', W / 2, 400);
-      ctx.fillText('TAP AGAIN to stop the spin — land feet-down.', W / 2, 428);
+    if (!S.ftue) {                       // first-time coaching, on pills
+      drawPrompt('TAP to jump.', 396);
+      drawPrompt('TAP AGAIN to stop the spin — land feet-down.', 438);
     } else {
-      ctx.fillText(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), W / 2, 420);
+      drawPrompt(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), 420);
     }
   } else if (state === 'air' && !p.locked) {
     // FTUE: pulse a TAP NOW! cue when the rookie is near upright
@@ -1565,14 +1588,10 @@ function draw(){
         ctx.font = 'bold ' + (S.set.rm ? 32 : 30 + Math.sin(mechT * 20) * 5) + 'px system-ui, sans-serif';
         ctx.fillText('TAP NOW!', W / 2, 480);
       } else if (p.spun <= MIN_SPIN) {
-        ctx.fillStyle = 'rgba(232,213,181,0.7)';
-        ctx.font = 'bold 18px system-ui, sans-serif';
-        ctx.fillText('Wait for the spin…', W / 2, 480);
+        drawPrompt('Wait for the spin…', 480);
       }
     }
-    ctx.fillStyle = 'rgba(232,213,181,0.7)';
-    ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillText('TAP TO STOP SPIN', W / 2, 660);
+    drawPrompt('TAP TO STOP SPIN', 660);
   } else if (state === 'over') {
     ctx.fillStyle = 'rgba(10,7,5,0.92)';
     ctx.fillRect(40, 240, W - 80, 220);
@@ -1913,16 +1932,27 @@ function drawSetLamp(c, x, y, s){
 }
 
 function propsStudio(c){
-  // two painted flats leaning on the back wall, wooden frames + a sandbag
-  for (const [fx, lean] of [[288, -8], [330, -14]]) {
-    c.save(); c.translate(fx, GROUND); c.rotate(lean * Math.PI / 180);
-    oRect(c, 0, -140, 54, 140, '#33261a');
-    c.strokeStyle = '#241808'; c.lineWidth = 2;
-    c.strokeRect(6, -134, 42, 128);
-    c.beginPath(); c.moveTo(6, -134); c.lineTo(48, -6); c.stroke();
-    c.restore();
-  }
-  oEllipse(c, 300, GROUND - 4, 16, 8, '#3a2c1c');               // sandbag
+  // a painted BACKDROP flat (sky + hills, clearly a painting in a wooden
+  // frame) leaning on the wall, plus a raw-canvas flat behind it + kick brace
+  c.save(); c.translate(368, GROUND); c.rotate(-10 * Math.PI / 180);
+  oRect(c, -76, -148, 76, 148, '#2c2014');                      // frame (raw back flat)
+  c.strokeStyle = '#241808'; c.lineWidth = 3;                    // cross brace
+  c.beginPath(); c.moveTo(-70, -142); c.lineTo(-6, -6); c.stroke();
+  c.beginPath(); c.moveTo(-6, -142); c.lineTo(-70, -6); c.stroke();
+  c.restore();
+  c.save(); c.translate(300, GROUND); c.rotate(-6 * Math.PI / 180);
+  oRect(c, -66, -132, 66, 132, '#2c2014');                      // painted flat: frame
+  c.fillStyle = '#31424e'; c.fillRect(-60, -126, 54, 120);       // ...painted sky
+  c.fillStyle = '#3d5240';                                       // ...painted hills
+  c.beginPath(); c.moveTo(-60, -6); c.quadraticCurveTo(-42, -52, -24, -6); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(-38, -6); c.quadraticCurveTo(-16, -66, -6, -6); c.closePath(); c.fill();
+  c.fillStyle = '#c8cdd0';                                       // ...one painted cloud
+  c.beginPath(); c.ellipse(-32, -98, 13, 6, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(-22, -94, 9, 5, 0, 0, Math.PI * 2); c.fill();
+  c.restore();
+  c.strokeStyle = '#241808'; c.lineWidth = 4;                    // kick brace
+  c.beginPath(); c.moveTo(252, GROUND - 118); c.lineTo(216, GROUND); c.stroke();
+  oEllipse(c, 224, GROUND - 4, 16, 8, '#3a2c1c');                // sandbag on the brace
 }
 function propsWestern(c){
   // saloon facade: parapet roofline, blank sign board, swing doors, brace
@@ -2031,31 +2061,35 @@ function buildSetCache(genre){
 
   c.strokeStyle = '#3a2c22'; c.lineWidth = 5;                   // it's ALWAYS a film set:
   c.beginPath(); c.moveTo(0, 24); c.lineTo(W, 24); c.stroke();  // the rig...
-  for (const lx of [70, 190, 310]) drawSetLamp(c, lx, 38, 1.1); // ...real fixtures...
+  for (const lx of [58, 342]) drawSetLamp(c, lx, 38, 1.1);      // ...fixtures clear of the HUD zone...
   const cone = c.createLinearGradient(0, 40, 0, GROUND);        // ...spotlight...
   cone.addColorStop(0, 'rgba(255,209,102,0.13)'); cone.addColorStop(1, 'rgba(255,209,102,0.02)');
   c.fillStyle = cone;
   c.beginPath(); c.moveTo(180, 48); c.lineTo(300, 48); c.lineTo(390, GROUND); c.lineTo(120, GROUND); c.closePath(); c.fill();
-  // ...a camera that reads as a camera (fully in frame)...
+  // ...a compact camera, far stage-left (launch spots start at x≈92)...
   c.strokeStyle = OUTL_SET; c.lineWidth = 4;                    // tripod
-  c.beginPath(); c.moveTo(56, GROUND - 58); c.lineTo(36, GROUND - 4); c.stroke();
-  c.beginPath(); c.moveTo(56, GROUND - 58); c.lineTo(76, GROUND - 4); c.stroke();
-  c.beginPath(); c.moveTo(56, GROUND - 58); c.lineTo(56, GROUND - 14); c.stroke();
-  oRect(c, 30, GROUND - 92, 46, 30, '#221712', 4);              // body
-  oRect(c, 76, GROUND - 86, 14, 18, '#2c2018');                 // lens barrel
-  oRect(c, 90, GROUND - 82, 8, 10, '#171008');                  // hood
-  oRect(c, 38, GROUND - 102, 18, 12, '#2c2018', 3);             // viewfinder
+  c.beginPath(); c.moveTo(40, GROUND - 50); c.lineTo(24, GROUND - 4); c.stroke();
+  c.beginPath(); c.moveTo(40, GROUND - 50); c.lineTo(56, GROUND - 4); c.stroke();
+  c.beginPath(); c.moveTo(40, GROUND - 50); c.lineTo(40, GROUND - 12); c.stroke();
+  oRect(c, 16, GROUND - 78, 40, 26, '#221712', 4);              // body
+  oRect(c, 56, GROUND - 73, 12, 16, '#2c2018');                 // lens barrel
+  oRect(c, 68, GROUND - 70, 7, 9, '#171008');                   // hood
+  oRect(c, 22, GROUND - 87, 15, 10, '#2c2018', 3);              // viewfinder
   c.fillStyle = '#c94f52';                                      // tally light
-  c.beginPath(); c.arc(36, GROUND - 86, 3, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(22, GROUND - 72, 3, 0, Math.PI * 2); c.fill();
   c.fillStyle = genre.floor; c.fillRect(0, GROUND, W, H - GROUND);
   oRect(c, 170, GROUND + 1, 220, 15, '#2e4a6b', 3);             // stitched crash mat
   c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 2;
   for (let x = 214; x < 390; x += 44) { c.beginPath(); c.moveTo(x, GROUND + 3); c.lineTo(x, GROUND + 13); c.stroke(); }
-  c.save();
-  c.beginPath(); c.rect(0, GROUND - 3, W, 3); c.clip();
+  // hazard tabs at the mat's ends only (the old full-width tape read as a
+  // checkerboard — Dan defect report)
   c.fillStyle = '#ffd166';
-  for (let x = -20; x < W + 20; x += 24) { c.save(); c.translate(x, GROUND - 3); c.rotate(0.6); c.fillRect(0, -6, 8, 16); c.restore(); }
-  c.restore();
+  for (const tx of [162, 392]) {
+    c.save(); c.beginPath(); c.rect(tx - 8, GROUND - 4, 16, 5); c.clip();
+    c.translate(tx - 8, GROUND - 4); c.rotate(0.5);
+    c.fillRect(0, -6, 6, 16); c.fillRect(11, -6, 6, 16);
+    c.restore();
+  }
 }
 
 // dev/test hooks: state inspection + action handles for the headless driver
