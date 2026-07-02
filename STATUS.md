@@ -34,8 +34,10 @@
 
 - Overnight research sprint (2026-07-02, late): five new docs — PIPELINE.md (no-Mac build runbook; cuts watch-list risk #1 to two ~10-min Dan sessions), MARKETING.md (ASO + launch plan draft), TRENDS.md (hybrid-casual shift — our design is on-trend; retention targets adopted), THEME.md (stunt-lore/genre research + IP guardrails), PRIVACY.md (policy draft, ad section pre-written). BACKLOG.md updated with research-driven ideas.
 
-## Next steps (tomorrow)
-1. Dan (morning coffee): review the five research docs. One decision queued: **scene genres in v1 or 1.1?** (THEME.md; affects Phase 4 art planning.)
-2. Implementation pass: build the full app from DESIGN.md on the cleaned take-47.html base.
-3. Dan: play the cleaned build meanwhile — ramp fairness, restart flow, new toggles.
-4. After the build: icon + real sound design; then the PIPELINE.md runbook toward TestFlight.
+- 2026-07-03: **v1 app built** at `app/index.html` — six genre sets (Dan: full v1), six characters with milestone unlocks, daily challenge (one life, 3 attempts + ad-stub extras), 10 achievements + trophy room, HTML settings/menus (VoiceOver-able), share card via Web Share API, versioned save blob with legacy migration. Full flow verified headlessly (campaign progression, reset-keeps-record, daily attempt limits, settings persistence).
+
+## Next steps
+1. Dan: push, then play `app/index.html` on the phone (Pages URL: `.../project-x/app/index.html`). Feel checklist: genre variety, character unlock pacing (first at Scene 10), daily one-life tension, share card output.
+2. Feedback batch → tuning/polish pass (quips timing, difficulty, juice).
+3. Icon + real sound design; then PIPELINE.md runbook → first hello-world TestFlight build.
+4. Later: verify "TAKE 47" name in App Store Connect.

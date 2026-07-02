@@ -46,6 +46,8 @@ Already in: hitstop, screen shake, red flash, landing dust, perfect confetti, ra
 
 **Settings.** Sound effects, haptics, reduce motion, Reshoot from Scene 1, restore purchases, privacy policy link — all real labeled buttons (VoiceOver-navigable).
 
+**Scene genres (added 2026-07-03, Dan: full v1).** The set changes genre every 10 scenes, cycling: The Backlot → Dust Gulch (western) → The High Seas (swashbuckler) → Saucer Stage (50s sci-fi) → Rain Street (noir) → Miniature City (kaiju). All trope-level per THEME.md IP guardrails; every set keeps the film-set framing (rig, spotlight, camera, crash mat). Genre transitions announced with a toast; each genre's 10th scene is its BIG STUNT finale.
+
 Explicitly out of v1.0: Game Center leaderboard (revisit for 1.1), cloud saves, multiplayer, level/world structure.
 
 ## Monetization
