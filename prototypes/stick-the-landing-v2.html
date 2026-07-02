@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Stick the Landing — prototype v2</title>
+<style>
+  html,body{margin:0;padding:0;background:#0e1220;height:100%;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  canvas{display:block;margin:0 auto;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+// ---------- setup ----------
+const W = 400, H = 700, GROUND = 600;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+function resize(){
+  const dpr = window.devicePixelRatio || 1;
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.width = Math.round(W * s * dpr);
+  cv.height = Math.round(H * s * dpr);
+  cv.style.width = (W * s) + 'px';
+  cv.style.height = (H * s) + 'px';
+  ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = parseInt(localStorage.getItem('stl2_best') || '0', 10) || 0; } catch (e) {}
+
+// ---------- audio (tiny synth; unlocked on first tap for iOS) ----------
+let AC = null;
+function ac(){
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f0, f1, dur, type, vol){
+  const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), a.currentTime + dur);
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(); o.stop(a.currentTime + dur);
+}
+function noise(dur, vol){
+  const a = ac(); if (!a) return;
+  const n = Math.floor(a.sampleRate * dur);
+  const b = a.createBuffer(1, n, a.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = a.createBufferSource(); s.buffer = b;
+  const g = a.createGain(); g.gain.value = vol;
+  s.connect(g); g.connect(a.destination); s.start();
+}
+const sfx = {
+  jump:   () => tone(180, 520, 0.25, 'sine', 0.15),
+  lock:   () => tone(950, 700, 0.06, 'square', 0.08),
+  land:   () => { tone(200, 130, 0.14, 'triangle', 0.22); noise(0.06, 0.08); },
+  perfect:() => { tone(660, 660, 0.09, 'sine', 0.14); setTimeout(() => tone(880, 880, 0.09, 'sine', 0.14), 90); setTimeout(() => tone(1320, 1320, 0.14, 'sine', 0.14), 180); },
+  crash:  () => { noise(0.3, 0.3); tone(300, 55, 0.4, 'sawtooth', 0.18); }
+};
+
+// ---------- state ----------
+const START_X = 70;
+let state = 'menu';         // menu | ready | air | landed | crash | over
+let score = 0, round = 1, perfectStreak = 0;
+let p = null;
+let popups = [], particles = [], ragdoll = [];
+let shake = 0, flash = 0, stateT = 0, hitstop = 0;
+let stars = [];
+for (let i = 0; i < 40; i++) stars.push({x: Math.random()*W, y: Math.random()*GROUND, r: Math.random()*1.5+0.4});
+
+function newPlayer(x){
+  return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, squash: 0, pose: 'stand'};
+}
+p = newPlayer(START_X);
+
+function spinSpeed(){
+  const deg = Math.min(720, 300 + round * 45);
+  return (round % 2 === 0 ? -1 : 1) * deg * Math.PI / 180;
+}
+function tolerance(){
+  const deg = Math.max(16, 30 - round * 1.5);
+  return deg * Math.PI / 180;
+}
+
+function startJump(){
+  const T = 1.35, g = 1400;
+  const targetX = 250 + Math.random() * 80;
+  p.vx = (targetX - p.x) / T;
+  p.vy = -g * T / 2;
+  p.om = spinSpeed();
+  p.locked = false;
+  p.pose = 'tuck';
+  state = 'air';
+  sfx.jump();
+}
+
+function addPopup(text, x, y, color, size){
+  popups.push({text: text, x: x, y: y, t: 0, color: color || '#fff', size: size || 26});
+}
+function dust(x, y, n){
+  for (let i = 0; i < n; i++) {
+    const a = Math.PI + Math.random() * Math.PI;
+    particles.push({x: x + (Math.random()-0.5)*20, y: y, vx: Math.cos(a)*60*(Math.random()<0.5?-1:1), vy: -20 - Math.random()*60, t: 0, life: 0.5, color: '#8ea0d0', r: 2+Math.random()*2, g: 60});
+  }
+}
+function confetti(x, y){
+  const colors = ['#ffd166', '#ef476f', '#6ee7b7', '#38bdf8', '#c084fc'];
+  for (let i = 0; i < 30; i++) {
+    const a = -Math.PI/2 + (Math.random()-0.5)*1.6;
+    const sp = 120 + Math.random()*220;
+    particles.push({x: x, y: y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, t: 0, life: 1.1, color: colors[i%colors.length], r: 2.5+Math.random()*2, g: 500});
+  }
+}
+function spawnRagdoll(){
+  ragdoll = [];
+  const parts = [
+    {type: 'head',  ox: 0,  oy: -22},
+    {type: 'torso', ox: 0,  oy: 0},
+    {type: 'arm',   ox: -10, oy: -8},
+    {type: 'arm',   ox: 10,  oy: -8},
+    {type: 'leg',   ox: -6,  oy: 14},
+    {type: 'leg',   ox: 6,   oy: 14}
+  ];
+  for (const pt of parts) {
+    ragdoll.push({
+      type: pt.type,
+      x: p.x + pt.ox, y: p.y - 20 + pt.oy,
+      vx: p.vx * 0.5 + (Math.random()-0.5)*260,
+      vy: -120 - Math.random()*220,
+      a: Math.random()*Math.PI*2,
+      om: (Math.random()-0.5)*18,
+      bounces: 0
+    });
+  }
+}
+
+function evaluateLanding(){
+  p.y = GROUND;
+  let a = p.angle % (Math.PI * 2);
+  if (a < 0) a += Math.PI * 2;
+  const off = Math.min(a, Math.PI * 2 - a);
+  const tol = tolerance();
+  hitstop = 0.06;
+  if (off <= tol) {
+    const perfect = off <= 10 * Math.PI / 180;
+    p.angle = 0; p.vx = 0; p.vy = 0; p.om = 0; p.squash = 1;
+    p.pose = perfect ? 'armsup' : 'stand';
+    dust(p.x, GROUND, 8);
+    if (perfect) {
+      perfectStreak++;
+      const pts = 3 * perfectStreak;
+      score += pts;
+      confetti(p.x, GROUND - 40);
+      addPopup('PERFECT! +' + pts, p.x, GROUND - 100, '#ffd166', 28);
+      if (perfectStreak >= 2) addPopup('STREAK ×' + perfectStreak, p.x, GROUND - 135, '#c084fc', 20);
+      sfx.perfect();
+    } else {
+      perfectStreak = 0;
+      score += 1;
+      addPopup('STUCK IT! +1', p.x, GROUND - 100, '#6ee7b7');
+      sfx.land();
+    }
+    state = 'landed'; stateT = 0;
+  } else {
+    perfectStreak = 0;
+    spawnRagdoll();
+    shake = 1; flash = 1;
+    addPopup('SPLAT!', p.x, GROUND - 120, '#f87171', 32);
+    sfx.crash();
+    state = 'crash'; stateT = 0;
+    if (score > best) { best = score; try { localStorage.setItem('stl2_best', String(best)); } catch (e) {} }
+  }
+}
+
+function resetGame(){
+  score = 0; round = 1; perfectStreak = 0;
+  p = newPlayer(START_X);
+  popups = []; ragdoll = [];
+  state = 'ready';
+}
+
+// ---------- input ----------
+function onTap(){
+  ac(); // unlock audio on iOS
+  if (state === 'menu' || state === 'ready') startJump();
+  else if (state === 'air' && !p.locked) { p.locked = true; p.om = 0; p.pose = 'stand'; sfx.lock(); }
+  else if (state === 'over') resetGame();
+}
+window.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(); });
+window.addEventListener('keydown', function(e){ if (e.code === 'Space') onTap(); });
+
+// ---------- update ----------
+function update(dt){
+  if (hitstop > 0) { hitstop -= dt; return; }
+  stateT += dt;
+  shake = Math.max(0, shake - dt * 3);
+  flash = Math.max(0, flash - dt * 4);
+  p.squash = Math.max(0, p.squash - dt * 4);
+
+  if (state === 'air') {
+    const g = 1400;
+    p.vy += g * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.angle += p.om * dt;
+    if (p.vy > 0 && p.y >= GROUND) evaluateLanding();
+  } else if (state === 'landed') {
+    if (stateT > 0.8) {
+      round++;
+      p = newPlayer(START_X);
+      state = 'ready';
+    }
+  } else if (state === 'crash') {
+    const g = 1400;
+    for (const q of ragdoll) {
+      q.vy += g * dt;
+      q.x += q.vx * dt;
+      q.y += q.vy * dt;
+      q.a += q.om * dt;
+      if (q.y > GROUND - 4) {
+        q.y = GROUND - 4;
+        if (Math.abs(q.vy) > 40) { q.vy = -q.vy * 0.4; q.vx *= 0.6; q.om *= 0.6; q.bounces++; }
+        else { q.vy = 0; q.vx *= 0.85; q.om *= 0.8; }
+      }
+    }
+    if (stateT > 1.2) state = 'over';
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const q = particles[i];
+    q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += q.g * dt;
+    if (q.t > q.life) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].t += dt;
+    popups[i].y -= 30 * dt;
+    if (popups[i].t > 1.1) popups.splice(i, 1);
+  }
+}
+
+// ---------- character drawing ----------
+const SKIN = '#ffd9a0', SUIT = '#ffd166', SHOE = '#ef476f', LINE = '#0e1220';
+function limb(x1, y1, x2, y2, x3, y3, color, w){
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke();
+}
+// draws the guy centered at his feet (0,0 = feet on ground)
+function drawGuy(x, y, angle, pose, squash){
+  ctx.save();
+  ctx.translate(x, y - 22);          // pivot at body center
+  ctx.rotate(angle);
+  const sq = (squash || 0) * 0.25;
+  ctx.scale(1 + sq, 1 - sq);
+
+  if (pose === 'tuck') {
+    // legs tucked
+    limb(-4, 10, -10, 16, 2, 20, SUIT, 6);
+    limb(4, 10, 12, 14, 4, 20, SUIT, 6);
+    // shoes
+    ctx.fillStyle = SHOE;
+    ctx.fillRect(-2, 17, 8, 6); ctx.fillRect(0, 17, 8, 6);
+    // torso (curled)
+    ctx.fillStyle = SUIT;
+    ctx.beginPath(); ctx.ellipse(0, 0, 11, 14, 0, 0, Math.PI * 2); ctx.fill();
+    // arms wrapped around knees
+    limb(-8, -4, -12, 8, 0, 14, SKIN, 5);
+    limb(8, -4, 12, 8, 4, 14, SKIN, 5);
+    // head
+    ctx.fillStyle = SKIN;
+    ctx.beginPath(); ctx.arc(0, -19, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = LINE;
+    ctx.beginPath(); ctx.arc(-3, -20, 1.5, 0, Math.PI*2); ctx.arc(3, -20, 1.5, 0, Math.PI*2); ctx.fill();
+  } else {
+    // standing / arms-up
+    // legs
+    limb(-4, 8, -5, 15, -5, 22, SUIT, 6);
+    limb(4, 8, 5, 15, 5, 22, SUIT, 6);
+    ctx.fillStyle = SHOE;
+    ctx.fillRect(-10, 19, 9, 5); ctx.fillRect(2, 19, 9, 5);
+    // torso
+    ctx.fillStyle = SUIT;
+    ctx.beginPath(); ctx.ellipse(0, -2, 9, 13, 0, 0, Math.PI * 2); ctx.fill();
+    // arms
+    if (pose === 'armsup') {
+      limb(-7, -8, -13, -16, -12, -26, SKIN, 5);
+      limb(7, -8, 13, -16, 12, -26, SKIN, 5);
+    } else {
+      limb(-7, -8, -11, 0, -10, 8, SKIN, 5);
+      limb(7, -8, 11, 0, 10, 8, SKIN, 5);
+    }
+    // head
+    ctx.fillStyle = SKIN;
+    ctx.beginPath(); ctx.arc(0, -21, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = LINE;
+    ctx.beginPath(); ctx.arc(-3, -22, 1.5, 0, Math.PI*2); ctx.arc(3, -22, 1.5, 0, Math.PI*2); ctx.fill();
+    if (pose === 'armsup') { // grin
+      ctx.strokeStyle = LINE; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(0, -19, 3.5, 0.1*Math.PI, 0.9*Math.PI); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function drawRagdollPart(q){
+  ctx.save();
+  ctx.translate(q.x, q.y);
+  ctx.rotate(q.a);
+  if (q.type === 'head') {
+    ctx.fillStyle = SKIN;
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = LINE; // X eyes
+    ctx.font = 'bold 8px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('×  ×', 0, 1);
+  } else if (q.type === 'torso') {
+    ctx.fillStyle = SUIT;
+    ctx.beginPath(); ctx.ellipse(0, 0, 9, 13, 0, 0, Math.PI*2); ctx.fill();
+  } else if (q.type === 'arm') {
+    limb(-6, 0, 0, 2, 6, 0, SKIN, 5);
+  } else {
+    limb(-6, 0, 0, 2, 6, 0, SUIT, 6);
+    ctx.fillStyle = SHOE; ctx.fillRect(4, -3, 7, 5);
+  }
+  ctx.restore();
+}
+
+// ---------- draw ----------
+function draw(){
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
+
+  ctx.fillStyle = '#0e1220'; ctx.fillRect(-20, -20, W + 40, H + 40);
+  ctx.fillStyle = '#2b3355';
+  for (const s of stars){ ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = '#1c2440'; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
+  ctx.strokeStyle = '#4c5a8a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-20, GROUND); ctx.lineTo(W + 20, GROUND); ctx.stroke();
+
+  if (state === 'crash' || (state === 'over' && ragdoll.length)) {
+    for (const q of ragdoll) drawRagdollPart(q);
+  } else if (state !== 'over') {
+    drawGuy(p.x, p.y, p.angle, p.pose, p.squash);
+  }
+
+  for (const q of particles) {
+    ctx.globalAlpha = Math.max(0, 1 - q.t / q.life);
+    ctx.fillStyle = q.color;
+    ctx.fillRect(q.x - q.r/2, q.y - q.r/2, q.r, q.r);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = 'center';
+  for (const pop of popups){
+    ctx.globalAlpha = Math.max(0, 1 - pop.t);
+    ctx.fillStyle = pop.color;
+    ctx.font = 'bold ' + pop.size + 'px system-ui, sans-serif';
+    ctx.fillText(pop.text, pop.x, pop.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // HUD
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 44px system-ui, sans-serif';
+  ctx.fillText(String(score), W / 2, 70);
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.fillStyle = '#8ea0d0';
+  ctx.fillText('ROUND ' + round + '   BEST ' + best, W / 2, 95);
+  if (perfectStreak >= 2) {
+    ctx.fillStyle = '#c084fc'; ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 120);
+  }
+
+  ctx.fillStyle = '#cdd7f5';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  if (state === 'menu') {
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText('STICK THE LANDING', W / 2, 260);
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillStyle = '#cdd7f5';
+    ctx.fillText('Tap to jump. Tap again to stop the spin.', W / 2, 300);
+    ctx.fillText('Land on your feet. Chain perfects for streaks.', W / 2, 324);
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillText('TAP TO START', W / 2, 400);
+  } else if (state === 'ready') {
+    ctx.fillText('TAP TO JUMP', W / 2, 400);
+  } else if (state === 'air' && !p.locked) {
+    ctx.fillStyle = 'rgba(205,215,245,0.7)';
+    ctx.fillText('TAP TO STOP SPIN', W / 2, 660);
+  } else if (state === 'over') {
+    ctx.fillStyle = 'rgba(14,18,32,0.82)';
+    ctx.fillRect(40, 230, W - 80, 220);
+    ctx.fillStyle = '#f87171';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText('CRASHED', W / 2, 285);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Score ' + score + '   Best ' + best, W / 2, 330);
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fillText('TAP TO TRY AGAIN', W / 2, 400);
+  }
+
+  if (flash > 0) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+  ctx.restore();
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

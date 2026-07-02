@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Stick the Landing — prototype</title>
+<style>
+  html,body{margin:0;padding:0;background:#0e1220;height:100%;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  canvas{display:block;margin:0 auto;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+// ---------- setup ----------
+const W = 400, H = 700, GROUND = 600;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+function resize(){
+  const dpr = window.devicePixelRatio || 1;
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.width = Math.round(W * s * dpr);
+  cv.height = Math.round(H * s * dpr);
+  cv.style.width = (W * s) + 'px';
+  cv.style.height = (H * s) + 'px';
+  ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = parseInt(localStorage.getItem('stl_best') || '0', 10) || 0; } catch (e) {}
+
+// ---------- state ----------
+const START_X = 70;
+let state = 'menu';         // menu | ready | air | landed | crash | over
+let score = 0, round = 1;
+let p = null;               // player
+let popups = [];
+let shake = 0, flash = 0, stateT = 0;
+let stars = [];
+for (let i = 0; i < 40; i++) stars.push({x: Math.random()*W, y: Math.random()*GROUND, r: Math.random()*1.5+0.4});
+
+function newPlayer(x){
+  return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, w: 24, h: 36, squash: 0};
+}
+p = newPlayer(START_X);
+
+function spinSpeed(){ // rad/s, alternates direction, ramps with round
+  const deg = 300 + round * 45;
+  return (round % 2 === 0 ? -1 : 1) * deg * Math.PI / 180;
+}
+function tolerance(){ // good-landing window in radians, tightens with round
+  const deg = Math.max(16, 30 - round * 1.5);
+  return deg * Math.PI / 180;
+}
+
+function startJump(){
+  const T = 1.35;                       // airtime seconds
+  const g = 1400;
+  const targetX = 250 + Math.random() * 80;
+  p.vx = (targetX - p.x) / T;
+  p.vy = -g * T / 2;
+  p.om = spinSpeed();
+  p.locked = false;
+  state = 'air';
+}
+
+function addPopup(text, x, y, color){
+  popups.push({text: text, x: x, y: y, t: 0, color: color || '#fff'});
+}
+
+function evaluateLanding(){
+  p.y = GROUND;
+  let a = p.angle % (Math.PI * 2);
+  if (a < 0) a += Math.PI * 2;
+  const off = Math.min(a, Math.PI * 2 - a);   // distance from upright
+  const tol = tolerance();
+  if (off <= tol) {
+    const perfect = off <= 10 * Math.PI / 180;
+    score += perfect ? 3 : 1;
+    p.angle = 0; p.vx = 0; p.vy = 0; p.om = 0; p.squash = 1;
+    addPopup(perfect ? 'PERFECT! +3' : 'STUCK IT! +1', p.x, GROUND - 90, perfect ? '#ffd166' : '#6ee7b7');
+    state = 'landed'; stateT = 0;
+  } else {
+    // crash: keep tumbling, bounce
+    p.vy = -Math.abs(p.vy) * 0.45;
+    p.vx *= 0.6;
+    p.om = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 6);
+    shake = 1; flash = 1;
+    addPopup('SPLAT!', p.x, GROUND - 110, '#f87171');
+    state = 'crash'; stateT = 0;
+    if (score > best) { best = score; try { localStorage.setItem('stl_best', String(best)); } catch (e) {} }
+  }
+}
+
+function resetGame(){
+  score = 0; round = 1;
+  p = newPlayer(START_X);
+  popups = [];
+  state = 'ready';
+}
+
+// ---------- input ----------
+function onTap(){
+  if (state === 'menu' || state === 'ready') startJump();
+  else if (state === 'air' && !p.locked) { p.locked = true; p.om = 0; }
+  else if (state === 'over') resetGame();
+}
+window.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(); });
+window.addEventListener('keydown', function(e){ if (e.code === 'Space') onTap(); });
+
+// ---------- update ----------
+function update(dt){
+  stateT += dt;
+  shake = Math.max(0, shake - dt * 3);
+  flash = Math.max(0, flash - dt * 4);
+  p.squash = Math.max(0, p.squash - dt * 4);
+
+  if (state === 'air') {
+    const g = 1400;
+    p.vy += g * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.angle += p.om * dt;
+    if (p.vy > 0 && p.y >= GROUND) evaluateLanding();
+  } else if (state === 'landed') {
+    if (stateT > 0.8) {                 // walk back for next round
+      round++;
+      p = newPlayer(START_X);
+      state = 'ready';
+    }
+  } else if (state === 'crash') {
+    const g = 1400;
+    p.vy += g * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.angle += p.om * dt;
+    if (p.y >= GROUND) { p.y = GROUND; p.vy = -p.vy * 0.4; p.vx *= 0.6; p.om *= 0.7; }
+    if (stateT > 1.1) state = 'over';
+  }
+
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].t += dt;
+    popups[i].y -= 30 * dt;
+    if (popups[i].t > 1.1) popups.splice(i, 1);
+  }
+}
+
+// ---------- draw ----------
+function drawPlayer(){
+  ctx.save();
+  ctx.translate(p.x, p.y - p.h / 2);
+  ctx.rotate(p.angle);
+  const sq = p.squash * 0.25;
+  ctx.scale(1 + sq, 1 - sq);
+  // body
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+  // head band
+  ctx.fillStyle = '#0e1220';
+  ctx.fillRect(-p.w / 2, -p.h / 2 + 6, p.w, 3);
+  // eyes (upper half = head)
+  ctx.fillStyle = '#0e1220';
+  ctx.beginPath(); ctx.arc(-5, -6, 2.4, 0, Math.PI * 2); ctx.arc(5, -6, 2.4, 0, Math.PI * 2); ctx.fill();
+  // feet marker so player can read orientation
+  ctx.fillStyle = '#ef476f';
+  ctx.fillRect(-p.w / 2, p.h / 2 - 5, p.w, 5);
+  ctx.restore();
+}
+
+function draw(){
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
+
+  // background
+  ctx.fillStyle = '#0e1220'; ctx.fillRect(-20, -20, W + 40, H + 40);
+  ctx.fillStyle = '#2b3355';
+  for (const s of stars){ ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+  // ground
+  ctx.fillStyle = '#1c2440'; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
+  ctx.strokeStyle = '#4c5a8a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-20, GROUND); ctx.lineTo(W + 20, GROUND); ctx.stroke();
+
+  drawPlayer();
+
+  // popups
+  ctx.textAlign = 'center';
+  for (const pop of popups){
+    ctx.globalAlpha = Math.max(0, 1 - pop.t);
+    ctx.fillStyle = pop.color;
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.fillText(pop.text, pop.x, pop.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // HUD
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 44px system-ui, sans-serif';
+  ctx.fillText(String(score), W / 2, 70);
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.fillStyle = '#8ea0d0';
+  ctx.fillText('ROUND ' + round + '   BEST ' + best, W / 2, 95);
+
+  // prompts
+  ctx.fillStyle = '#cdd7f5';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  if (state === 'menu') {
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText('STICK THE LANDING', W / 2, 260);
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillStyle = '#cdd7f5';
+    ctx.fillText('Tap to jump. Tap again to stop the spin.', W / 2, 300);
+    ctx.fillText('Land feet-down (red side) to score.', W / 2, 324);
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillText('TAP TO START', W / 2, 400);
+  } else if (state === 'ready') {
+    ctx.fillText('TAP TO JUMP', W / 2, 400);
+  } else if (state === 'air' && !p.locked) {
+    ctx.fillStyle = 'rgba(205,215,245,0.7)';
+    ctx.fillText('TAP TO STOP SPIN', W / 2, 640);
+  } else if (state === 'over') {
+    ctx.fillStyle = 'rgba(14,18,32,0.82)';
+    ctx.fillRect(40, 230, W - 80, 220);
+    ctx.fillStyle = '#f87171';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText('CRASHED', W / 2, 285);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Score ' + score + '   Best ' + best, W / 2, 330);
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fillText('TAP TO TRY AGAIN', W / 2, 400);
+  }
+
+  if (flash > 0) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+  ctx.restore();
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
