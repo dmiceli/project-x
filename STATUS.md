@@ -26,6 +26,12 @@
 - Phase 4 design batch settled: 6-character roster, 10 achievements, daily challenge (3 attempts + max 3 ad extras), settings scope, Apple-only analytics. DESIGN.md is now the complete build spec.
 - Pre-build cleanup pass on take-47.html (2026-07-02): static set cached (per-frame cost ~45 canvas calls → 1), constants extracted, full comment pass, a11y additions (sound toggle, 44px touch targets, HUD split to ≥14px lines, keyboard S key), privacy audit documented in file header (fully offline, localStorage only). Old prototypes archived via prototypes/README.md. Logic regression-tested headlessly.
 
+## Watch list (known risks, none blocking yet)
+- Codemagic signing/upload without a Mac is designed but unproven — de-risk with a build early in Phase 5, before the game is "done."
+- Ad SDK choice (Phase 4/5) brings ATT prompt + privacy-label work; budget a session for it.
+- "TAKE 47" name must be reserved in App Store Connect — verify availability when we first touch App Store Connect, not at submission.
+- Apple review: rewarded-ad and IAP flows get scrutiny; keep DESIGN.md's caps/discipline implemented exactly.
+
 ## Next steps (tomorrow)
 1. Implementation pass: build the full app from DESIGN.md (screens, 6 characters, daily challenge, trophy room, settings, share card) on the cleaned take-47.html base.
 2. Dan: play the cleaned build meanwhile — ramp fairness, restart flow, new toggles.

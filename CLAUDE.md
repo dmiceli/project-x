@@ -39,6 +39,11 @@ Vanilla JS + HTML5 canvas, single-file during prototyping (no game engine — pr
 - Use git from day one; commit at every meaningful step. Claude provides a brief commit message at the end of every working session (and at any mid-session point worth committing); Dan pastes it into GitHub Desktop.
 - **Batch before building (Dan, 2026-07-02):** don't update the prototype/code after every individual decision. Discuss and settle open questions first, then implement accumulated changes at logical stopping points.
 - **Code commenting standard (Dan, 2026-07-02):** every code file gets (a) a header block stating its purpose, architecture, and privacy/accessibility posture, and (b) succinct comments on non-obvious decisions — the *why*, not the *what* (e.g., why scenes are seeded, why audio unlocks on tap). Keep comments current when code changes; no comment noise on self-explanatory lines.
-- Living docs in this folder: DESIGN.md, DECISIONS.md, STATUS.md.
+- Living docs in this folder: DESIGN.md (spec), DECISIONS.md (choices + why), STATUS.md (current state), BACKLOG.md (post-launch parking lot — new ideas go here, not into v1 scope).
 - Update STATUS.md at the end of every working session; log every significant choice in DECISIONS.md with the "why."
+
+## Session protocol (handoff)
+**Start:** Claude reads STATUS.md, then opens with a 2-3 line brief — where we left off, what's planned today, anything needing Dan's decision up front (batched). Dan confirms or redirects; then work begins.
+**During:** new scope ideas → BACKLOG.md by default (keeps v1 fixed); decisions → DECISIONS.md as they land.
+**End:** Claude updates STATUS.md (done / next steps / open questions), supplies the commit note, and flags anything Dan must do before next session (e.g., push, play-test, account actions). Dan commits/pushes via GitHub Desktop — that push is what updates the phone-playable Pages build.
 - "Viral" is a lottery — design for its ingredients (one-thumb play, instant restart, shareable score, "one more try" loop) and measure against concrete goals: App Store approval, 20+ TestFlight testers.
