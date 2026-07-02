@@ -32,8 +32,10 @@
 - "TAKE 47" name must be reserved in App Store Connect — verify availability when we first touch App Store Connect, not at submission.
 - Apple review: rewarded-ad and IAP flows get scrutiny; keep DESIGN.md's caps/discipline implemented exactly.
 
+- Overnight research sprint (2026-07-02, late): five new docs — PIPELINE.md (no-Mac build runbook; cuts watch-list risk #1 to two ~10-min Dan sessions), MARKETING.md (ASO + launch plan draft), TRENDS.md (hybrid-casual shift — our design is on-trend; retention targets adopted), THEME.md (stunt-lore/genre research + IP guardrails), PRIVACY.md (policy draft, ad section pre-written). BACKLOG.md updated with research-driven ideas.
+
 ## Next steps (tomorrow)
-1. Implementation pass: build the full app from DESIGN.md (screens, 6 characters, daily challenge, trophy room, settings, share card) on the cleaned take-47.html base.
-2. Dan: play the cleaned build meanwhile — ramp fairness, restart flow, new toggles.
-3. After the build: icon + real sound design; then Capacitor/Codemagic pipeline toward TestFlight.
-4. Later: verify "TAKE 47" name in App Store Connect.
+1. Dan (morning coffee): review the five research docs. One decision queued: **scene genres in v1 or 1.1?** (THEME.md; affects Phase 4 art planning.)
+2. Implementation pass: build the full app from DESIGN.md on the cleaned take-47.html base.
+3. Dan: play the cleaned build meanwhile — ramp fairness, restart flow, new toggles.
+4. After the build: icon + real sound design; then the PIPELINE.md runbook toward TestFlight.
