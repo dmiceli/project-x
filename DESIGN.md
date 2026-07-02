@@ -45,9 +45,13 @@ Explicitly out of v1.0: Game Center leaderboard (revisit for 1.1), cloud saves, 
 
 Free download. Rewarded ads (opt-in only): continue a crashed run once per run by watching an ad; unlock characters early. Interstitials: full-screen ad between runs, at most one per 3 crashes and never less than 90 seconds apart, never mid-run. No banners — they earn little and clutter the screen. "Remove Ads" IAP at $1.99–2.99 removes interstitials but keeps opt-in rewarded ads available. Ad SDK choice (AdMob vs. alternatives) is a build-phase decision; whichever we pick brings Apple's App Tracking Transparency prompt and privacy-label requirements — accounted for in the App Store phase.
 
-## Theme and name (OPEN)
+## Theme and name: TAKE 47 (decided 2026-07-02)
 
-The name must grow out of the visual theme, which needs research. Candidate directions to explore with mockups and App Store crowding checks: Olympic/gymnast, rooftop stunt performer, trampoline park, clumsy animal (cat), daredevil movie-stunt set. Current placeholder art is an abstract stunt figure on a night background. Working title remains "Stick the Landing"; naming decision gates icon and branding work, not the build.
+**Theme: movie stunt set.** You're a stunt double; every attempt is a take. Crashes aren't failures — they're outtakes: the director yells "CUT!" and delivers a randomized quip; restart is "one more take." The lifetime take counter (persisted) is the running joke — it climbs forever and headlines the share card ("Scored 23. Only took 1,047 takes."). Landings: "CLEAN TAKE +1"; perfects: "PRINT IT!". Rewarded-ad continue = "reshoot the scene." Daily challenge = "today's scene." Achievements = the blooper reel. Visual language: warm studio lighting, spotlight on the landing zone, camera silhouette, crash mat, warning-tape floor edge, film-slate UI cards. Sound language: clapperboard on action, director's bullhorn on cuts.
+
+**Name: TAKE 47** — no App Store collision found (verify in App Store Connect before reserving). Icon direction: film slate.
+
+Research notes: the generic flip niche is saturated (Flip Master, Flip Trickster, Backflip Madness, Flip Jump Stickman); "Stick the Landing" collided with a Steam/Switch title; "Take Two" blocked by Take-Two Interactive; "Stunt Guy" taken. The movie-set framing is the differentiator — personality over mechanic novelty.
 
 ## Tech
 
