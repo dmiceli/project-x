@@ -19,3 +19,5 @@
 | 2026-07-02 | Lifetime take counter as core joke + share hook | Failure count becomes content: "Only took 1,047 takes" writes the share card itself |
 | 2026-07-02 | Levels = scene progression: crash retries the SAME scene, progress persists; seeded so every player's Scene N is identical; endless score-run becomes the daily challenge mode | Dan wanted levels for accomplishment + sharing ("Scene 137"); fits the movie theme natively |
 | 2026-07-02 | Standing rule: accessibility & privacy checked on every change (added to CLAUDE.md) | Dan's directive; cheaper as a habit than a retrofit |
+| 2026-07-02 | "Reshoot from Scene 1" voluntary restart; furthest-scene record survives reset | Dan: persistent progress + escape valve for frustration; record preservation keeps restarts painless |
+| 2026-07-02 | Ads never buy progress (no scene skips). Rewarded ads → daily-challenge extra attempts (~3 free/day) + cosmetic unlocks only | Dan rejected pay-to-win; limited daily attempts make the daily score meaningful and give rewarded ads a fair home |

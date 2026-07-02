@@ -33,7 +33,8 @@ resize();
 // ---------- persistence ----------
 function loadInt(k, d){ try { return parseInt(localStorage.getItem(k) || String(d), 10) || d; } catch (e) { return d; } }
 function save(k, v){ try { localStorage.setItem(k, String(v)); } catch (e) {} }
-let scene  = loadInt('t47_scene', 1);      // current scene (furthest incomplete) — THE level number
+let scene  = loadInt('t47_scene', 1);      // current scene — THE level number
+let furthest = loadInt('t47_furthest', 1); // record: survives a restart
 let takes  = loadInt('t47_takes', 0);      // lifetime takes, the running joke
 let prints = loadInt('t47_prints', 0);     // scenes completed with a PERFECT
 let reduceMotion = loadInt('t47_rm', 0);   // accessibility: no shake/flash
@@ -121,7 +122,26 @@ let p = null;
 let popups = [], particles = [], ragdoll = [];
 let shake = 0, flash = 0, stateT = 0, hitstop = 0;
 let quip = '', wasPerfect = false;
+let resetConfirm = 0;                      // seconds left in "tap again to confirm"
 let params = sceneParams(scene);
+
+function resetProgress(){
+  scene = 1; save('t47_scene', 1);
+  params = sceneParams(1);
+  takesScene = 1;
+  perfectStreak = 0;
+  p = newPlayer(START_X);
+  popups = []; ragdoll = [];
+  resetConfirm = 0;
+  addPopup('BACK TO SCENE 1', W / 2, 300, '#e8d5b5', 22);
+  state = 'ready'; stateT = 0;
+}
+// reset button location depends on screen
+function resetBox(){
+  if (state === 'menu') return {x: 90, y: 575, w: 220, h: 36};
+  if (state === 'over') return {x: 90, y: 612, w: 220, h: 36};
+  return null;
+}
 
 function newPlayer(x){
   return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, squash: 0, pose: 'stand'};
@@ -232,8 +252,19 @@ function canvasCoords(e){
   return {x: (e.clientX - rect.left) / SCALE, y: (e.clientY - rect.top) / SCALE};
 }
 const RM_BOX = {x: 90, y: 520, w: 220, h: 40};   // reduce-motion toggle on menu
+function hitReset(e){
+  const box = resetBox();
+  if (!box || scene <= 1 || !e || e.clientX === undefined) return false;
+  const c = canvasCoords(e);
+  return c.x >= box.x && c.x <= box.x + box.w && c.y >= box.y && c.y <= box.y + box.h;
+}
 function onTap(e){
   ac();
+  if (hitReset(e)) {
+    if (resetConfirm > 0) resetProgress();
+    else resetConfirm = 2.5;
+    return;
+  }
   if (state === 'menu') {
     if (e && e.clientX !== undefined) {
       const c = canvasCoords(e);
@@ -253,6 +284,10 @@ window.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(e)
 window.addEventListener('keydown', function(e){
   if (e.code === 'Space') onTap(null);
   if (e.code === 'KeyM' && state === 'menu') { reduceMotion = reduceMotion ? 0 : 1; save('t47_rm', reduceMotion); }
+  if (e.code === 'KeyR' && resetBox() && scene > 1) {
+    if (resetConfirm > 0) resetProgress();
+    else resetConfirm = 2.5;
+  }
 });
 
 // ---------- update ----------
@@ -261,6 +296,7 @@ function update(dt){
   stateT += dt;
   shake = Math.max(0, shake - dt * 3);
   flash = Math.max(0, flash - dt * 4);
+  resetConfirm = Math.max(0, resetConfirm - dt);
   p.squash = Math.max(0, p.squash - dt * 4);
 
   if (state === 'air') {
@@ -273,6 +309,7 @@ function update(dt){
   } else if (state === 'landed') {
     if (stateT > 1.0) {                       // scene complete → advance
       scene++; save('t47_scene', scene);
+      if (scene > furthest) { furthest = scene; save('t47_furthest', furthest); }
       params = sceneParams(scene);
       takesScene = 1;
       p = newPlayer(START_X);
@@ -430,6 +467,19 @@ function drawSet(){
   }
 }
 
+function drawResetButton(){
+  const box = resetBox();
+  if (!box || scene <= 1) return;
+  const confirming = resetConfirm > 0;
+  ctx.strokeStyle = confirming ? '#f87171' : '#a08b72';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(box.x, box.y, box.w, box.h);
+  ctx.fillStyle = confirming ? '#f87171' : '#a08b72';
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(confirming ? 'SURE? TAP AGAIN  (keeps your record)' : 'RESHOOT FROM SCENE 1  (tap / R)', box.x + box.w / 2, box.y + 23);
+}
+
 function slateStripes(x, y, w, h){
   ctx.fillStyle = '#fff';
   const n = Math.ceil(w / 44) + 1;
@@ -491,7 +541,9 @@ function draw(){
   ctx.fillText(String(scene), W / 2, 92);
   ctx.font = '13px system-ui, sans-serif';
   ctx.fillStyle = '#c9a876';
-  ctx.fillText('TAKE ' + takesScene + ' OF THIS SCENE   ·   LIFETIME TAKES ' + takes + '   ·   PRINTS ' + prints, W / 2, 114);
+  let hudLine = 'TAKE ' + takesScene + ' OF THIS SCENE   ·   LIFETIME TAKES ' + takes + '   ·   PRINTS ' + prints;
+  if (furthest > scene) hudLine += '   ·   FURTHEST ' + furthest;
+  ctx.fillText(hudLine, W / 2, 114);
   if (params.big && (state === 'ready' || state === 'menu')) {
     ctx.fillStyle = '#ef476f';
     ctx.font = 'bold 16px system-ui, sans-serif';
@@ -525,6 +577,7 @@ function draw(){
     ctx.fillStyle = reduceMotion ? '#6ee7b7' : '#a08b72';
     ctx.font = '14px system-ui, sans-serif';
     ctx.fillText('REDUCE MOTION: ' + (reduceMotion ? 'ON' : 'OFF') + '  (tap / M)', W / 2, RM_BOX.y + 25);
+    drawResetButton();
   } else if (state === 'ready') {
     ctx.fillText('ACTION!  (tap to jump)', W / 2, 420);
   } else if (state === 'air' && !p.locked) {
@@ -546,6 +599,7 @@ function draw(){
     ctx.fillStyle = '#6ee7b7';
     ctx.font = 'bold 20px system-ui, sans-serif';
     ctx.fillText('TAP FOR ONE MORE TAKE', W / 2, 425);
+    drawResetButton();
   }
 
   if (flash > 0 && !reduceMotion) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }

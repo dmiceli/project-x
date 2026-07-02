@@ -20,8 +20,11 @@
 - Theme + name decided: **TAKE 47** (movie stunt set). Theme confirmed in playtest; quips readable.
 - Core restructured to **scenes-as-levels** (persisted progress, retry same scene, seeded scene design) in `prototypes/take-47.html`; includes first accessibility setting (reduce motion). Standing a11y/privacy rule added to CLAUDE.md.
 
+- Scene progression refined: "Reshoot from Scene 1" restart (record preserved); monetization principle locked — ads never buy progress; daily challenge = ~3 attempts/day, rewarded ads for extra attempts.
+- Working style: batch decisions via discussion, implement at logical stopping points (see CLAUDE.md).
+
 ## Next steps
-1. Dan: push, then play the scene-progression build — does persistent progress feel better than the endless run? Is the per-scene difficulty ramp fair?
-2. Phase 4 build: restructure into the real app (menus, unlockable characters, share card, daily challenge = endless seeded run, achievements, settings screen).
-3. Icon + real sound design in the movie-set language.
-4. Later: verify "TAKE 47" availability when reserving the name in App Store Connect.
+1. Dan: push + play the scene-progression build (ramp fairness, restart flow).
+2. Settle remaining Phase 4 design questions in one discussion batch (characters roster, achievements list, daily-challenge details, settings scope, analytics yes/no).
+3. Then one implementation pass: restructure prototype into the real app skeleton.
+4. Icon + real sound design; later verify "TAKE 47" name in App Store Connect.
