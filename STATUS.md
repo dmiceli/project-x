@@ -65,9 +65,11 @@
 
 - 2026-07-03: BRAND.md expanded — copy rules (4 registers: STAMPS / sentence case / Title Case / quips) + art direction reference (Tim-adjacent flat deadpan, inspiration-only). In-app capitalization violations fixed ("Wait for the spin…", home stats normalized). Regression green.
 
+- 2026-07-03: **Flipper direction settled via 3-way study** (assets/flipper-direction-study.png): B-hybrid — anatomy + scream kept, flat/muted/mid-line treatment adopted. Icon re-rendered and deployed (same composition); Stunt Guy recolored in-app (ochre/sand/brick); Marquee Gold now exclusive to rewards/CTAs. Wardrobe mute pass for other characters → BACKLOG.
+
 ## Next steps (polish)
-1. Dan: push + play — judge the face at game size (flight scream, landing relief) and hit SHARE to see the card cameo.
-2. **Sound design** — replace synth placeholder in the movie-set language (clapper, bullhorn, film stings); crash comedy pass alongside.
+1. Dan: push + play — judge the face + new muted hero at game size; hit SHARE for the card cameo; re-add to home screen for the hybrid icon.
+2. **Sound design** — replace synth placeholder in the movie-set language (clapper, bullhorn, film stings); crash comedy pass alongside. Tim register applies: dry foley over cartoon boings.
 3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
 4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate) → hello-world TestFlight build.
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.

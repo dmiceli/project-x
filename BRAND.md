@@ -30,6 +30,8 @@ Research: 4–8 core colors with assigned jobs, identical hex across all platfor
 
 Rules: gold is precious — one gold element per composition (it's the reward color; overuse debases it). Red and green always ship with a text label (accessibility standing rule: never color alone). No pure black, no pure white, anywhere.
 
+**Character tones (hybrid direction, 2026-07-03):** the hero wears *muted* versions — Suit Ochre `#e0b04a`, Skin Sand `#ecd0a8`, Shoe Brick `#c94f52`, mid-weight outline `#1a1310`, flat (no highlight shading). This keeps him Tim-adjacent-dry while Marquee Gold stays exclusive to rewards/CTAs/light. Anatomy and the big scream are locked (60px expressiveness is the conversion asset); the full Tim register applies to backgrounds, props, and animation restraint.
+
 ## Art direction reference (added 2026-07-03, Dan)
 
 Tonal north star: **"The Life and Times of Tim"-adjacent** — flat, deadpan line-art; understated expressions doing heavy lifting; muted, unglamorous color fields; matter-of-fact framing of absurd events. Inspiration only, never imitation: we borrow the *register* (flatness, dryness, restraint), no characters, likenesses, or traceable compositions. Practical implications for our art: keep line weights honest and even, resist gloss and bounce, let the terror-face stay small and matter-of-fact rather than rubber-hose exaggerated, and let backgrounds stay quiet.

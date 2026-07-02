@@ -514,7 +514,9 @@ function resize(){
 
 // ========== characters: one rig, six costumes ==========
 const COSTUMES = [
-  {id:'guy',    name:'Stunt Guy',        icon:'🤸', unlock:0,   bio:'Union card, coffee breath, zero fear.',                          suit:'#ffd166', skin:'#ffd9a0', shoe:'#ef476f', acc:null},
+  // hybrid art direction (2026-07-03): hero wears muted ochre/brick — flat,
+  // drier than UI gold (Marquee Gold stays precious for rewards/CTAs only)
+  {id:'guy',    name:'Stunt Guy',        icon:'🤸', unlock:0,   bio:'Union card, coffee breath, zero fear.',                          suit:'#e0b04a', skin:'#ecd0a8', shoe:'#c94f52', acc:null},
   {id:'gal',    name:'Stunt Gal',        icon:'💫', unlock:10,  bio:'Does her own stunts AND her stunt double\'s.',                   suit:'#f472b6', skin:'#ffd9a0', shoe:'#ffffff', acc:'pony'},
   {id:'dummy',  name:'Crash-Test Dummy', icon:'🎯', unlock:25,  bio:'Feels nothing. Fears nothing. Files no complaints.',             suit:'#e5e7eb', skin:'#e5e7eb', shoe:'#111111', acc:'dummy'},
   {id:'hotdog', name:'Hot-Dog Guy',      icon:'🌭', unlock:50,  bio:'A promotional tie-in that went too far and never went home.',    suit:'#f59e0b', skin:'#ffd9a0', shoe:'#dc2626', acc:'bun'},
@@ -524,7 +526,7 @@ const COSTUMES = [
 // Wardrobe: three colorways per character, bought with prints (cosmetic only —
 // the prints economy never touches progression, same principle as ads).
 const WARDROBE = {
-  guy:    [{name:'Classic', suit:'#ffd166', shoe:'#ef476f', price:0}, {name:'Midnight', suit:'#38bdf8', shoe:'#ffffff', price:15}, {name:'Inferno', suit:'#ef4444', shoe:'#111111', price:30}],
+  guy:    [{name:'Classic', suit:'#e0b04a', shoe:'#c94f52', price:0}, {name:'Midnight', suit:'#38bdf8', shoe:'#ffffff', price:15}, {name:'Inferno', suit:'#ef4444', shoe:'#111111', price:30}],
   gal:    [{name:'Classic', suit:'#f472b6', shoe:'#ffffff', price:0}, {name:'Emerald',  suit:'#34d399', shoe:'#111111', price:15}, {name:'Royal',   suit:'#818cf8', shoe:'#ffd166', price:30}],
   dummy:  [{name:'Classic', suit:'#e5e7eb', shoe:'#111111', price:0}, {name:'Caution',  suit:'#fbbf24', shoe:'#111111', price:15}, {name:'Stealth', suit:'#374151', shoe:'#ef4444', price:30}],
   hotdog: [{name:'Classic', suit:'#f59e0b', shoe:'#dc2626', price:0}, {name:'Ketchup',  suit:'#dc2626', shoe:'#fbbf24', price:15}, {name:'Mustard', suit:'#eab308', shoe:'#dc2626', price:30}],
