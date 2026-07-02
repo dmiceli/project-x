@@ -21,6 +21,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>TAKE 47</title>
+<!-- home-screen identity: real icon + fullscreen standalone on iOS -->
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TAKE 47">
+<meta name="theme-color" content="#191010">
 <style>
   :root{
     --bg:#191010; --panel:#241515; --ink:#e8d5b5; --dim:#a08b72;
@@ -176,6 +183,7 @@
   <button id="btnReset">🔄 RESHOOT FROM SCENE 1</button>
   <button id="btnRestore" disabled>RESTORE PURCHASES (App Store build)</button>
   <a href="../PRIVACY.md" target="_blank" rel="noopener">Privacy policy</a>
+  <p class="stats" id="verLine">TAKE 47</p>
   <button class="back" data-to="home">← BACK</button>
 </section>
 
@@ -207,6 +215,14 @@ const DAILY_FREE = 3, DAILY_AD_MAX = 3;
 // Where "challenge a friend" sends people. Beta: the Pages URL (instantly
 // playable). Swap to the App Store link at launch.
 const GAME_URL = 'https://dmiceli.github.io/project-x/app/';
+const VERSION = '0.9.0-beta';
+// lifetime-take milestones: the running joke pays off (whimsy, never cheesy)
+const TAKE_MILESTONES = {
+  100:  '"Take 100. The director sends a nod. One (1)."',
+  250:  '"Take 250. Craft services knows your order now."',
+  1000: '"Take 1,000. The insurance guy fainted."',
+  2000: '"Take 2,000. They renamed the movie after you."'
+};
 // Anti-cheese: lock is unavailable until this much rotation has happened.
 // Without it, tap-tap instantly freezes the angle at ~0° for a free landing.
 const MIN_SPIN = 200 * Math.PI / 180;
@@ -795,6 +811,7 @@ function crashAir(popupText, quipText){
 }
 function startJump(){
   S.takes++;
+  if (TAKE_MILESTONES[S.takes]) toast('🎬 ' + TAKE_MILESTONES[S.takes]);
   if (mode === 'campaign') S.setTakes++;
   csEvent('take');
   // props: consume the armed item; its effect lasts exactly this take
@@ -1571,6 +1588,9 @@ function buildShareCard(){
   c.fillText('— the director', 500, 1005);
   c.fillStyle = '#ffd166'; c.font = 'bold 64px Georgia, serif';
   c.fillText('TAKE 47', 500, 1140);
+  // the link lives ON the image — screenshots and re-shares keep it playable
+  c.fillStyle = '#a08b72'; c.font = '34px system-ui, sans-serif';
+  c.fillText('play: dmiceli.github.io/project-x/app', 500, 1205);
   return s;
 }
 // Challenge text travels WITH the image so the recipient can actually play —
@@ -1825,6 +1845,13 @@ function frame(now){
   if (state !== lastState) { lastState = state; refreshPropBar(); }   // belt follows game state
   requestAnimationFrame(frame);
 }
+// beta safety net: never lose progress to a glitch, never freeze silently
+window.addEventListener('error', function(){
+  try { persist(); } catch (e) {}
+  try { toast('Something glitched — progress saved. Reload if stuck.'); } catch (e) {}
+});
+try { $('verLine').textContent = 'TAKE 47  ·  v' + VERSION; } catch (e) {}
+
 resize();
 refreshHome();
 requestAnimationFrame(frame);

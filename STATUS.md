@@ -51,9 +51,11 @@
 
 - 2026-07-03 (pre-polish audit): FTUE package (guided first takes + progressive home disclosure), miss-angle crash lessons, midnight-reset hook, interstitial placeholder on real caps. All verified headlessly. Save-durability gate added to watch list.
 
+- 2026-07-03 (final quick wins): share card carries the play link ON the image; app icon (180 + 1024px placeholder) + iOS home-screen meta (standalone, status bar, title); take-counter milestone quips (100/250/1000/2000); version stamp in Settings + global error handler that saves progress. Regression green.
+
 ## Next steps
-1. Dan: push + BIG play session — ideally ALSO on a fresh save (clear website data or private tab) to feel the new-player experience: coached first takes, home screen unfolding as you earn it.
-2. Then: polish phase (icon, real sound, crash comedy pass) → PIPELINE.md → TestFlight.
+1. Dan: push + BIG play session — ideally on a fresh save (private tab) to feel the new-player experience. Note: re-add to home screen to pick up the new icon + standalone mode.
+2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.
 4. Later: verify "TAKE 47" name in App Store Connect.
