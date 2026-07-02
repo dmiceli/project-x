@@ -1,7 +1,7 @@
 # Status
 
-**Phase:** 3→4 — Design doc written; entering full build
-**Last updated:** 2026-07-02
+**Phase:** 4 — Full build starts next session
+**Last updated:** 2026-07-02 (end of day)
 
 ## Done
 - Project plan reviewed and strengthened; foundation files created.
@@ -24,8 +24,10 @@
 - Working style: batch decisions via discussion, implement at logical stopping points (see CLAUDE.md).
 
 - Phase 4 design batch settled: 6-character roster, 10 achievements, daily challenge (3 attempts + max 3 ad extras), settings scope, Apple-only analytics. DESIGN.md is now the complete build spec.
+- Pre-build cleanup pass on take-47.html (2026-07-02): static set cached (per-frame cost ~45 canvas calls → 1), constants extracted, full comment pass, a11y additions (sound toggle, 44px touch targets, HUD split to ≥14px lines, keyboard S key), privacy audit documented in file header (fully offline, localStorage only). Old prototypes archived via prototypes/README.md. Logic regression-tested headlessly.
 
-## Next steps
-1. Dan: push + play the scene-progression build (ramp fairness, restart flow).
-2. Implementation pass: build the full app from DESIGN.md (screens, characters, daily challenge, achievements, settings, share card).
-3. Icon + real sound design; later verify "TAKE 47" name in App Store Connect.
+## Next steps (tomorrow)
+1. Implementation pass: build the full app from DESIGN.md (screens, 6 characters, daily challenge, trophy room, settings, share card) on the cleaned take-47.html base.
+2. Dan: play the cleaned build meanwhile — ramp fairness, restart flow, new toggles.
+3. After the build: icon + real sound design; then Capacitor/Codemagic pipeline toward TestFlight.
+4. Later: verify "TAKE 47" name in App Store Connect.

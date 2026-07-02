@@ -1,9 +1,28 @@
 <!DOCTYPE html>
+<!--
+  TAKE 47 — playable prototype (pre-production base for the full app)
+
+  Architecture: single-file HTML5 canvas game, no dependencies.
+  Sections: config → canvas/scaling → persistence → scene design →
+  audio → game state → gameplay → input → update → render.
+
+  PRIVACY: fully offline. The only stored data is local game state
+  (scene, furthest, lifetime takes, prints, settings) in localStorage.
+  No network requests, no analytics, no identifiers, no third-party code.
+
+  ACCESSIBILITY: every outcome pairs color with a text label (never color
+  alone); reduce-motion toggle disables screen shake + damage flash (also
+  the photosensitivity mitigation — no strobing anywhere); sound toggle,
+  game fully playable silent; touch targets ≥44px; keyboard equivalents
+  (Space=tap, M=motion, S=sound, R=reset). Canvas gameplay is not
+  screen-reader accessible; the shipped app will use real labeled buttons
+  for all non-gameplay UI.
+-->
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>TAKE 47 — scene progression prototype</title>
+<title>TAKE 47 — prototype</title>
 <style>
   html,body{margin:0;padding:0;background:#191010;height:100%;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
   canvas{display:block;margin:0 auto;touch-action:none}
@@ -13,11 +32,23 @@
 <canvas id="c"></canvas>
 <script>
 'use strict';
-// ---------- setup ----------
-const W = 400, H = 700, GROUND = 600;
+
+// ========== config ==========
+const W = 400, H = 700;            // logical resolution; everything scales from this
+const GROUND = 600;                // floor y
+const GRAVITY = 1400;              // px/s²
+const PERFECT_RAD = 10 * Math.PI / 180;   // perfect-landing window
+const HITSTOP = 0.06;              // freeze-frame on landing, seconds
+const START_X = 70;                // where the stunt double stands
+const DT_MAX = 0.033;              // clamp big frame gaps (tab switches)
+const CONFIRM_WINDOW = 2.5;        // seconds to confirm a progress reset
+
+// ========== canvas & scaling ==========
 const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
-let SCALE = 1;
+let SCALE = 1;                     // CSS px per logical px (input mapping needs it)
+let setCache = null;               // pre-rendered static set (built on resize)
+
 function resize(){
   const dpr = window.devicePixelRatio || 1;
   SCALE = Math.min(window.innerWidth / W, window.innerHeight / H);
@@ -26,20 +57,23 @@ function resize(){
   cv.style.width = (W * SCALE) + 'px';
   cv.style.height = (H * SCALE) + 'px';
   ctx.setTransform(SCALE * dpr, 0, 0, SCALE * dpr, 0, 0);
+  buildSetCache();                 // static set re-rendered at the new pixel density
 }
-window.addEventListener('resize', resize);
-resize();
 
-// ---------- persistence ----------
+// ========== persistence (local-only; see privacy note above) ==========
 function loadInt(k, d){ try { return parseInt(localStorage.getItem(k) || String(d), 10) || d; } catch (e) { return d; } }
 function save(k, v){ try { localStorage.setItem(k, String(v)); } catch (e) {} }
-let scene  = loadInt('t47_scene', 1);      // current scene — THE level number
-let furthest = loadInt('t47_furthest', 1); // record: survives a restart
-let takes  = loadInt('t47_takes', 0);      // lifetime takes, the running joke
-let prints = loadInt('t47_prints', 0);     // scenes completed with a PERFECT
-let reduceMotion = loadInt('t47_rm', 0);   // accessibility: no shake/flash
+let scene    = loadInt('t47_scene', 1);      // current scene — THE level number
+let furthest = loadInt('t47_furthest', 1);   // record; survives "Reshoot from Scene 1"
+let takes    = loadInt('t47_takes', 0);      // lifetime attempts, the running joke
+let prints   = loadInt('t47_prints', 0);     // perfect landings banked
+let reduceMotion = loadInt('t47_rm', 0);     // a11y: no shake/flash
+let soundOn      = loadInt('t47_sound', 1);  // a11y: play silent if preferred
 
-// ---------- seeded per-scene design ----------
+// ========== scene design ==========
+// Deterministic per-scene difficulty: a seeded PRNG (mulberry32) derives each
+// scene's spin/airtime from its number, so every player's Scene N is identical
+// (that's what makes "beat my scene" sharing fair).
 function mulberry32(a){
   return function(){
     a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -51,15 +85,17 @@ function mulberry32(a){
 function sceneParams(n){
   const rnd = mulberry32(n * 2654435761 >>> 0);
   const dir = rnd() < 0.5 ? 1 : -1;
-  let spinDeg = Math.min(880, 280 + n * 28 + rnd() * 80);
-  const T = 1.15 + rnd() * 0.35;
-  const big = (n % 10 === 0);
+  let spinDeg = Math.min(880, 280 + n * 28 + rnd() * 80);   // ramps forever, capped
+  const T = 1.15 + rnd() * 0.35;                            // airtime, seconds
+  const big = (n % 10 === 0);                               // every 10th: BIG STUNT
   if (big) spinDeg *= 1.15;
-  const goodDeg = Math.max(15, 30 - n * 1.2);
+  const goodDeg = Math.max(15, 30 - n * 1.2);               // landing window tightens
   return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, tol: goodDeg * Math.PI / 180};
 }
 
-// ---------- audio ----------
+// ========== audio ==========
+// Tiny synth placeholder (real sound design comes with the art pass).
+// The AudioContext unlocks on first tap — iOS requires a user gesture.
 let AC = null;
 function ac(){
   if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
@@ -67,6 +103,7 @@ function ac(){
   return AC;
 }
 function tone(f0, f1, dur, type, vol, delay){
+  if (!soundOn) return;
   const a = ac(); if (!a) return;
   const t0 = a.currentTime + (delay || 0);
   const o = a.createOscillator(), g = a.createGain();
@@ -79,6 +116,7 @@ function tone(f0, f1, dur, type, vol, delay){
   o.start(t0); o.stop(t0 + dur);
 }
 function noise(dur, vol, delay){
+  if (!soundOn) return;
   const a = ac(); if (!a) return;
   const n = Math.floor(a.sampleRate * dur);
   const b = a.createBuffer(1, n, a.sampleRate);
@@ -90,14 +128,14 @@ function noise(dur, vol, delay){
   s.start(a.currentTime + (delay || 0));
 }
 const sfx = {
-  clap:    () => { noise(0.03, 0.35); noise(0.05, 0.3, 0.05); },
+  clap:    () => { noise(0.03, 0.35); noise(0.05, 0.3, 0.05); },   // clapperboard: ACTION!
   jump:    () => tone(180, 520, 0.25, 'sine', 0.15, 0.08),
   lock:    () => tone(950, 700, 0.06, 'square', 0.08),
   land:    () => { tone(200, 130, 0.14, 'triangle', 0.22); noise(0.06, 0.08); },
   perfect: () => { tone(660, 660, 0.09, 'sine', 0.14); tone(880, 880, 0.09, 'sine', 0.14, 0.09); tone(1320, 1320, 0.14, 'sine', 0.14, 0.18); },
   advance: () => { tone(523, 523, 0.1, 'sine', 0.12); tone(659, 659, 0.1, 'sine', 0.12, 0.1); tone(784, 784, 0.18, 'sine', 0.12, 0.2); },
   crash:   () => { noise(0.3, 0.3); tone(300, 55, 0.4, 'sawtooth', 0.18); },
-  cut:     () => tone(500, 350, 0.25, 'square', 0.12, 0.25)
+  cut:     () => tone(500, 350, 0.25, 'square', 0.12, 0.25)        // director's bullhorn
 };
 
 const QUIPS = [
@@ -113,47 +151,29 @@ const QUIPS = [
   '"Was that in the script?"'
 ];
 
-// ---------- state ----------
-const START_X = 70;
-let state = 'menu';          // menu | ready | air | landed | crash | over
-let takesScene = 1;          // takes on the current scene (session)
-let perfectStreak = 0;
-let p = null;
+// ========== game state ==========
+// state machine: menu | ready | air | landed | crash | over
+let state = 'menu';
+let takesScene = 1;                // attempts on the current scene
+let perfectStreak = 0;             // session flair only (prints persist)
+let p = null;                      // the stunt double
 let popups = [], particles = [], ragdoll = [];
 let shake = 0, flash = 0, stateT = 0, hitstop = 0;
 let quip = '', wasPerfect = false;
-let resetConfirm = 0;                      // seconds left in "tap again to confirm"
+let resetConfirm = 0;              // >0 while "SURE?" is showing
 let params = sceneParams(scene);
-
-function resetProgress(){
-  scene = 1; save('t47_scene', 1);
-  params = sceneParams(1);
-  takesScene = 1;
-  perfectStreak = 0;
-  p = newPlayer(START_X);
-  popups = []; ragdoll = [];
-  resetConfirm = 0;
-  addPopup('BACK TO SCENE 1', W / 2, 300, '#e8d5b5', 22);
-  state = 'ready'; stateT = 0;
-}
-// reset button location depends on screen
-function resetBox(){
-  if (state === 'menu') return {x: 90, y: 575, w: 220, h: 36};
-  if (state === 'over') return {x: 90, y: 612, w: 220, h: 36};
-  return null;
-}
 
 function newPlayer(x){
   return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, squash: 0, pose: 'stand'};
 }
 p = newPlayer(START_X);
 
+// ========== gameplay ==========
 function startJump(){
   takes++; save('t47_takes', takes);
-  const g = 1400;
-  const targetX = 250 + Math.random() * 80;
+  const targetX = 250 + Math.random() * 80;      // landing spot varies; angle is what's judged
   p.vx = (targetX - p.x) / params.T;
-  p.vy = -g * params.T / 2;
+  p.vy = -GRAVITY * params.T / 2;                // symmetric arc: airtime = T
   p.om = params.om;
   p.locked = false;
   p.pose = 'tuck';
@@ -167,8 +187,7 @@ function addPopup(text, x, y, color, size){
 }
 function dust(x, y, n){
   for (let i = 0; i < n; i++) {
-    const a = Math.PI + Math.random() * Math.PI;
-    particles.push({x: x + (Math.random()-0.5)*20, y: y, vx: Math.cos(a)*60*(Math.random()<0.5?-1:1), vy: -20 - Math.random()*60, t: 0, life: 0.5, color: '#b09a80', r: 2+Math.random()*2, g: 60});
+    particles.push({x: x + (Math.random()-0.5)*20, y: y, vx: (Math.random()<0.5?-1:1)*Math.random()*60, vy: -20 - Math.random()*60, t: 0, life: 0.5, color: '#b09a80', r: 2+Math.random()*2, g: 60});
   }
 }
 function confetti(x, y){
@@ -179,11 +198,12 @@ function confetti(x, y){
     particles.push({x: x, y: y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, t: 0, life: 1.1, color: colors[i%colors.length], r: 2.5+Math.random()*2, g: 500});
   }
 }
+// Crash comedy: the double breaks into six independent pieces.
 function spawnRagdoll(){
   ragdoll = [];
   const parts = [
-    {type: 'head',  ox: 0,  oy: -22},
-    {type: 'torso', ox: 0,  oy: 0},
+    {type: 'head',  ox: 0,   oy: -22},
+    {type: 'torso', ox: 0,   oy: 0},
     {type: 'arm',   ox: -10, oy: -8},
     {type: 'arm',   ox: 10,  oy: -8},
     {type: 'leg',   ox: -6,  oy: 14},
@@ -197,24 +217,24 @@ function spawnRagdoll(){
       vy: -120 - Math.random()*220,
       a: Math.random()*Math.PI*2,
       om: (Math.random()-0.5)*18,
-      bounces: 0
     });
   }
 }
 
+// Landing verdict: distance of final angle from upright decides
+// PRINT IT (perfect) / CLEAN TAKE (good) / CUT! (crash).
 function evaluateLanding(){
   p.y = GROUND;
   let a = p.angle % (Math.PI * 2);
   if (a < 0) a += Math.PI * 2;
   const off = Math.min(a, Math.PI * 2 - a);
-  hitstop = 0.06;
+  hitstop = HITSTOP;
   if (off <= params.tol) {
-    const perfect = off <= 10 * Math.PI / 180;
-    wasPerfect = perfect;
+    wasPerfect = off <= PERFECT_RAD;
     p.angle = 0; p.vx = 0; p.vy = 0; p.om = 0; p.squash = 1;
-    p.pose = perfect ? 'armsup' : 'stand';
+    p.pose = wasPerfect ? 'armsup' : 'stand';
     dust(p.x, GROUND, 8);
-    if (perfect) {
+    if (wasPerfect) {
       perfectStreak++;
       prints++; save('t47_prints', prints);
       confetti(p.x, GROUND - 40);
@@ -246,34 +266,50 @@ function retryScene(){
   state = 'ready';
 }
 
-// ---------- input ----------
+// Voluntary restart ("Reshoot from Scene 1"). Two-tap confirm guards against
+// accidental taps; the furthest-scene record intentionally survives.
+function resetProgress(){
+  scene = 1; save('t47_scene', 1);
+  params = sceneParams(1);
+  takesScene = 1;
+  perfectStreak = 0;
+  p = newPlayer(START_X);
+  popups = []; ragdoll = [];
+  resetConfirm = 0;
+  addPopup('BACK TO SCENE 1', W / 2, 300, '#e8d5b5', 22);
+  state = 'ready'; stateT = 0;
+}
+
+// ========== input ==========
+// Toggle buttons live on the menu (+ reset also on the CUT! screen).
+// All boxes ≥44px tall (a11y touch-target minimum). Keyboard: M / S / R.
+const BOX_RM    = {x: 90, y: 512, w: 220, h: 44};
+const BOX_SOUND = {x: 90, y: 564, w: 220, h: 44};
+function boxReset(){
+  if (state === 'menu') return {x: 90, y: 616, w: 220, h: 44};
+  if (state === 'over') return {x: 90, y: 604, w: 220, h: 44};
+  return null;                                   // reset only offered on those screens
+}
 function canvasCoords(e){
   const rect = cv.getBoundingClientRect();
   return {x: (e.clientX - rect.left) / SCALE, y: (e.clientY - rect.top) / SCALE};
 }
-const RM_BOX = {x: 90, y: 520, w: 220, h: 40};   // reduce-motion toggle on menu
-function hitReset(e){
-  const box = resetBox();
-  if (!box || scene <= 1 || !e || e.clientX === undefined) return false;
-  const c = canvasCoords(e);
-  return c.x >= box.x && c.x <= box.x + box.w && c.y >= box.y && c.y <= box.y + box.h;
+function inBox(c, box){ return box && c.x >= box.x && c.x <= box.x + box.w && c.y >= box.y && c.y <= box.y + box.h; }
+
+function toggleMotion(){ reduceMotion = reduceMotion ? 0 : 1; save('t47_rm', reduceMotion); }
+function toggleSound(){ soundOn = soundOn ? 0 : 1; save('t47_sound', soundOn); }
+function tryReset(){
+  if (resetConfirm > 0) resetProgress();
+  else resetConfirm = CONFIRM_WINDOW;
 }
+
 function onTap(e){
-  ac();
-  if (hitReset(e)) {
-    if (resetConfirm > 0) resetProgress();
-    else resetConfirm = 2.5;
-    return;
-  }
+  ac();                                          // unlock audio (iOS gesture rule)
+  const c = (e && e.clientX !== undefined) ? canvasCoords(e) : null;
+  if (c && scene > 1 && inBox(c, boxReset())) { tryReset(); return; }
   if (state === 'menu') {
-    if (e && e.clientX !== undefined) {
-      const c = canvasCoords(e);
-      if (c.x >= RM_BOX.x && c.x <= RM_BOX.x + RM_BOX.w && c.y >= RM_BOX.y && c.y <= RM_BOX.y + RM_BOX.h) {
-        reduceMotion = reduceMotion ? 0 : 1;
-        save('t47_rm', reduceMotion);
-        return;
-      }
-    }
+    if (c && inBox(c, BOX_RM))    { toggleMotion(); return; }
+    if (c && inBox(c, BOX_SOUND)) { toggleSound();  return; }
     startJump();
   }
   else if (state === 'ready') startJump();
@@ -283,16 +319,15 @@ function onTap(e){
 window.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(e); });
 window.addEventListener('keydown', function(e){
   if (e.code === 'Space') onTap(null);
-  if (e.code === 'KeyM' && state === 'menu') { reduceMotion = reduceMotion ? 0 : 1; save('t47_rm', reduceMotion); }
-  if (e.code === 'KeyR' && resetBox() && scene > 1) {
-    if (resetConfirm > 0) resetProgress();
-    else resetConfirm = 2.5;
-  }
+  if (e.code === 'KeyM' && state === 'menu') toggleMotion();
+  if (e.code === 'KeyS' && state === 'menu') toggleSound();
+  if (e.code === 'KeyR' && boxReset() && scene > 1) tryReset();
 });
+window.addEventListener('resize', resize);
 
-// ---------- update ----------
+// ========== update ==========
 function update(dt){
-  if (hitstop > 0) { hitstop -= dt; return; }
+  if (hitstop > 0) { hitstop -= dt; return; }    // freeze-frame: skip one beat
   stateT += dt;
   shake = Math.max(0, shake - dt * 3);
   flash = Math.max(0, flash - dt * 4);
@@ -300,14 +335,13 @@ function update(dt){
   p.squash = Math.max(0, p.squash - dt * 4);
 
   if (state === 'air') {
-    const g = 1400;
-    p.vy += g * dt;
+    p.vy += GRAVITY * dt;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.angle += p.om * dt;
     if (p.vy > 0 && p.y >= GROUND) evaluateLanding();
   } else if (state === 'landed') {
-    if (stateT > 1.0) {                       // scene complete → advance
+    if (stateT > 1.0) {                          // scene complete → advance (persists)
       scene++; save('t47_scene', scene);
       if (scene > furthest) { furthest = scene; save('t47_furthest', furthest); }
       params = sceneParams(scene);
@@ -318,15 +352,14 @@ function update(dt){
       state = 'ready'; stateT = 0;
     }
   } else if (state === 'crash') {
-    const g = 1400;
-    for (const q of ragdoll) {
-      q.vy += g * dt;
+    for (const q of ragdoll) {                   // each piece: gravity + floor bounce
+      q.vy += GRAVITY * dt;
       q.x += q.vx * dt;
       q.y += q.vy * dt;
       q.a += q.om * dt;
       if (q.y > GROUND - 4) {
         q.y = GROUND - 4;
-        if (Math.abs(q.vy) > 40) { q.vy = -q.vy * 0.4; q.vx *= 0.6; q.om *= 0.6; q.bounces++; }
+        if (Math.abs(q.vy) > 40) { q.vy = -q.vy * 0.4; q.vx *= 0.6; q.om *= 0.6; }
         else { q.vy = 0; q.vx *= 0.85; q.om *= 0.8; }
       }
     }
@@ -345,44 +378,47 @@ function update(dt){
   }
 }
 
-// ---------- character ----------
+// ========== render: character ==========
 const SKIN = '#ffd9a0', SUIT = '#ffd166', SHOE = '#ef476f', LINE = '#191010';
-function limb(x1, y1, x2, y2, x3, y3, color, w){
-  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke();
+function limb(c, x1, y1, x2, y2, x3, y3, color, w){
+  c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineTo(x3, y3); c.stroke();
 }
+// Poses: 'tuck' (mid-flip), 'stand', 'armsup' (perfect-landing celebration).
+// Red shoes mark "feet" so spin orientation reads at a glance (not color-only:
+// the whole silhouette flips too).
 function drawGuy(x, y, angle, pose, squash){
   ctx.save();
   ctx.translate(x, y - 22);
   ctx.rotate(angle);
-  const sq = (squash || 0) * 0.25;
+  const sq = (squash || 0) * 0.25;               // landing squash-and-stretch
   ctx.scale(1 + sq, 1 - sq);
   if (pose === 'tuck') {
-    limb(-4, 10, -10, 16, 2, 20, SUIT, 6);
-    limb(4, 10, 12, 14, 4, 20, SUIT, 6);
+    limb(ctx, -4, 10, -10, 16, 2, 20, SUIT, 6);
+    limb(ctx, 4, 10, 12, 14, 4, 20, SUIT, 6);
     ctx.fillStyle = SHOE;
     ctx.fillRect(-2, 17, 8, 6); ctx.fillRect(0, 17, 8, 6);
     ctx.fillStyle = SUIT;
     ctx.beginPath(); ctx.ellipse(0, 0, 11, 14, 0, 0, Math.PI * 2); ctx.fill();
-    limb(-8, -4, -12, 8, 0, 14, SKIN, 5);
-    limb(8, -4, 12, 8, 4, 14, SKIN, 5);
+    limb(ctx, -8, -4, -12, 8, 0, 14, SKIN, 5);
+    limb(ctx, 8, -4, 12, 8, 4, 14, SKIN, 5);
     ctx.fillStyle = SKIN;
     ctx.beginPath(); ctx.arc(0, -19, 8, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = LINE;
     ctx.beginPath(); ctx.arc(-3, -20, 1.5, 0, Math.PI*2); ctx.arc(3, -20, 1.5, 0, Math.PI*2); ctx.fill();
   } else {
-    limb(-4, 8, -5, 15, -5, 22, SUIT, 6);
-    limb(4, 8, 5, 15, 5, 22, SUIT, 6);
+    limb(ctx, -4, 8, -5, 15, -5, 22, SUIT, 6);
+    limb(ctx, 4, 8, 5, 15, 5, 22, SUIT, 6);
     ctx.fillStyle = SHOE;
     ctx.fillRect(-10, 19, 9, 5); ctx.fillRect(2, 19, 9, 5);
     ctx.fillStyle = SUIT;
     ctx.beginPath(); ctx.ellipse(0, -2, 9, 13, 0, 0, Math.PI * 2); ctx.fill();
     if (pose === 'armsup') {
-      limb(-7, -8, -13, -16, -12, -26, SKIN, 5);
-      limb(7, -8, 13, -16, 12, -26, SKIN, 5);
+      limb(ctx, -7, -8, -13, -16, -12, -26, SKIN, 5);
+      limb(ctx, 7, -8, 13, -16, 12, -26, SKIN, 5);
     } else {
-      limb(-7, -8, -11, 0, -10, 8, SKIN, 5);
-      limb(7, -8, 11, 0, 10, 8, SKIN, 5);
+      limb(ctx, -7, -8, -11, 0, -10, 8, SKIN, 5);
+      limb(ctx, 7, -8, 11, 0, 10, 8, SKIN, 5);
     }
     ctx.fillStyle = SKIN;
     ctx.beginPath(); ctx.arc(0, -21, 8, 0, Math.PI * 2); ctx.fill();
@@ -409,66 +445,95 @@ function drawRagdollPart(q){
     ctx.fillStyle = SUIT;
     ctx.beginPath(); ctx.ellipse(0, 0, 9, 13, 0, 0, Math.PI*2); ctx.fill();
   } else if (q.type === 'arm') {
-    limb(-6, 0, 0, 2, 6, 0, SKIN, 5);
+    limb(ctx, -6, 0, 0, 2, 6, 0, SKIN, 5);
   } else {
-    limb(-6, 0, 0, 2, 6, 0, SUIT, 6);
+    limb(ctx, -6, 0, 0, 2, 6, 0, SUIT, 6);
     ctx.fillStyle = SHOE; ctx.fillRect(4, -3, 7, 5);
   }
   ctx.restore();
 }
 
-// ---------- set dressing ----------
-function drawSet(){
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
+// ========== render: static set (cached) ==========
+// The set never changes, so it's rendered once per resize into an offscreen
+// canvas — the per-frame cost drops from ~45 canvas calls to one drawImage.
+function buildSetCache(){
+  if (typeof document.createElement !== 'function') return;   // headless test guard
+  const k = Math.min(3, (window.devicePixelRatio || 1) * SCALE);
+  setCache = document.createElement('canvas');
+  setCache.width = Math.max(1, Math.round(W * k));
+  setCache.height = Math.max(1, Math.round(H * k));
+  const c = setCache.getContext('2d');
+  c.scale(k, k);
+
+  // warm studio backdrop
+  const grad = c.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, '#1a0f0d');
   grad.addColorStop(0.7, '#2a1a12');
   grad.addColorStop(1, '#191010');
-  ctx.fillStyle = grad;
-  ctx.fillRect(-20, -20, W + 40, H + 40);
+  c.fillStyle = grad;
+  c.fillRect(0, 0, W, H);
 
-  ctx.strokeStyle = '#3a2c22'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(0, 26); ctx.lineTo(W, 26); ctx.stroke();
-  ctx.fillStyle = '#4a3626';
+  // lighting rig
+  c.strokeStyle = '#3a2c22'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(0, 26); c.lineTo(W, 26); c.stroke();
   for (const lx of [60, 180, 300]) {
-    ctx.fillRect(lx - 8, 28, 16, 14);
-    ctx.fillStyle = '#ffd166';
-    ctx.fillRect(lx - 5, 40, 10, 3);
-    ctx.fillStyle = '#4a3626';
+    c.fillStyle = '#4a3626';
+    c.fillRect(lx - 8, 28, 16, 14);
+    c.fillStyle = '#ffd166';
+    c.fillRect(lx - 5, 40, 10, 3);
   }
-  const cone = ctx.createLinearGradient(0, 40, 0, GROUND);
+  // spotlight cone over the landing zone
+  const cone = c.createLinearGradient(0, 40, 0, GROUND);
   cone.addColorStop(0, 'rgba(255,209,102,0.13)');
   cone.addColorStop(1, 'rgba(255,209,102,0.02)');
-  ctx.fillStyle = cone;
-  ctx.beginPath();
-  ctx.moveTo(180, 44); ctx.lineTo(300, 44);
-  ctx.lineTo(390, GROUND); ctx.lineTo(120, GROUND);
-  ctx.closePath(); ctx.fill();
+  c.fillStyle = cone;
+  c.beginPath();
+  c.moveTo(180, 44); c.lineTo(300, 44);
+  c.lineTo(390, GROUND); c.lineTo(120, GROUND);
+  c.closePath(); c.fill();
 
-  ctx.fillStyle = '#0d0806';
-  ctx.fillRect(14, GROUND - 78, 34, 22);
-  ctx.beginPath(); ctx.arc(52, GROUND - 67, 9, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = '#0d0806'; ctx.lineWidth = 5;
-  ctx.beginPath(); ctx.moveTo(31, GROUND - 56); ctx.lineTo(18, GROUND); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(31, GROUND - 56); ctx.lineTo(44, GROUND); ctx.stroke();
+  // camera silhouette
+  c.fillStyle = '#0d0806';
+  c.fillRect(14, GROUND - 78, 34, 22);
+  c.beginPath(); c.arc(52, GROUND - 67, 9, 0, Math.PI*2); c.fill();
+  c.strokeStyle = '#0d0806'; c.lineWidth = 5;
+  c.beginPath(); c.moveTo(31, GROUND - 56); c.lineTo(18, GROUND); c.stroke();
+  c.beginPath(); c.moveTo(31, GROUND - 56); c.lineTo(44, GROUND); c.stroke();
 
-  ctx.fillStyle = '#241811'; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
-  ctx.fillStyle = '#2e4a6b';
-  ctx.fillRect(170, GROUND, 220, 16);
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.fillRect(170, GROUND, 220, 4);
-  ctx.fillStyle = '#ffd166';
+  // floor, crash mat, warning tape
+  c.fillStyle = '#241811'; c.fillRect(0, GROUND, W, H - GROUND);
+  c.fillStyle = '#2e4a6b'; c.fillRect(170, GROUND, 220, 16);
+  c.fillStyle = 'rgba(255,255,255,0.08)'; c.fillRect(170, GROUND, 220, 4);
+  c.save();
+  c.beginPath(); c.rect(0, GROUND - 3, W, 3); c.clip();
+  c.fillStyle = '#ffd166';
   for (let x = -20; x < W + 20; x += 24) {
-    ctx.save();
-    ctx.beginPath(); ctx.rect(-20, GROUND - 3, W + 40, 3); ctx.clip();
-    ctx.translate(x, GROUND - 3);
-    ctx.rotate(0.6);
-    ctx.fillRect(0, -6, 8, 16);
-    ctx.restore();
+    c.save(); c.translate(x, GROUND - 3); c.rotate(0.6); c.fillRect(0, -6, 8, 16); c.restore();
   }
+  c.restore();
 }
 
+// ========== render: UI ==========
+function slateStripes(x, y, w, h){                // clapperboard header stripes
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.fillStyle = '#fff';
+  for (let i = 0, n = Math.ceil(w / 44) + 1; i < n; i++) {
+    ctx.save(); ctx.translate(x + i * 44, y); ctx.rotate(0.5); ctx.fillRect(0, -8, 20, h + 20); ctx.restore();
+  }
+  ctx.restore();
+}
+function drawToggle(box, label, on, onColor){
+  ctx.strokeStyle = on ? onColor : '#a08b72';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(box.x, box.y, box.w, box.h);
+  ctx.fillStyle = on ? onColor : '#a08b72';
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, box.x + box.w / 2, box.y + box.h / 2 + 5);
+}
 function drawResetButton(){
-  const box = resetBox();
+  const box = boxReset();
   if (!box || scene <= 1) return;
   const confirming = resetConfirm > 0;
   ctx.strokeStyle = confirming ? '#f87171' : '#a08b72';
@@ -477,29 +542,15 @@ function drawResetButton(){
   ctx.fillStyle = confirming ? '#f87171' : '#a08b72';
   ctx.font = '14px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(confirming ? 'SURE? TAP AGAIN  (keeps your record)' : 'RESHOOT FROM SCENE 1  (tap / R)', box.x + box.w / 2, box.y + 23);
+  ctx.fillText(confirming ? 'SURE? TAP AGAIN  (keeps your record)' : 'RESHOOT FROM SCENE 1  (tap / R)', box.x + box.w / 2, box.y + box.h / 2 + 5);
 }
 
-function slateStripes(x, y, w, h){
-  ctx.fillStyle = '#fff';
-  const n = Math.ceil(w / 44) + 1;
-  for (let i = 0; i < n; i++) {
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-    ctx.translate(x + i * 44, y);
-    ctx.rotate(0.5);
-    ctx.fillRect(0, -8, 20, h + 20);
-    ctx.restore();
-  }
-}
-
-// ---------- draw ----------
 function draw(){
   ctx.clearRect(0, 0, W, H);
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
 
-  drawSet();
+  if (setCache) ctx.drawImage(setCache, 0, 0, W, H);
 
   if (state === 'crash' || (state === 'over' && ragdoll.length)) {
     for (const q of ragdoll) drawRagdollPart(q);
@@ -523,6 +574,7 @@ function draw(){
   }
   ctx.globalAlpha = 1;
 
+  // director quip persists through crash AND retry screens (a11y: no flash-read)
   if ((state === 'crash' || state === 'over') && quip) {
     ctx.fillStyle = '#e8d5b5';
     ctx.font = 'italic 17px Georgia, serif';
@@ -532,26 +584,28 @@ function draw(){
     ctx.fillText('— the director', W / 2, 202);
   }
 
-  // HUD — the scene number IS the level
+  // HUD: scene number is the level; counters split across two lines so
+  // nothing falls below 14px at phone size
   ctx.fillStyle = '#c9a876';
   ctx.font = 'bold 15px system-ui, sans-serif';
   ctx.fillText('SCENE', W / 2, 46);
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 48px system-ui, sans-serif';
   ctx.fillText(String(scene), W / 2, 92);
-  ctx.font = '13px system-ui, sans-serif';
   ctx.fillStyle = '#c9a876';
-  let hudLine = 'TAKE ' + takesScene + ' OF THIS SCENE   ·   LIFETIME TAKES ' + takes + '   ·   PRINTS ' + prints;
-  if (furthest > scene) hudLine += '   ·   FURTHEST ' + furthest;
-  ctx.fillText(hudLine, W / 2, 114);
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.fillText('TAKE ' + takesScene + ' OF THIS SCENE', W / 2, 114);
+  let line2 = 'LIFETIME ' + takes + '   ·   PRINTS ' + prints;
+  if (furthest > scene) line2 += '   ·   FURTHEST ' + furthest;
+  ctx.fillText(line2, W / 2, 133);
   if (params.big && (state === 'ready' || state === 'menu')) {
     ctx.fillStyle = '#ef476f';
     ctx.font = 'bold 16px system-ui, sans-serif';
-    ctx.fillText('★ BIG STUNT SCENE ★', W / 2, 138);
+    ctx.fillText('★ BIG STUNT SCENE ★', W / 2, 156);
   }
   if (perfectStreak >= 2) {
     ctx.fillStyle = '#c084fc'; ctx.font = 'bold 15px system-ui, sans-serif';
-    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 158);
+    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 176);
   }
 
   ctx.fillStyle = '#e8d5b5';
@@ -567,16 +621,12 @@ function draw(){
     ctx.font = '14px system-ui, sans-serif';
     ctx.fillText('a stunt double\'s life', W / 2, 322);
     ctx.font = '16px system-ui, sans-serif';
-    ctx.fillText('Tap to jump. Tap again to stop the spin.', W / 2, 396);
-    ctx.fillText('Land on your feet to finish the scene.', W / 2, 420);
+    ctx.fillText('Tap to jump. Tap again to stop the spin.', W / 2, 390);
+    ctx.fillText('Land on your feet to finish the scene.', W / 2, 414);
     ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillText('TAP FOR ACTION!', W / 2, 470);
-    // reduce-motion toggle (accessibility)
-    ctx.strokeStyle = '#a08b72'; ctx.lineWidth = 1.5;
-    ctx.strokeRect(RM_BOX.x, RM_BOX.y, RM_BOX.w, RM_BOX.h);
-    ctx.fillStyle = reduceMotion ? '#6ee7b7' : '#a08b72';
-    ctx.font = '14px system-ui, sans-serif';
-    ctx.fillText('REDUCE MOTION: ' + (reduceMotion ? 'ON' : 'OFF') + '  (tap / M)', W / 2, RM_BOX.y + 25);
+    ctx.fillText('TAP FOR ACTION!', W / 2, 462);
+    drawToggle(BOX_RM, 'REDUCE MOTION: ' + (reduceMotion ? 'ON' : 'OFF') + '  (tap / M)', !!reduceMotion, '#6ee7b7');
+    drawToggle(BOX_SOUND, 'SOUND: ' + (soundOn ? 'ON' : 'OFF') + '  (tap / S)', !!soundOn, '#6ee7b7');
     drawResetButton();
   } else if (state === 'ready') {
     ctx.fillText('ACTION!  (tap to jump)', W / 2, 420);
@@ -602,19 +652,21 @@ function draw(){
     drawResetButton();
   }
 
-  if (flash > 0 && !reduceMotion) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40); }
+  // damage flash: single soft decay, capped at 25% alpha — never a strobe
+  if (flash > 0 && !reduceMotion) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }
 
-// ---------- loop ----------
+// ========== main loop ==========
 let last = performance.now();
 function frame(now){
-  const dt = Math.min(0.033, (now - last) / 1000);
+  const dt = Math.min(DT_MAX, (now - last) / 1000);
   last = now;
   update(dt);
   draw();
   requestAnimationFrame(frame);
 }
+resize();
 requestAnimationFrame(frame);
 </script>
 </body>
