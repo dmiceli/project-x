@@ -64,6 +64,10 @@ Explicitly out of v1.0: Game Center leaderboard (revisit for 1.1), cloud saves, 
 
 Free download. **Principle (Dan, 2026-07-02): ads never buy progress.** No scene skips, no pay-to-win — main-mode scene progression cannot be advanced by watching or paying for anything. Rewarded ads (opt-in only) live where they don't touch progression: extra attempts in the daily challenge (base allowance ~3 attempts/day, which also makes the daily score meaningful), and early cosmetic character unlocks. Interstitials: full-screen ad between takes, at most one per 3 crashes and never less than 90 seconds apart, never mid-jump. No banners — they earn little and clutter the screen. "Remove Ads" IAP at $1.99–2.99 removes interstitials but keeps opt-in rewarded ads available. Ad SDK choice (AdMob vs. alternatives) is a build-phase decision; whichever we pick brings Apple's App Tracking Transparency prompt and privacy-label requirements — accounted for in the App Store phase.
 
+## The flipper is the face of the franchise (Dan, 2026-07-03)
+
+Like Flappy's bird and the Angry Birds, the character IS the brand. The icon established his identity: inverted mid-flip, wide terror eyes, open "AAAAH" mouth, sweat drops, red shoes. This face must propagate: into the in-game character during flight (art pass), the share card, App Store screenshots, and any future marketing. One character, everywhere.
+
 ## Voice (Dan, 2026-07-03): whimsical, never cheesy
 
 All game copy — quips, cards, bios, achievements, share cards — aims for deadpan film-industry humor. The joke is always that the crew takes absurd things completely seriously ("one nervous insurance guy," "a city of shoeboxes," "files no complaints"). Whimsy comes from *specificity*, not wackiness. Guardrails: no pun pile-ups, no fourth-wall mugging, no exclamation-point enthusiasm outside the director's yells, no random-lol humor. If a line would fit a minion meme, cut it.

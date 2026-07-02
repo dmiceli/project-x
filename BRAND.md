@@ -38,9 +38,9 @@ Rules: gold is precious — one gold element per composition (it's the reward co
 
 The **clapper stripe band** (45°-slanted alternating stripes, gold/black — our 0.5 rad slant) is the primary brand device: header of the icon, share cards, brand sheet, store screenshots. The **spotlight cone**, **warning tape**, and **crash mat blue** are set dressing for backgrounds. The **take counter** is the verbal motif — big numbers with deadpan captions are always on-brand.
 
-## Icon (per conversion research: one focal element, readable at 60px)
+## Icon (finalized 2026-07-03 after 11 iterations with Dan; source: assets/icon-final.png)
 
-Composition: clapper stripe band across the top, oversized gold **47** centered on Set Black, "TAKE" small in Dust. Nothing else — research shows single-focus icons lift conversion 22–30%, and if it doesn't read at 60px it fails. Current `app/icon-1024.png` implements this; the art pass may refine weight/texture but must not add elements. A/B candidates later may vary the character mid-flip as focal element instead — test, don't guess.
+**Composition — "the clapperboard contains the scene":** the open striped clapper and silent slate bar form the container's top edge (no text anywhere — competitor pattern: character first, brand as shape); a spotlight hangs from the slate's underside and lights the **flipper mid-flip, inverted, screaming** (wide terror eyes, open mouth, sweat drops — the face of the franchise); motion trails off the red shoes carry the spin; below him, curtain legs, floorboards, and his taped X mark waiting. Supersampled render, soft beam, hard+soft shadow, vignette + grain. Iteration lessons encoded as rules: one focal element (the character), no text, cartoon-license face (mouth below eyes regardless of head orientation), all overlaps separated by dark outlines, hazards of clutter beat by containment.
 
 ## Applications
 

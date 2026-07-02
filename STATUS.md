@@ -57,9 +57,11 @@
 
 - 2026-07-03: **Polish phase opened with the brand kit** — BRAND.md (research-grounded: single-focal icon data, gold-reward psychology, roles-not-vibes palette; full WCAG contrast audit — all pairings AA+, most AAA) + assets/brand-sheet.png. Kit codifies the shipped identity; all polish assets now build from it.
 
+- 2026-07-03: **Icon finalized (MVP)** after 11 iterations — "clapperboard contains the scene": no-text container composition, screaming inverted flipper (now the franchise face, per DESIGN note), spotlight, stage, X mark. Production files in app/ (icon-1024/180); source assets/icon-final.png; iteration artifacts cleaned.
+
 ## Next steps
-1. Dan: review BRAND.md + brand sheet; push + play session (fresh save; re-add to home screen; re-judge the cart with the preview).
-2. Polish continues per kit: icon art refinement, App Store screenshot set, sound design in the movie-set language, crash comedy pass.
+1. Dan: push; re-add to home screen to see the real icon.
+2. Polish continues: App Store screenshot set + share-card face pass, sound design in the movie-set language, crash comedy pass.
 3. Then PIPELINE.md runbook → hello-world TestFlight build (incl. save-durability gate).
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
