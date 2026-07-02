@@ -44,9 +44,11 @@
 
 - 2026-07-03: **Joy package shipped** after guided replayability session — near-miss tier, the Reel (reshoot/print), Poster Wall, Call Sheet dailies, golden takes, director approval, prints wallet + wardrobe (18 colorways). All flows verified headlessly (near-miss trigger, scene-21 run, reshoot isolation, wallet math, call-sheet payout, golden seeding).
 
+- 2026-07-03: **Depth pass shipped** — economy baseline logged; "every set teaches a stunt" (cart/boom/gravity/wind/arm/double-bounce, full v1 per Dan); logarithmic ramp w/ brutal-but-fair ceiling (floor 12° @ ~scene 72); launch platforms everywhere; cycle-2 combos. Headless verification caught + fixed an untouchable-boom placement bug. Sub-frame lock timing noted in BACKLOG as pre-beta fairness candidate.
+
 ## Next steps
-1. Dan: push + play the joy build. Watch for: does SO CLOSE! sting correctly? Is the Reel inviting? Wardrobe prices fair?
-2. Then: polish phase (icon, real sound in movie-set language, crash comedy pass) → PIPELINE.md → TestFlight.
+1. Dan: push + BIG play session. This build changes how the whole game feels — judge: mechanic introductions (Scene 11 cart, 21 boom...), ramp pace, and whether variation kills the "same scene faster" fatigue.
+2. Then: polish phase (icon, real sound, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.
 4. Later: verify "TAKE 47" name in App Store Connect.

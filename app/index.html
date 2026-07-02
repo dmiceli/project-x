@@ -243,18 +243,46 @@ function mulberry32(a){
   };
 }
 // campaign: seeded by scene number only — everyone's Scene N is identical
+// Depth architecture (2026-07-03): every set teaches a stunt. Difficulty comes
+// from mechanics layering, not raw speed — the ramp is logarithmic ("brutal but
+// fair": tolerance floor 12° lands ~scene 72; spin soft-caps at 950°/s), with
+// seeded breather scenes. Cycle 2+ (scene 61+) mixes a second mechanic in and
+// upgrades BIG STUNTS to double-bounce format.
+function assembleMech(rnd, gi, cycle, big){
+  const mech = {cart: 0, boom: 0, grav: 1, wind: 0, arm: 0, bounce: 0};
+  const apply = (idx) => {
+    if (idx === 1) mech.cart = 1;                                    // DUST GULCH: rolling launch cart
+    else if (idx === 2) mech.boom = 1;                               // HIGH SEAS: swinging boom
+    else if (idx === 3) mech.grav = rnd() < 0.5 ? 0.55 : 1.45;       // SAUCER STAGE: wire-work gravity
+    else if (idx === 4) mech.wind = (rnd() < 0.5 ? -1 : 1) * (10 + rnd() * 8);  // RAIN STREET: wind drift (°/s²)
+    else if (idx === 5) mech.arm = 1;                                // MINIATURE CITY: arm sweep
+  };
+  if (gi > 0) apply(gi);
+  if (cycle >= 1 && rnd() < 0.5) apply(1 + Math.floor(rnd() * 4));   // combo scenes
+  if (cycle >= 1 && big) mech.bounce = 1;                            // late big stunts: two locks
+  if (mech.cart) mech.arm = 0;                                       // cart+arm both gate timing — too cruel
+  return mech;
+}
 function sceneParams(n){
   const rnd = mulberry32(n * 2654435761 >>> 0);
   const dir = rnd() < 0.5 ? 1 : -1;
-  let spinDeg = Math.min(880, 280 + n * 28 + rnd() * 80);
-  const T = 1.15 + rnd() * 0.35;
+  const si = Math.floor((n - 1) / 10), gi = si % GENRES.length, cycle = Math.floor(si / GENRES.length);
   const big = (n % 10 === 0);
-  if (big) spinDeg *= 1.15;
-  const goodDeg = Math.max(15, 30 - n * 1.2);
-  // golden takes: ~1 in 20 scenes (seeded — everyone's goldens match), never on
-  // big stunts. NOTE: drawn 4th so existing scenes keep their exact spin/airtime.
+  const breather = !big && rnd() < 0.10;                             // seeded easy days on set
+  let spinDeg = Math.min(950, 280 + 150 * Math.log(1 + n / 12) + rnd() * 40);
+  let goodDeg = Math.max(12, 30 - n * 0.25);
+  if (breather) { spinDeg *= 0.85; goodDeg += 6; }
+  if (big) { spinDeg *= 1.12; goodDeg = Math.max(10, goodDeg - 2); }
+  const T = 1.15 + rnd() * 0.35;
   const golden = !big && rnd() < 0.05;
-  return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, golden: golden, tol: goodDeg * Math.PI / 180};
+  const mech = assembleMech(rnd, gi, cycle, big);
+  const h = mech.cart ? 0 : [0, 60, 120][Math.floor(rnd() * 3)];     // launch platform height
+  const startX = mech.cart ? 90 : 55 + Math.floor(rnd() * 40);
+  const matC = 250 + rnd() * 60;                                     // cart scenes: the mat matters
+  return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, golden: golden, breather: breather,
+          tol: goodDeg * Math.PI / 180, h: h, startX: startX, gi: gi, cycle: cycle, mech: mech,
+          matL: matC - 55, matR: matC + 55,
+          boomPhase: rnd() * Math.PI * 2, armPhase: rnd() * 300};
 }
 // daily: seeded by date + step so the whole world shoots the same gauntlet;
 // ramps faster than campaign because attempts are scarce
@@ -269,7 +297,15 @@ function dailyParams(step){
   const spinDeg = Math.min(900, 320 + step * 45 + rnd() * 90);
   const T = 1.1 + rnd() * 0.35;
   const goodDeg = Math.max(14, 28 - step * 1.6);
-  return {om: dir * spinDeg * Math.PI / 180, T: T, big: step % 5 === 0, tol: goodDeg * Math.PI / 180};
+  const big = step % 5 === 0;
+  // gauntlet gets spicy from step 4: one seeded mechanic per scene
+  const mech = step >= 4 ? assembleMech(rnd, 1 + Math.floor(rnd() * 5), 0, big) : {cart:0, boom:0, grav:1, wind:0, arm:0, bounce:0};
+  const h = mech.cart ? 0 : [0, 60, 120][Math.floor(rnd() * 3)];
+  const startX = mech.cart ? 90 : 55 + Math.floor(rnd() * 40);
+  const matC = 250 + rnd() * 60;
+  return {om: dir * spinDeg * Math.PI / 180, T: T, big: big, golden: false, breather: false,
+          tol: goodDeg * Math.PI / 180, h: h, startX: startX, gi: 0, cycle: 0, mech: mech,
+          matL: matC - 55, matR: matC + 55, boomPhase: rnd() * Math.PI * 2, armPhase: rnd() * 300};
 }
 function todayStr(){ return new Date().toISOString().slice(0, 10); }
 function dailyRollover(){                      // reset counters on a new day
@@ -284,12 +320,12 @@ function dailyRollover(){                      // reset counters on a new day
 // floor are drawn for every genre — it's always a film set; only the
 // backdrop and props change. Set switches every 10 scenes, cycling.
 const GENRES = [
-  {id:'studio',  name:'THE BACKLOT',    flavor:'painted flats, pyrotechnics, and one nervous insurance guy', sky:['#1a0f0d','#2a1a12','#191010'], floor:'#241811', props: propsStudio},
-  {id:'western', name:'DUST GULCH',     flavor:'saloons, tumbleweeds, and six-shooters (props, obviously)',  sky:['#2b1608','#4a2410','#241208'], floor:'#3a2a14', props: propsWestern},
-  {id:'pirate',  name:'THE HIGH SEAS',  flavor:'rigging, rum barrels, and a very wobbly mast',               sky:['#0a1a2f','#14304f','#0d1626'], floor:'#2a2118', props: propsPirate},
-  {id:'scifi',   name:'SAUCER STAGE',   flavor:'a saucer on strings and a cardboard cosmos',                 sky:['#120b24','#251448','#0f0a1c'], floor:'#1e1830', props: propsScifi},
-  {id:'noir',    name:'RAIN STREET',    flavor:'rain machines and one moody neon sign',                      sky:['#0d0d12','#1a1a24','#0b0b10'], floor:'#15151d', props: propsNoir},
-  {id:'kaiju',   name:'MINIATURE CITY', flavor:'a rubber suit and a city of shoeboxes',                      sky:['#0c1a12','#173626','#0a140e'], floor:'#1c2418', props: propsKaiju}
+  {id:'studio',  name:'THE BACKLOT',    flavor:'painted flats, pyrotechnics, and one nervous insurance guy', stunt:'The basics. Nail them.',                          sky:['#1a0f0d','#2a1a12','#191010'], floor:'#241811', props: propsStudio},
+  {id:'western', name:'DUST GULCH',     flavor:'saloons, tumbleweeds, and six-shooters (props, obviously)',  stunt:'You launch from a rolling cart — time it, and mind the mat.', sky:['#2b1608','#4a2410','#241208'], floor:'#3a2a14', props: propsWestern},
+  {id:'pirate',  name:'THE HIGH SEAS',  flavor:'rigging, rum barrels, and a very wobbly mast',               stunt:'The boom swings. The boom does not apologize.',   sky:['#0a1a2f','#14304f','#0d1626'], floor:'#2a2118', props: propsPirate},
+  {id:'scifi',   name:'SAUCER STAGE',   flavor:'a saucer on strings and a cardboard cosmos',                 stunt:'Wire work: gravity is a suggestion here.',        sky:['#120b24','#251448','#0f0a1c'], floor:'#1e1830', props: propsScifi},
+  {id:'noir',    name:'RAIN STREET',    flavor:'rain machines and one moody neon sign',                      stunt:'The wind machine is on. Your spin will drift.',   sky:['#0d0d12','#1a1a24','#0b0b10'], floor:'#15151d', props: propsNoir},
+  {id:'kaiju',   name:'MINIATURE CITY', flavor:'a rubber suit and a city of shoeboxes',                      stunt:'The arm sweeps the lot. Land between passes.',    sky:['#0c1a12','#173626','#0a140e'], floor:'#1c2418', props: propsKaiju}
 ];
 function genreForScene(n){ return GENRES[Math.floor((n - 1) / 10) % GENRES.length]; }
 
@@ -589,6 +625,18 @@ let dLives = 3;                      // daily: crashes left in this attempt
 let rScene = 1;                      // reshoot: which completed scene
 let crashKind = 'full';              // full ragdoll vs near-miss stumble
 let cardQueue = [];                  // pending interstitial celebrations
+let mechT = 0;                       // scene clock driving cart/boom/arm animation
+let bounced = false;                 // double-bounce stunts: second phase flag
+
+// mechanic positions as functions of the scene clock (all telegraphed visually)
+function cartX(t){ return 55 + 70 * (0.5 + 0.5 * Math.sin(t * 2.2)); }
+function cartVx(t){ return 70 * 0.5 * 2.2 * Math.cos(t * 2.2); }
+// boom geometry: pivot high, arm long — the tip sweeps through the descent
+// corridor (y≈350-400) so it genuinely threatens flights. Watching its rhythm
+// before jumping is the skill (first-tap timing).
+function boomAngle(t){ return Math.sin(t * 3.2 + params.boomPhase) * 0.6; }
+function boomTip(t){ const a = boomAngle(t); return {x: 280 + Math.sin(a) * 320, y: 80 + Math.cos(a) * 320}; }
+function armX(t){ return 400 - ((t * 130 + params.armPhase) % 340); }
 let takesScene = 1;                  // campaign: attempts on current scene
 let perfectStreak = 0;
 let p = null;
@@ -646,18 +694,44 @@ function csEvent(ev){
   if (changed) persist();
 }
 function newPlayer(x){
-  return {x: x, y: GROUND, vx: 0, vy: 0, angle: 0, om: 0, locked: false, squash: 0, pose: 'stand'};
+  const h = (typeof params !== 'undefined' && params && params.h) || 0;
+  return {x: x, y: GROUND - h, vx: 0, vy: 0, angle: 0, om: 0, locked: false, spun: 0, squash: 0, pose: 'stand'};
 }
-p = newPlayer(START_X);
+p = freshPlayer();
+function freshPlayer(){ bounced = false; mechT = Math.random() * 10; return newPlayer(params.startX || START_X); }
 
 // ========== gameplay ==========
+function grav(){ return GRAVITY * (params.mech ? params.mech.grav : 1); }
+// hazard collision mid-air: same CUT! flow, aerial ragdoll, special quips
+function crashAir(popupText, quipText){
+  perfectStreak = 0;
+  S.crashes++;
+  if (S.crashes >= 100) award('frequentFlyer');
+  crashKind = 'full';
+  spawnRagdoll();
+  if (!S.set.rm) { shake = 1; flash = 1; }
+  haptic([40, 40, 60]);
+  quip = quipText;
+  addPopup(popupText, p.x, Math.max(80, p.y - 60), '#f87171', 32);
+  sfx.crash(); sfx.cut();
+  persist();
+  state = 'crash'; stateT = 0;
+}
 function startJump(){
   S.takes++;
   if (mode === 'campaign') S.setTakes++;
   csEvent('take');
-  const targetX = 250 + Math.random() * 80;
-  p.vx = (targetX - p.x) / params.T;
-  p.vy = -GRAVITY * params.T / 2;
+  const g = grav();
+  if (params.mech.cart) {
+    // launch inherits the cart's velocity — the mat is where timing cashes out
+    const base = ((params.matL + params.matR) / 2 - 95) / params.T;
+    p.vx = base + cartVx(mechT);
+  } else {
+    const targetX = 250 + Math.random() * 80;    // landing spot varies; angle is what's judged
+    p.vx = (targetX - p.x) / params.T;
+  }
+  // arc solved so airtime ≈ T even when launching from a platform (fall = h)
+  p.vy = (params.h || 0) / params.T - g * params.T / 2;
   p.om = params.om;
   p.locked = false;
   p.spun = 0;                          // rotation accrued (gates the lock)
@@ -692,6 +766,11 @@ function spawnRagdoll(){
 
 function evaluateLanding(){
   p.y = GROUND;
+  // cart scenes: timing decides WHERE you land; the mat is non-negotiable
+  if (params.mech.cart && (p.x < params.matL || p.x > params.matR)) {
+    crashAir('MISSED THE MAT!', '"The mat. It\'s the big obvious rectangle. The ONE job of the mat."');
+    return;
+  }
   let a = p.angle % (Math.PI * 2);
   if (a < 0) a += Math.PI * 2;
   const off = Math.min(a, Math.PI * 2 - a);
@@ -832,7 +911,7 @@ function advance(){
     if (oldG.id !== g.id) {
       // wrap party: honor what was just finished, then tease the new set
       queueCard({kicker: "THAT'S A WRAP", icon: '🎉', title: oldG.name + ' — WRAPPED',
-        body: 'All ten scenes shot in ' + S.setTakes + ' takes. The company moves to ' + g.name + ': ' + g.flavor + '.',
+        body: 'All ten scenes shot in ' + S.setTakes + ' takes. The company moves to ' + g.name + ': ' + g.flavor + '. ' + g.stunt,
         buttons: [{label: 'ACTION!', primary: true}]});
       S.setTakes = 0;
     }
@@ -843,7 +922,7 @@ function advance(){
     addPopup('SCENE ' + (dStep - 1) + ' IN THE CAN', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
   }
   refreshParams();
-  p = newPlayer(START_X);
+  p = freshPlayer();
   sfx.advance();
   if (cardQueue.length) showNextCard();
   else { state = 'ready'; stateT = 0; }
@@ -872,7 +951,7 @@ function retry(){
   gameBar(false);
   if (mode === 'daily') {
     if (dLives > 0) {                  // lives remain: same run continues
-      p = newPlayer(START_X);
+      p = freshPlayer();
       popups = []; ragdoll = [];
       state = 'ready';
     } else { showScreen('daily'); state = 'home'; }
@@ -880,7 +959,7 @@ function retry(){
   }
   takesScene++;
   if (mode === 'campaign') S.firstTakeChain = 0;
-  p = newPlayer(START_X);
+  p = freshPlayer();
   popups = []; ragdoll = [];
   state = 'ready';
 }
@@ -891,7 +970,7 @@ function playReshoot(n){
   rScene = n;
   refreshParams();
   takesScene = 1; perfectStreak = 0;
-  p = newPlayer(START_X);
+  p = freshPlayer();
   popups = []; ragdoll = []; quip = '';
   showScreen(null);
   state = 'ready';
@@ -902,7 +981,7 @@ function playCampaign(){
   mode = 'campaign';
   refreshParams();
   takesScene = 1; perfectStreak = 0;
-  p = newPlayer(START_X);
+  p = freshPlayer();
   popups = []; ragdoll = []; quip = '';
   showScreen(null);
   state = 'ready';
@@ -918,7 +997,7 @@ function playDaily(){
   dLives = 3;
   refreshParams();
   perfectStreak = 0;
-  p = newPlayer(START_X);
+  p = freshPlayer();
   popups = []; ragdoll = []; quip = '';
   showScreen(null);
   state = 'ready';
@@ -928,7 +1007,7 @@ function resetProgress(){                            // "Reshoot from Scene 1"
   takesScene = 1; perfectStreak = 0; S.firstTakeChain = 0;
   persist();
   refreshParams();
-  p = newPlayer(START_X);
+  p = freshPlayer();
   toast('Back to Scene 1 — record kept: Scene ' + S.furthest);
 }
 
@@ -957,13 +1036,51 @@ function update(dt){
   flash = Math.max(0, flash - dt * 4);
   p.squash = Math.max(0, p.squash - dt * 4);
 
+  if (state !== 'home' && state !== 'card') mechT += dt;   // scene clock (hazards animate even pre-jump)
+
+  if (state === 'ready' && params.mech.cart) {             // the cart carries you until you jump
+    p.x = cartX(mechT);
+  }
+
   if (state === 'air') {
-    p.vy += GRAVITY * dt;
+    p.vy += grav() * dt;
+    if (params.mech.wind) {
+      p.vx += params.mech.wind * 0.35 * dt;                          // visible drift
+      if (!p.locked) p.om += params.mech.wind * (Math.PI / 180) * dt; // spin drift: the real skill test
+    }
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.angle += p.om * dt;
     p.spun += Math.abs(p.om) * dt;
-    if (p.vy > 0 && p.y >= GROUND) evaluateLanding();
+    // aerial hazards (both telegraphed by constant visible motion)
+    if (params.mech.boom) {
+      const tip = boomTip(mechT);
+      const mx = (280 + tip.x) / 2, my = (80 + tip.y) / 2;           // outer half of the boom
+      if (Math.hypot(p.x - tip.x, p.y - tip.y) < 30 || Math.hypot(p.x - mx, p.y - my) < 26) {
+        crashAir('CLIPPED IT!', '"The boom. THE BOOM. It was RIGHT THERE."');
+        return;
+      }
+    }
+    if (params.mech.arm && p.y > GROUND - 70 && Math.abs(p.x - armX(mechT)) < 45) {
+      crashAir('SWATTED!', '"The monster is a PROP. He is not. Was not."');
+      return;
+    }
+    if (p.vy > 0 && p.y >= GROUND) {
+      if (params.mech.bounce && !bounced) {                          // double-bounce big stunts
+        bounced = true;
+        p.y = GROUND;
+        p.vy = -grav() * (params.T * 0.7) / 2;
+        p.om = -Math.sign(p.om || 1) * Math.abs(params.om) * 1.1;
+        p.locked = false;
+        p.spun = 0;                                                  // second lock, fresh gate
+        p.pose = 'tuck';
+        dust(p.x, GROUND, 10);
+        addPopup('BOUNCE!', p.x, GROUND - 90, '#38bdf8', 26);
+        sfx.jump();
+      } else {
+        evaluateLanding();
+      }
+    }
   } else if (state === 'landed') {
     if (stateT > 1.0) advance();
   } else if (state === 'crash') {
@@ -1103,6 +1220,58 @@ function drawRagdollPart(q){
   ctx.restore();
 }
 
+// ========== render: mechanics (all hazards telegraph by constant motion) ==========
+function drawMechanics(){
+  const m = params.mech;
+  if (params.h > 0) {                                       // launch scaffold
+    ctx.fillStyle = '#2c2018';
+    ctx.fillRect(params.startX - 26, GROUND - params.h, 52, params.h);
+    ctx.strokeStyle = '#4a3626'; ctx.lineWidth = 2;
+    ctx.strokeRect(params.startX - 26, GROUND - params.h, 52, params.h);
+  }
+  if (m.cart) {
+    const cx = cartX(mechT);                                // keeps rolling after launch
+    ctx.fillStyle = '#5a3a1a';
+    ctx.fillRect(cx - 24, GROUND - 14, 48, 14);
+    ctx.fillStyle = '#241811';
+    ctx.beginPath(); ctx.arc(cx - 14, GROUND - 2, 7, 0, Math.PI * 2); ctx.arc(cx + 14, GROUND - 2, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(46,74,107,0.95)';                 // THE mat, highlighted
+    ctx.fillRect(params.matL, GROUND, params.matR - params.matL, 16);
+    ctx.strokeStyle = '#6ee7b7'; ctx.lineWidth = 2;
+    ctx.strokeRect(params.matL, GROUND, params.matR - params.matL, 6);
+  }
+  if (m.boom) {
+    const tip = boomTip(mechT);
+    ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(280, 80); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+    ctx.fillStyle = '#5a4020';
+    ctx.beginPath(); ctx.arc(tip.x, tip.y, 14, 0, Math.PI * 2); ctx.fill();
+  }
+  if (m.wind) {
+    ctx.strokeStyle = 'rgba(180,200,230,0.35)'; ctx.lineWidth = 2;
+    const dir = Math.sign(m.wind);
+    for (let i = 0; i < 7; i++) {
+      const yy = 130 + i * 60;
+      const xx = ((mechT * 90 * dir + i * 67) % 460 + 460) % 460 - 30;
+      ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx + 26 * dir, yy); ctx.stroke();
+    }
+  }
+  if (m.arm) {
+    const ax = armX(mechT);
+    ctx.fillStyle = '#1f3a26';
+    ctx.beginPath();
+    ctx.moveTo(ax + 40, GROUND); ctx.quadraticCurveTo(ax + 20, GROUND - 70, ax, GROUND - 55);
+    ctx.quadraticCurveTo(ax - 25, GROUND - 40, ax - 30, GROUND); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2e5237';
+    ctx.beginPath(); ctx.arc(ax - 8, GROUND - 42, 6, 0, Math.PI * 2); ctx.arc(ax + 10, GROUND - 50, 6, 0, Math.PI * 2); ctx.fill();
+  }
+  if (m.grav !== 1 && state !== 'crash' && state !== 'over') {   // wire-work wires
+    ctx.strokeStyle = 'rgba(232,213,181,0.28)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(p.x - 8, 28); ctx.lineTo(p.x - 4, p.y - 44); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.x + 8, 28); ctx.lineTo(p.x + 4, p.y - 44); ctx.stroke();
+  }
+}
+
 // ========== render: frame ==========
 function slateStripes(x, y, w, h){
   ctx.save();
@@ -1119,6 +1288,7 @@ function draw(){
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
   if (setCache) ctx.drawImage(setCache, 0, 0, W, H);
+  drawMechanics();
 
   if (ragdoll.length && (state === 'crash' || state === 'over')) {
     for (const q of ragdoll) drawRagdollPart(q);
@@ -1166,22 +1336,28 @@ function draw(){
     // lives shown as hearts AND a number — never color/symbol alone (a11y)
     ctx.fillText('LIVES ' + '♥'.repeat(Math.max(0, dLives)) + ' (' + dLives + ')  ·  CLEARED ' + (dStep - 1) + '  ·  TODAY\'S BEST ' + S.daily.todayBest, W / 2, 114);
   }
-  if (params.big && state === 'ready') {
-    ctx.fillStyle = '#ef476f'; ctx.font = 'bold 16px system-ui, sans-serif';
-    ctx.fillText('★ BIG STUNT SCENE ★', W / 2, 156);
-  }
-  if (params.golden && state === 'ready') {
-    ctx.fillStyle = '#ffd166'; ctx.font = 'bold 16px system-ui, sans-serif';
-    ctx.fillText('★ GOLDEN TAKE — BONUS PRINTS ★', W / 2, 156);
+  // scene badge stack: stunt conditions, always text-labeled (a11y)
+  const badges = [];
+  if (params.big) badges.push(['★ BIG STUNT' + (params.mech.bounce ? ' — DOUBLE BOUNCE' : '') + ' ★', '#ef476f']);
+  if (params.golden) badges.push(['★ GOLDEN TAKE — BONUS PRINTS ★', '#ffd166']);
+  if (params.mech.cart) badges.push(['ROLLING CART — LAND ON THE MAT', '#e8a33d']);
+  if (params.mech.boom) badges.push(['MIND THE BOOM', '#7dd3fc']);
+  if (params.mech.grav !== 1) badges.push([params.mech.grav < 1 ? 'WIRE WORK: LOW-G' : 'WIRE WORK: HIGH-G', '#c084fc']);
+  if (params.mech.wind) badges.push(['WIND MACHINE — SPIN DRIFT', '#93c5fd']);
+  if (params.mech.arm) badges.push(['TIME THE SWEEP', '#6ee7b7']);
+  let by = 156;
+  if (state === 'ready' || state === 'air') {
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    for (const [txt, col] of badges) { ctx.fillStyle = col; ctx.fillText(txt, W / 2, by); by += 19; }
   }
   if (perfectStreak >= 2) {
     ctx.fillStyle = '#c084fc'; ctx.font = 'bold 15px system-ui, sans-serif';
-    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, 176);
+    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, by);
   }
 
   ctx.fillStyle = '#e8d5b5'; ctx.font = 'bold 20px system-ui, sans-serif';
   if (state === 'ready') {
-    ctx.fillText('ACTION!  (tap to jump)', W / 2, 420);
+    ctx.fillText(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), W / 2, 420);
   } else if (state === 'air' && !p.locked) {
     ctx.fillStyle = 'rgba(232,213,181,0.7)';
     ctx.fillText('TAP TO STOP SPIN', W / 2, 660);
@@ -1428,7 +1604,7 @@ for (const b of document.querySelectorAll('.back')) b.onclick = () => showScreen
 
 // dev/test hooks: state inspection + action handles for the headless driver
 window.__t47 = {
-  get: () => ({state, mode, dStep, dLives, rScene, crashKind, takesScene, perfectStreak, cards: cardQueue.length, wallet: wallet(), S}),
+  get: () => ({state, mode, dStep, dLives, rScene, crashKind, takesScene, perfectStreak, cards: cardQueue.length, wallet: wallet(), mech: params.mech, h: params.h, matL: params.matL, matR: params.matR, S}),
   reshoot: playReshoot,
   buy: buyOrSelectVariant,
   cs: csEvent

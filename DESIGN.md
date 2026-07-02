@@ -16,17 +16,19 @@ The movie is the progression. Each **scene** is one designed jump: the player ta
 
 Scene design is deterministic-procedural: a seeded PRNG derives each scene's spin speed/direction, airtime, and landing tolerance from the scene number, so every player faces the identical Scene 137. Every 10th scene is a marked "BIG STUNT SCENE" (faster spin).
 
-Current tuning (prototype, subject to feel iteration):
+**Every set teaches a stunt (depth architecture, 2026-07-03).** Difficulty comes from mechanics layering, not raw speed. Each genre introduces its signature mechanic when the production arrives: THE BACKLOT teaches the basics; DUST GULCH adds the **rolling launch cart** (first-tap timing + a mandatory crash mat); THE HIGH SEAS swings a **boom** through the descent corridor; SAUCER STAGE runs **wire-work gravity** (low-G/high-G arcs); RAIN STREET's **wind machine** drifts your spin mid-air; MINIATURE CITY's **arm sweeps** the landing zone on a rhythm. Cycle 2 (scene 61+) mixes a seeded second mechanic into scenes and upgrades BIG STUNTS to **double-bounce** format (two spin phases, two locks). Launch platforms (0/60/120px, seeded) vary every scene's arc everywhere. All hazards telegraph via constant visible motion + text badges; input stays strictly one-thumb.
+
+Current tuning ("brutal but fair" ceiling, subject to feel iteration):
 
 | Parameter | Value |
 |---|---|
-| Airtime | 1.15–1.5 s (seeded per scene), gravity 1400 px/s² |
-| Spin speed | 280 + 28×scene °/s + seeded 0–80, capped 880; ×1.15 on big-stunt scenes; direction seeded |
-| Good window | 30 − 1.2×scene degrees, floor 15° |
+| Airtime | 1.15–1.5 s (seeded), gravity 1400 px/s² × wire-work factor (0.55/1.45) |
+| Spin speed | 280 + 150·ln(1+n/12) °/s + seeded 0–40, soft cap 950; ×1.12 big stunts |
+| Good window | 30 − 0.25×scene degrees, floor 12° (big stunts −2°, floor 10°) |
+| Breathers | ~10% of scenes seeded easier (spin ×0.85, window +6°) |
 | Perfect window | 10° |
-| Perfect streak | session-scoped flair (popup ×n); prints counter persists |
 | Hitstop on landing | 60 ms |
-| Persistence | scene, lifetime takes, prints, reduce-motion setting (local storage) |
+| Persistence | full save blob (scene, printed map, wallet, wardrobe, call sheet, settings) |
 
 ## Juice and feel
 
@@ -47,6 +49,8 @@ Already in: hitstop, screen shake, red flash, landing dust, perfect confetti, ra
 **Settings.** Sound effects, haptics, reduce motion, Reshoot from Scene 1, restore purchases, privacy policy link — all real labeled buttons (VoiceOver-navigable).
 
 **The joy package (added 2026-07-03 after Dan's replayability session).** Six interlocking systems: (1) **Near-miss tier** — landing within 8° outside tolerance is "SO CLOSE!": no ragdoll, a dignified faceplant, pained director quips; the strongest retry-driver in the genre. (2) **The Reel** — reshoot any completed scene; perfect it to *print* it. The mastery loop: forward-only becomes beat-your-own-history. (3) **Poster Wall** — one poster per wrapped set; printing all ten of its scenes gilds it to a Director's Cut. (4) **Call Sheet** — three seeded daily goals (+2 prints each, +5 for the sweep); gives sessions a finish line. (5) **Golden takes** — ~1 in 20 scenes (seeded, never big stunts) pays +3 prints. (6) **Rare director approval** — 2% of perfects, he has no notes. Prints economy: perfects earn prints (+call sheet+goldens); prints spend on **wardrobe** — three colorways per character (0/15/30) — cosmetic only, never progression (the no-pay-to-win principle extends to earned currency).
+
+**Economy baseline (2026-07-03, for calibration — Dan: evaluate usage over time).** Earn rates: +1/perfect, +3/golden scene (~1 in 20), +2/call-sheet goal (max 3/day), +5/call-sheet sweep = a skilled day ≈ 15-25 prints; casual ≈ 5-10. Sink: 15/30 per colorway, 270 to buy everything. Baseline intent: first purchase within ~2 days casual, full wardrobe ≈ 2-3 weeks. Calibration checkpoints: Dan's own play now, TestFlight feedback later (no analytics SDK — self-report + direct questions to testers). Adjust prices, not earn rates, first.
 
 **Scene genres (added 2026-07-03, Dan: full v1).** The set changes genre every 10 scenes, cycling: The Backlot → Dust Gulch (western) → The High Seas (swashbuckler) → Saucer Stage (50s sci-fi) → Rain Street (noir) → Miniature City (kaiju). All trope-level per THEME.md IP guardrails; every set keeps the film-set framing (rig, spotlight, camera, crash mat). Genre transitions announced with a toast; each genre's 10th scene is its BIG STUNT finale.
 
