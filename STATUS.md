@@ -59,10 +59,15 @@
 
 - 2026-07-03: **Icon finalized (MVP)** after 11 iterations — "clapperboard contains the scene": no-text container composition, screaming inverted flipper (now the franchise face, per DESIGN note), spotlight, stage, X mark. Production files in app/ (icon-1024/180); source assets/icon-final.png; iteration artifacts cleaned.
 
-## Next steps
-1. Dan: push; re-add to home screen to see the real icon.
-2. Polish continues: App Store screenshot set + share-card face pass, sound design in the movie-set language, crash comedy pass.
-3. Then PIPELINE.md runbook → hello-world TestFlight build (incl. save-durability gate).
+- 2026-07-03 (session end): **sanitization pass** — folder audited (prototypes/README updated: all prototypes archived, app/ is the game); a11y fixes (canvas aria-label, FTUE pulse respects reduce-motion); file header rewritten to current architecture; zero-gain refactors deliberately skipped (verified code > micro-churn); full headless regression green; CLAUDE.md operational lessons expanded (read-cap workaround, verification wins, visual workflow).
+
+## Next session (polish, in priority order)
+1. **In-game face pass** — port the icon's franchise face (terror eyes/mouth/sweat) to the flight character + share card. Small code, big brand payoff; do before screenshots.
+2. **Sound design** — replace synth placeholder in the movie-set language (clapper, bullhorn, film stings); crash comedy pass alongside.
+3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
+4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate: Capacitor Preferences) → hello-world TestFlight build.
+
+**Dan actions on return:** commit/push the sanitization note below; play the icon build (re-add to home screen); confirm polish order or redirect.
 2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.

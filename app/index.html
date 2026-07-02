@@ -1,20 +1,31 @@
 <!DOCTYPE html>
 <!--
-  TAKE 47 — v1 app (full game; becomes the Capacitor web root in Phase 5)
+  TAKE 47 — v0.9 beta (full game; becomes the Capacitor web root in Phase 5)
 
   Architecture: single-file. Canvas renders gameplay only; all menus/settings
-  are real HTML buttons (VoiceOver/keyboard accessible). Systems: versioned
-  save → genres (6 sets, cached offscreen) → characters (1 rig, 6 costumes) →
-  audio → engine (campaign + daily modes) → achievements → share card → UI.
+  are real HTML buttons (VoiceOver/keyboard accessible). Systems, in file
+  order: config → save (versioned blob + legacy migration) → seeded scene
+  design + genre mechanics (cart/boom/gravity/wind/arm/bounce) → genres
+  (6 cached sets) → characters (1 rig, 6 costumes + wardrobe economy) →
+  prop department (earned-only consumables) → audio → call sheet → engine
+  (campaign/daily/reshoot) → interstitial cards + ad-pacing placeholder →
+  FTUE coaching + progressive home disclosure → achievements w/ progress →
+  render (cached set, mechanics telegraphs, cart trajectory preview) →
+  share card (challenge + on-image link) → UI wiring → safety net.
 
   PRIVACY: fully offline. One localStorage key holds all game state; no
   network requests, no analytics, no identifiers, no third-party code.
-  (Ad SDK arrives in Phase 5 behind Capacitor; see PRIVACY.md.)
+  Share uses the native sheet, user-initiated only. (Ad SDK arrives in
+  Phase 5 behind Capacitor; see PRIVACY.md. Save moves to Capacitor
+  Preferences in Phase 5 — hard gate, see STATUS watch list.)
 
-  ACCESSIBILITY: outcomes pair color with text labels; reduce-motion setting
-  kills shake/flash (no strobing anywhere); sound optional; menu UI is native
-  HTML with aria-pressed toggles and a polite live region for achievement
-  toasts; touch targets ≥48px; canvas gameplay itself is one-tap.
+  ACCESSIBILITY: outcomes pair color with text labels (never color alone);
+  reduce-motion kills shake/flash and calms FTUE pulses (no strobing
+  anywhere); sound optional; hazards telegraph by constant visible motion
+  + text badges; menus are native HTML with aria-pressed toggles and a
+  polite live region for toasts; touch targets ≥48px; canvas gameplay is
+  one-tap with keyboard equivalent (Space). Canvas itself is labeled but
+  gameplay is acknowledged as not screen-reader playable.
 -->
 <html lang="en">
 <head>
@@ -113,7 +124,7 @@
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c" role="img" aria-label="TAKE 47 gameplay: tap to jump, tap again to stop the spin"></canvas>
 
 <section id="scr-home" class="screen active" aria-label="TAKE 47 home">
   <h1>TAKE 47</h1>
@@ -1528,7 +1539,8 @@ function draw(){
       const foff = Math.min(fa, Math.PI * 2 - fa);
       if (p.spun > MIN_SPIN && foff < params.tol * 0.9) {
         ctx.fillStyle = '#ffd166';
-        ctx.font = 'bold ' + (30 + Math.sin(mechT * 20) * 5) + 'px system-ui, sans-serif';
+        // pulse respects reduce-motion (a11y): static size when rm is on
+        ctx.font = 'bold ' + (S.set.rm ? 32 : 30 + Math.sin(mechT * 20) * 5) + 'px system-ui, sans-serif';
         ctx.fillText('TAP NOW!', W / 2, 480);
       } else if (p.spun <= MIN_SPIN) {
         ctx.fillStyle = 'rgba(232,213,181,0.7)';

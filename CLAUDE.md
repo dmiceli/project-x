@@ -20,10 +20,13 @@ Dan (product owner) and Claude (lead developer) build a low-complexity iOS game 
 ## Tech stack (decided 2026-07-02)
 Vanilla JS + HTML5 canvas, single-file during prototyping (no game engine — proven unnecessary at this scope) → Capacitor wrapper for iOS → Codemagic cloud build/sign/submit. Browser-playable at every stage.
 
-## Operational notes for Claude (learned 2026-07-02)
+## Operational notes for Claude (learned 2026-07-02/03)
 - **Claude never commits.** Dan commits/pushes via GitHub Desktop after reviewing diffs — this review step is deliberate. Claude supplies the commit message.
-- Claude's sandbox cannot run git on the shared folder (lock-file restrictions) and its mounted view may truncate larger files (~18KB seen) — the Write/Edit/Read file tools are authoritative; don't trust `wc`/`cat` on the mount for big files.
-- **Verify before handing over:** test game-logic changes headlessly (logic mirror + simulated input driver lives in the session scratchpad under `test/`; recreate as needed). Visual changes still need Dan's eyes.
+- Claude's sandbox cannot run git on the shared folder (lock-file restrictions) and its mounted READ view truncates larger files (caps observed anywhere from ~18KB to ~46KB, and the boundary shifts as the file grows) — the Write/Edit/Read file tools are authoritative; never trust `wc`/`cat`/`node fs` on the mount for app/index.html.
+- **Headless testing of the app despite the read cap:** stitch a test copy in the scratchpad from [mounted head] + [known-verbatim bridge segments] anchored on unique code lines, then run the input-simulation driver (recreate under scratchpad `test/`; drivers 1-7 pattern: DOM stubs, vm sandbox, __t47 hook widened per test). When the cap boundary swallows an anchor, bridge one section higher. Sandbox `bash` CAN WRITE to the mount (icons were written that way) — only reads are capped.
+- **Verification pays:** headless drivers caught a game-breaking exploit (instant-lock), an untouchable hazard (boom placed above all flight paths), and multiple driver-side false alarms — always distinguish game bug vs test bug before patching the game.
+- **Visual asset workflow:** PIL in the sandbox, written directly to the mount; supersample 4× + LANCZOS downscale, soft light via GaussianBlur, grain/vignette to escape flat "programmer art." Render → Read (view) → self-critique honestly → iterate with Dan in short loops. Keep a 60px test strip for icons.
+- **Skip zero-gain refactors:** micro-optimizations that add churn risk to verified code are declined deliberately (noted in session log) — cleanup passes target real waste, a11y, comments, docs.
 
 ## Phases
 0. Environment + stack decision; start Apple Developer enrollment
