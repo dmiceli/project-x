@@ -1570,7 +1570,7 @@ function draw(){
       } else if (p.spun <= MIN_SPIN) {
         ctx.fillStyle = 'rgba(232,213,181,0.7)';
         ctx.font = 'bold 18px system-ui, sans-serif';
-        ctx.fillText('wait for the spin…', W / 2, 480);
+        ctx.fillText('Wait for the spin…', W / 2, 480);
       }
     }
     ctx.fillStyle = 'rgba(232,213,181,0.7)';
@@ -1730,9 +1730,9 @@ function revealRules(){
   ];
 }
 function refreshHome(){
-  const tomorrow = S.furthest >= 3 ? '  ·  new gauntlet & call sheet at midnight 🌙' : '';
-  $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  wallet: ' + wallet() + ' prints' +
-    (S.furthest > S.scene ? '  ·  record: Scene ' + S.furthest : '') + tomorrow;
+  const tomorrow = S.furthest >= 3 ? '  ·  New gauntlet & call sheet at midnight 🌙' : '';
+  $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  Wallet: ' + wallet() + ' prints' +
+    (S.furthest > S.scene ? '  ·  Record: Scene ' + S.furthest : '') + tomorrow;
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
   for (const [id, cond, label] of revealRules()) {
     $(id).style.display = cond ? '' : 'none';

@@ -63,6 +63,8 @@
 
 - 2026-07-03 (new session): **face pass shipped** — franchise face on the in-game character (terror scream in flight, relief on clean landings, grin on perfects, unchanged X-eyes/faceplant variants) and the star now appears mid-scream on the share card beside the number, wearing the player's selected costume. drawGuy/drawAccessory parameterized for reuse. Regression green.
 
+- 2026-07-03: BRAND.md expanded — copy rules (4 registers: STAMPS / sentence case / Title Case / quips) + art direction reference (Tim-adjacent flat deadpan, inspiration-only). In-app capitalization violations fixed ("Wait for the spin…", home stats normalized). Regression green.
+
 ## Next steps (polish)
 1. Dan: push + play — judge the face at game size (flight scream, landing relief) and hit SHARE to see the card cameo.
 2. **Sound design** — replace synth placeholder in the movie-set language (clapper, bullhorn, film stings); crash comedy pass alongside.

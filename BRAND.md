@@ -30,6 +30,21 @@ Research: 4–8 core colors with assigned jobs, identical hex across all platfor
 
 Rules: gold is precious — one gold element per composition (it's the reward color; overuse debases it). Red and green always ship with a text label (accessibility standing rule: never color alone). No pure black, no pure white, anywhere.
 
+## Art direction reference (added 2026-07-03, Dan)
+
+Tonal north star: **"The Life and Times of Tim"-adjacent** — flat, deadpan line-art; understated expressions doing heavy lifting; muted, unglamorous color fields; matter-of-fact framing of absurd events. Inspiration only, never imitation: we borrow the *register* (flatness, dryness, restraint), no characters, likenesses, or traceable compositions. Practical implications for our art: keep line weights honest and even, resist gloss and bounce, let the terror-face stay small and matter-of-fact rather than rubber-hose exaggerated, and let backgrounds stay quiet.
+
+## Copy rules (added 2026-07-03 after in-app capitalization audit)
+
+Four registers, used consistently:
+
+1. **STAMPS** (ALL CAPS): verdicts and production paperwork — CUT!, PRINT IT!, SO CLOSE!, SCENE 12, TAKE 47, screen titles (THE REEL), button labels (ACTION!, STAR THEM), HUD labels. The stamp register is the *only* home of exclamation marks besides director yells.
+2. **Sentence case**: all instructions, descriptions, toasts, body copy ("Tap to jump. Tap again to stop the spin."). Asides attached to stamps stay lowercase in parentheses: "ACTION!  (time the cart!)".
+3. **Title Case**: proper nouns of the world — the Call Sheet, the Reel, the Poster Wall, the Prop Department, character names — when referenced in prose or toasts.
+4. **Quips**: always quoted, sentence case, italic serif, attributed ("— the director").
+
+Brand words (PRINT, CUT, TAKE) may be stamped inside sentence-case copy sparingly ("Land a perfect to PRINT it"). Mid-sentence clauses after em-dashes stay lowercase. Numerals always for scenes/takes/prints.
+
 ## Typography
 
 **Display:** bold serif (Georgia in-app; DejaVu Serif in generated assets) — slates, titles, verdicts (CUT!, BEAT THIS.). The serif is the "movie" in the brand. **UI/body:** system sans — everything functional. Never mix roles: a serif button or a sans-serif slate is off-brand. Minimum sizes: 14px equivalent in-app, nothing under 24px on marketing assets.
