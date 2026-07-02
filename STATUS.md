@@ -45,9 +45,8 @@
 - 2026-07-03: **Joy package shipped** after guided replayability session — near-miss tier, the Reel (reshoot/print), Poster Wall, Call Sheet dailies, golden takes, director approval, prints wallet + wardrobe (18 colorways). All flows verified headlessly (near-miss trigger, scene-21 run, reshoot isolation, wallet math, call-sheet payout, golden seeding).
 
 ## Next steps
-1. **Still open: GAME_URL needs Dan's GitHub username** (share link is a placeholder until then).
-2. Dan: push + play the joy build. Watch for: does SO CLOSE! sting correctly? Is the Reel inviting? Wardrobe prices fair?
-3. Then: polish phase (icon, real sound in movie-set language, crash comedy pass) → PIPELINE.md → TestFlight.
+1. Dan: push + play the joy build. Watch for: does SO CLOSE! sting correctly? Is the Reel inviting? Wardrobe prices fair?
+2. Then: polish phase (icon, real sound in movie-set language, crash comedy pass) → PIPELINE.md → TestFlight.
 2. Then: tuning/polish batch → icon + real sound design.
 3. PIPELINE.md runbook → first hello-world TestFlight build.
 4. Later: verify "TAKE 47" name in App Store Connect.
