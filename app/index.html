@@ -114,9 +114,20 @@
   .poster .art{font-size:44px}
   .poster.gold{border-color:var(--gold);background:#2a2010}
   .poster p{margin:2px 0;font-size:13px;color:var(--dim)}
-  #csList{width:min(340px,88vw);margin:0 auto 10px;text-align:left}
-  #csList div{font-size:14px;color:var(--dim);padding:3px 0}
+  /* call sheet: its own card, present from day zero (Dan) */
+  #csList{width:min(352px,90vw);margin:16px auto 0;text-align:left;background:var(--panel);
+    border:1px solid #3a2a22;border-radius:12px;padding:10px 14px 12px;box-sizing:border-box}
+  #csList::before{content:"TODAY'S CALL SHEET";display:block;font-size:11px;
+    letter-spacing:2px;color:var(--dim);font-weight:700;margin-bottom:6px}
+  #csList div{font-size:13px;color:var(--dim);padding:3px 0;display:flex;
+    justify-content:space-between;gap:8px}
   #csList div.done{color:var(--good)}
+  #csList .pay{color:var(--gold);font-weight:700;flex-shrink:0}
+  /* locked-but-visible future features (zero state shows the promise) */
+  .locked{opacity:.42}
+  .shelf button.locked .em{filter:grayscale(1)}
+  .shelf button.locked::after,.footrow button.locked::after{content:'🔒 ' attr(data-hint);
+    display:block;font-size:9px;color:var(--dim);font-weight:600}
 
   /* ---- prop belt: consumables armed from the ready screen ---- */
   #propBar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));
@@ -675,6 +686,7 @@ let rScene = 1;                      // reshoot: which completed scene
 let crashKind = 'full';              // full ragdoll vs near-miss stumble
 let slowmoT = 0;                     // brief slow-motion on spectacular crashes
 let gag = null;                      // the delayed falling-light BONK (comedy beat)
+let dirMood = '', dirMoodT = 0;      // director reaction override (clap on perfects)
 let cardQueue = [];                  // pending interstitial celebrations
 let mechT = 0;                       // scene clock driving cart/boom/arm animation
 let bounced = false;                 // double-bounce stunts: second phase flag
@@ -864,6 +876,7 @@ function evaluateLanding(){
     if (!S.ftue) { S.ftue = 1; }         // first landed scene: coaching retires
     if (wasPerfect) {
       perfectStreak++;
+      dirMood = 'clap'; dirMoodT = 1.4;              // even HE has to admit it
       S.prints++;
       if (mode !== 'daily') S.printed[currentSceneNo()] = 1;   // collection flag (posters)
       S.bestStreak = Math.max(S.bestStreak, perfectStreak);
@@ -1142,6 +1155,7 @@ function update(dt){
   if (hitstop > 0) { hitstop -= dt; return; }
   if (slowmoT > 0) { slowmoT -= dt; dt *= 0.3; }    // slow-mo: the crash, savored
   stateT += dt;
+  dirMoodT = Math.max(0, dirMoodT - dt);
   shake = Math.max(0, shake - dt * 3);
   flash = Math.max(0, flash - dt * 4);
   p.squash = Math.max(0, p.squash - dt * 4);
@@ -1516,6 +1530,7 @@ function draw(){
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
   if (setCache) ctx.drawImage(setCache, 0, 0, W, H);
+  drawDirector();                                    // reacts live, so not cached
   drawMechanics();
 
   if (ragdoll.length && (state === 'crash' || state === 'over')) {
@@ -1833,7 +1848,6 @@ function toast(msg){
 function revealRules(){
   return [
     ['btnDaily',     S.furthest >= 3,               '🎬 Daily Challenge'],
-    ['csList',       S.furthest >= 5,               '📋 The Call Sheet'],
     ['btnShareHome', S.furthest >= 5,               null],
     ['btnReel',      S.furthest >= 11,              '🎞️ The Reel'],
     ['btnPosters',   S.furthest >= 11,              '🖼️ The Poster Wall'],
@@ -1847,11 +1861,18 @@ function refreshHome(){
   $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  Wallet: ' + wallet() + ' prints' +
     (S.furthest > S.scene ? '  ·  Record: Scene ' + S.furthest : '') + tomorrow;
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
+  // locked features stay VISIBLE but dimmed with an unlock hint (Dan: the zero
+  // state hid the future — an empty shelf reads as a broken app, not a promise)
+  const HINTS = {btnDaily: 'scene 3', btnShareHome: 'scene 5', btnReel: 'scene 11',
+    btnPosters: 'scene 11', btnProps: 'earn a print', btnCast: 'scene 10', btnTrophies: 'first trophy'};
   for (const [id, cond, label] of revealRules()) {
-    $(id).style.display = cond ? '' : 'none';
+    const el = $(id);
+    el.classList.toggle('locked', !cond);
+    el.disabled = !cond;
+    if (!cond) el.setAttribute('data-hint', HINTS[id] || '');
     if (cond && label && !S.reveals[id]) {
       S.reveals[id] = 1; persist();
-      toast('🆕 ' + label + ' — now on the home screen');
+      toast('🆕 ' + label + ' — unlocked');
     }
   }
   dailyRollover();
@@ -1863,7 +1884,11 @@ function refreshHome(){
     if (!gDef) return;
     const row = document.createElement('div');
     row.className = S.cs.done[i] ? 'done' : '';
-    row.textContent = (S.cs.done[i] ? '✓ ' : '☐ ') + gDef.text + '  (' + Math.min(S.cs.prog[i], gDef.n) + '/' + gDef.n + ')  ·  +2🖨';
+    const left = document.createElement('span');
+    left.textContent = (S.cs.done[i] ? '✓ ' : '☐ ') + gDef.text + ' (' + Math.min(S.cs.prog[i], gDef.n) + '/' + gDef.n + ')';
+    const pay = document.createElement('span');
+    pay.className = 'pay'; pay.textContent = '+2🖨';
+    row.appendChild(left); row.appendChild(pay);
     cs.appendChild(row);
   });
   // the reel: every completed scene is reshootable
@@ -2019,6 +2044,46 @@ function oRect(c, x, y, w, h, fill, r){
 function oEllipse(c, x, y, rx, ry, fill){
   c.fillStyle = fill; c.strokeStyle = OUTL_SET; c.lineWidth = 3;
   c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+}
+// THE DIRECTOR — reacts per frame (Dan: promoted to MVP): watches from the
+// tall chair, leans in during flight, facepalms on crashes, raises the
+// megaphone while his quote shows, hands up on perfects. State-based poses,
+// no motion loops (reduce-motion safe).
+function drawDirector(){
+  let pose = 'watch';
+  if (state === 'air') pose = 'lean';
+  if (state === 'crash' || state === 'over') pose = quip ? 'shout' : 'face';
+  if (dirMoodT > 0 && dirMood === 'clap') pose = 'clap';
+  const x = 17, lean = pose === 'lean' ? 3 : 0;
+  ctx.strokeStyle = OUTL_SET; ctx.lineWidth = 3;                 // tall chair
+  ctx.beginPath(); ctx.moveTo(2, GROUND); ctx.lineTo(12, GROUND - 52); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30, GROUND); ctx.lineTo(20, GROUND - 52); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6, GROUND - 20); ctx.lineTo(27, GROUND - 20); ctx.stroke();
+  oRect(ctx, 8, GROUND - 58, 18, 8, '#2c2018');                  // canvas seat
+  ctx.fillStyle = '#3a3430'; ctx.strokeStyle = OUTL_SET; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.ellipse(x + lean, GROUND - 72, 9, 12, lean * 0.06, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  const hx2 = x + lean * 2, hy = GROUND - 90 + (pose === 'face' ? 4 : 0);
+  ctx.fillStyle = '#ecd0a8';
+  ctx.beginPath(); ctx.arc(hx2, hy, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#191010';                                     // beret
+  ctx.beginPath(); ctx.ellipse(hx2, hy - 6, 8, 3.5, -0.15, 0, Math.PI * 2); ctx.fill();
+  if (pose === 'face') {                                         // facepalm
+    ctx.fillStyle = '#ecd0a8';
+    ctx.beginPath(); ctx.ellipse(hx2 + 3, hy + 2, 5, 4, 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  } else if (pose === 'shout') {                                 // megaphone raised: he IS the quote
+    ctx.fillStyle = '#c94f52';
+    ctx.beginPath(); ctx.moveTo(hx2 + 6, hy + 2); ctx.lineTo(hx2 + 20, hy - 4); ctx.lineTo(hx2 + 18, hy + 8); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (pose === 'clap') {                                  // hands up for the perfect
+    ctx.strokeStyle = '#3a3430'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x - 6, GROUND - 78); ctx.lineTo(x - 12, hy - 10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 6, GROUND - 78); ctx.lineTo(x + 12, hy - 10); ctx.stroke();
+    ctx.fillStyle = '#ecd0a8'; ctx.strokeStyle = OUTL_SET;
+    ctx.beginPath(); ctx.arc(x - 12, hy - 12, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 12, hy - 12, 3, 0, Math.PI * 2); ctx.fill();
+  } else {                                                       // megaphone rests on the knee
+    ctx.fillStyle = '#c94f52';
+    ctx.beginPath(); ctx.moveTo(24, GROUND - 62); ctx.lineTo(36, GROUND - 68); ctx.lineTo(36, GROUND - 56); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
 }
 // the recognizable lamp fixture (same design family as icon + gag)
 function drawSetLamp(c, x, y, s){
@@ -2197,21 +2262,6 @@ function buildSetCache(genre){
   c.beginPath(); c.moveTo(184, 56); c.lineTo(216, 56); c.lineTo(390, GROUND); c.lineTo(120, GROUND); c.closePath(); c.fill();
   oRect(c, 178, 34, 44, 22, '#2c2018', 4);                      // fixture body
   c.fillStyle = '#fff3cf'; c.fillRect(184, 52, 32, 5);          // lit lens = cone source
-  // THE DIRECTOR — filming every scene from the tall chair behind the camera
-  // (gives the "— the director" quips a body on set; drawn first = behind camera)
-  c.strokeStyle = OUTL_SET; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(6, GROUND); c.lineTo(16, GROUND - 52); c.stroke();
-  c.beginPath(); c.moveTo(34, GROUND); c.lineTo(24, GROUND - 52); c.stroke();
-  c.beginPath(); c.moveTo(10, GROUND - 20); c.lineTo(31, GROUND - 20); c.stroke();
-  oRect(c, 12, GROUND - 58, 18, 8, '#2c2018');                  // canvas seat
-  c.fillStyle = '#3a3430'; c.strokeStyle = OUTL_SET; c.lineWidth = 2.5;
-  c.beginPath(); c.ellipse(21, GROUND - 72, 9, 12, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-  c.fillStyle = '#ecd0a8';
-  c.beginPath(); c.arc(21, GROUND - 90, 7, 0, Math.PI * 2); c.fill(); c.stroke();
-  c.fillStyle = '#191010';                                      // beret
-  c.beginPath(); c.ellipse(21, GROUND - 96, 8, 3.5, -0.15, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#c94f52';                                      // megaphone, resting on knee
-  c.beginPath(); c.moveTo(28, GROUND - 62); c.lineTo(40, GROUND - 68); c.lineTo(40, GROUND - 56); c.closePath(); c.fill(); c.stroke();
   // ...a compact camera, far stage-left (launch spots start at x≈92)...
   c.strokeStyle = OUTL_SET; c.lineWidth = 4;                    // tripod
   c.beginPath(); c.moveTo(40, GROUND - 50); c.lineTo(24, GROUND - 4); c.stroke();

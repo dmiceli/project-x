@@ -28,6 +28,5 @@ Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgot
 
 ## Deferred process items
 - Third-party analytics: reconsider before public launch only if TestFlight feedback is insufficient (decided 2026-07-02: Apple built-in only for v1).
-- Director reactions (leans in on ACTION, facepalm on crash, golf clap on perfect) — juice pass candidate
 - Home poster-wall thumbnails could reflect actually wrapped sets (live data, not decorative)
 - Per-set floor accents (scifi panel seams, noir wet sheen, western sand drifts) — fold into 5-set background rollout if cheap
