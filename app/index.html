@@ -220,7 +220,7 @@
 
 <section id="scr-props" class="screen" aria-label="Prop department">
   <h2>PROP DEPARTMENT</h2>
-  <p class="stats">One prop per take. Earned with prints — never with money.<br>Assisted takes finish the scene but don't PRINT it.</p>
+  <p class="stats">One prop per take. Earned with prints — never with money.<br>Assisted takes finish the scene but don't PRINT it.<br>Props stack and are saved with your game. Arm one from the belt before a take — it's spent on that take, win or lose. (No props in the daily gauntlet.)</p>
   <p class="stats" id="propWallet"></p>
   <div id="propList"></div>
   <button class="back" data-to="home">← BACK</button>
@@ -687,6 +687,7 @@ let crashKind = 'full';              // full ragdoll vs near-miss stumble
 let slowmoT = 0;                     // brief slow-motion on spectacular crashes
 let gag = null;                      // the delayed falling-light BONK (comedy beat)
 let dirMood = '', dirMoodT = 0;      // director reaction override (clap on perfects)
+let chockT = 0;                      // cart clock frozen here while a chock is spent
 let cardQueue = [];                  // pending interstitial celebrations
 let mechT = 0;                       // scene clock driving cart/boom/arm animation
 let bounced = false;                 // double-bounce stunts: second phase flag
@@ -795,6 +796,7 @@ function startJump(){
   activeItem = null;
   if (armedItem && itemCount(armedItem) > 0 && mode !== 'daily') {
     activeItem = armedItem;
+    if (activeItem === 'chock') chockT = mechT;      // park the cart where it stands
     S.items[armedItem]--;
     armedItem = null;
     refreshPropBar();
@@ -1416,7 +1418,15 @@ function drawMechanics(){
     }
   }
   if (m.cart) {
-    const cx = cartX(mechT);                                // keeps rolling after launch
+    // Wheel Chock: the cart visibly PARKS once the prop is spent (it used to
+    // keep rolling while the physics ignored it — Dan: "no idea what they do")
+    const chocked = activeItem === 'chock' && state !== 'ready';
+    const cx = chocked ? cartX(chockT) : cartX(mechT);      // keeps rolling after launch
+    if (chocked) {
+      ctx.fillStyle = '#8a5a28';                            // the chock wedge
+      ctx.beginPath(); ctx.moveTo(cx + 22, GROUND); ctx.lineTo(cx + 34, GROUND); ctx.lineTo(cx + 34, GROUND - 11); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 2; ctx.stroke();
+    }
     ctx.fillStyle = '#5a3a1a';
     ctx.fillRect(cx - 24, GROUND - 14, 48, 14);
     ctx.fillStyle = '#241811';
@@ -1452,13 +1462,31 @@ function drawMechanics(){
     }
   }
   if (m.boom) {
-    const tip = boomTip(mechT);
-    ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    // the boom hangs FROM the rig via a strut + pivot mount (it was floating —
+    // Dan defect), and the tip is a proper mic: gray windscreen blimp w/ fuzz.
+    // Boom Brake PARKS it visibly (active props must change the picture).
+    ctx.strokeStyle = '#3a2c22'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(280, 24); ctx.lineTo(280, 74); ctx.stroke();
+    ctx.fillStyle = '#2c2018';
+    ctx.beginPath(); ctx.arc(280, 78, 7, 0, Math.PI * 2); ctx.fill();
+    const parked = activeItem === 'boombrake' && state !== 'ready';
+    const tip = parked ? {x: 388, y: 64} : boomTip(mechT);
+    ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 7; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(280, 80); ctx.lineTo(tip.x, tip.y); ctx.stroke();
-    ctx.fillStyle = '#5a4020';
-    ctx.beginPath(); ctx.arc(tip.x, tip.y, 14, 0, Math.PI * 2); ctx.fill();
+    const bang = Math.atan2(tip.y - 80, tip.x - 280);
+    ctx.save();
+    ctx.translate(tip.x, tip.y); ctx.rotate(bang);
+    ctx.fillStyle = '#6b6b70'; ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.ellipse(10, 0, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#57575c'; ctx.lineWidth = 1.5;
+    for (const fx of [-6, 2, 10, 18]) { ctx.beginPath(); ctx.moveTo(fx, -11); ctx.lineTo(fx + 3, 11); ctx.stroke(); }
+    ctx.restore();
+    if (parked) {                                     // tie-down strap to the rig
+      ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(tip.x - 4, tip.y - 6); ctx.lineTo(tip.x, 24); ctx.stroke();
+    }
   }
-  if (m.wind) {
+  if (m.wind && !(activeItem === 'windbreak' && state !== 'ready')) {   // Wind Break: streaks stop too
     ctx.strokeStyle = 'rgba(180,200,230,0.35)'; ctx.lineWidth = 2;
     const dir = Math.sign(m.wind);
     for (let i = 0; i < 7; i++) {
@@ -1467,7 +1495,7 @@ function drawMechanics(){
       ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx + 26 * dir, yy); ctx.stroke();
     }
   }
-  if (m.arm) {
+  if (m.arm && !(activeItem === 'trapdoor' && state !== 'ready')) {
     const ax = armX(mechT);
     ctx.fillStyle = '#1f3a26';
     ctx.beginPath();
@@ -1475,6 +1503,14 @@ function drawMechanics(){
     ctx.quadraticCurveTo(ax - 25, GROUND - 40, ax - 30, GROUND); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#2e5237';
     ctx.beginPath(); ctx.arc(ax - 8, GROUND - 42, 6, 0, Math.PI * 2); ctx.arc(ax + 10, GROUND - 50, 6, 0, Math.PI * 2); ctx.fill();
+  } else if (m.arm) {
+    // Trap Door active: the monster fell through it. nobody talks about it.
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(300, GROUND + 2, 60, 10);
+    ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 3;
+    ctx.strokeRect(300, GROUND + 2, 60, 10);
+    ctx.fillStyle = '#241811';
+    ctx.save(); ctx.translate(300, GROUND + 2); ctx.rotate(-0.9); ctx.fillRect(0, -8, 56, 8); ctx.restore();
   }
   if (m.grav !== 1 && state !== 'crash' && state !== 'over') {   // wire-work wires
     ctx.strokeStyle = 'rgba(232,213,181,0.28)'; ctx.lineWidth = 1.5;

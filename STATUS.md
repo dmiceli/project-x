@@ -91,6 +91,8 @@
 
 - 2026-07-03: **Background rollout COMPLETE — all six sets** (Dan approved the Dust Gulch pattern). Shipped: BACKLOT (scaffold towers, string lights on cable swags, parked crane, work-lamp glow), HIGH SEAS (low moon + sea shimmer, moonlit clouds, sister ship, cardboard sea serpent on a stick), SAUCER STAGE (nebula washes, second moon, cratered moonscape, cardboard rocket on a stick), RAIN STREET (lit-window skyline, water tower, distant neon, fire-escape rooftop), MINIATURE CITY (premiere searchlights, "real city" backdrop behind the miniature, to-scale moon on a wire). Per-set floor accents added (noir wet sheen, scifi panel glints, western sand drifts). All drafts iterated in the render harness first (assets/foursets-depth.png, backlot-before-after.png); every ported block smoke-tested. Task #33 closed.
 
+- 2026-07-03: **Boom rebuilt + prop coherence batch** (Dan defects). Boom now hangs from the rig (strut + pivot mount) and ends in a gray windscreen-blimp mic with fuzz — reads as sound gear, hitbox unchanged. New rule (DECISIONS): an active prop must visibly change the scene — Boom Brake ties the boom up to the rig, Trap Door removes the arm and opens a hatch in the floor, Wheel Chock parks the cart with a visible wedge, Wind Break stops the wind streaks; all revert on the next take's ready screen. Prop Dept copy now states the lifecycle (stack, saved with the game, spent per take win-or-lose, barred from daily). All visual gates verified headlessly with real state sequences.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).
