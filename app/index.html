@@ -1979,6 +1979,34 @@ function propsStudio(c){
   oEllipse(c, 224, GROUND - 4, 16, 8, '#3a2c1c');                // sandbag on the brace
 }
 function propsWestern(c){
+  // layered depth pilot (ART-RESEARCH.md): far shapes NEVER get outlines
+  // (outline = foreground language); values step darker toward the viewer
+  const glow = c.createRadialGradient(95, 478, 10, 95, 478, 85);   // 1. low sun = focal point
+  glow.addColorStop(0, 'rgba(255,150,80,0.14)'); glow.addColorStop(1, 'rgba(255,150,80,0)');
+  c.fillStyle = glow; c.fillRect(0, 388, 190, 180);
+  c.fillStyle = '#8a4a22';
+  c.beginPath(); c.arc(95, 478, 38, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#3f220e';                                          // 2. far mesas, hazed
+  c.beginPath(); c.moveTo(-20, GROUND); c.lineTo(-20, 505); c.lineTo(15, 505); c.lineTo(45, 528); c.lineTo(100, 528); c.lineTo(118, GROUND); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(288, GROUND); c.lineTo(305, 488); c.lineTo(372, 488); c.lineTo(398, 512); c.lineTo(420, 512); c.lineTo(420, GROUND); c.closePath(); c.fill();
+  c.strokeStyle = '#241208'; c.lineWidth = 2;                       // 3. two birds near the sun
+  for (const [bx, by] of [[138, 432], [154, 442]]) {
+    c.beginPath(); c.moveTo(bx - 5, by); c.lineTo(bx, by - 4); c.lineTo(bx + 5, by); c.stroke();
+  }
+  c.fillStyle = 'rgba(255,170,100,0.05)';                           // 4. atmospheric haze band
+  c.fillRect(0, 540, W, GROUND - 540);
+  c.fillStyle = '#221106';                                          // 5. mid ridge (darker = closer)
+  c.beginPath(); c.moveTo(0, GROUND); c.lineTo(0, 574); c.lineTo(40, 562); c.lineTo(95, 572); c.lineTo(150, 560); c.lineTo(215, 574); c.lineTo(280, 562); c.lineTo(340, 572); c.lineTo(400, 564); c.lineTo(400, GROUND); c.closePath(); c.fill();
+  c.strokeStyle = '#221106'; c.lineWidth = 3;                       // ...windmill silhouette
+  c.beginPath(); c.moveTo(136, GROUND); c.lineTo(150, 500); c.stroke();
+  c.beginPath(); c.moveTo(164, GROUND); c.lineTo(150, 500); c.stroke();
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(142, 556); c.lineTo(158, 556); c.stroke();
+  for (let a = 0; a < 6; a++) {
+    const ang = a * Math.PI / 3;
+    c.beginPath(); c.moveTo(150, 494); c.lineTo(150 + 13 * Math.cos(ang), 494 + 13 * Math.sin(ang)); c.stroke();
+  }
+  c.beginPath(); c.moveTo(150, 494); c.lineTo(160, 502); c.stroke();
   // saloon facade: parapet roofline, blank sign board, swing doors, brace
   oRect(c, 286, GROUND - 150, 104, 150, '#4a3018');
   oRect(c, 278, GROUND - 162, 120, 18, '#3a2410');              // parapet
