@@ -24,7 +24,6 @@ Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgot
 - Hybrid mute pass on remaining wardrobe: the other five cast members' Classic colorways (+ variants) should get the same muted-flat treatment as Stunt Guy during the art pass.
 - In-game character face pass: bring the icon's terror-face (eyes/mouth/sweat) into the flight animation and share card — "one character, everywhere" (see DESIGN.md franchise-face note).
 - Icon art: current version is polished programmatic art (MVP per Dan); optionally commission an artist pre-launch using icon-final.png as the exact brief.
-- Sub-frame lock timing: use pointer-event timestamps to interpolate the lock angle between frames. At 700+°/s late-game spins, frame quantization (11°+/frame) makes the ±10° window partly luck; interpolation restores pure skill. Consider before beta if late scenes test as unfair.
 
 ## Deferred process items
 - Third-party analytics: reconsider before public launch only if TestFlight feedback is insufficient (decided 2026-07-02: Apple built-in only for v1).

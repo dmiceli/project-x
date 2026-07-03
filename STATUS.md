@@ -106,8 +106,10 @@
 
 - 2026-07-04: **QA Test Mode panel shipped** (Dan: set game state to test prerequisites) — Settings → tap version line 5×: save backup/restore, scene jump, +50 prints, +1 every prop, mercy arm, FTUE+reveals reset, forced rollover. Logic verified headlessly. Verification protocol updated in CLAUDE.md (all future verify steps reference the panel; backup first). Phase 5 hard gate added to watch list: strip before submission.
 
+- 2026-07-04: **Exploration batch SHIPPED** (Dan approved all three recommendations): cosmetic flip poses (TUCK/PIKE/LAYOUT/TWIST by spin speed + scene, wind=twist, low-G=layout, announced on perfects); prop purchases now instant + 4s tap-toast UNDO, wardrobe ≥15 prints gets a second-tap confirm; **Launch Rig prop** (4🖨, hold-to-aim power meter 0.75–1.25×, canvas meter + release prompt) as the power-meter trial balloon. **Plus Dan's ride-it-out defect fixed:** landing angle now judged at exact sub-frame ground contact (was one frame late), unlocked clean landings earn "RODE IT OUT!" — sub-frame fairness item retired from BACKLOG. All five changes verified headlessly with real sequences.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
-1. **Morning review queue (Dan):** EXPLORATIONS.md (flip variety / purchase confirms / power meter — mockups attached) + BIG-WINS.md (5 MVP proposals).
+1. ~~Morning review queue~~ — all exploration + big-win verdicts in and shipped.
 2. **Fresh-save FTUE run** (~10 min, private tab).
 3. **Combined a11y sweep** (~15 min).
 4. **Full copy read** (~15 min).

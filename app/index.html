@@ -496,18 +496,23 @@ const ITEMS = [
   {id:'windbreak', name:'Wind Break',   icon:'🌂', price:2, desc:'Wind machine off for one take'},
   {id:'griptape',  name:'Grip Tape',    icon:'🩹', price:4, desc:'Landing window +5° for one take'},
   {id:'boombrake', name:'Boom Brake',   icon:'⚓', price:3, desc:'Boom parked for one take'},
-  {id:'trapdoor',  name:'Trap Door',    icon:'🕳️', price:3, desc:'Arm sweep skipped for one take'}
+  {id:'trapdoor',  name:'Trap Door',    icon:'🕳️', price:3, desc:'Arm sweep skipped for one take'},
+  // hold-to-aim trial balloon (Dan pick D): tests the second-touchpoint input
+  // as a prop before committing it as a core mechanic (EXPLORATIONS.md §3)
+  {id:'launchrig', name:'Launch Rig',   icon:'🎯', price:4, desc:'Hold to aim your launch power for one take'}
 ];
 let armedItem = null;                 // chosen on the ready screen
 let activeItem = null;                // consumed; in effect for the current take
 function itemCount(id){ return S.items[id] || 0; }
+let lastBuy = null;                   // {id, price, at}: 4s undo window (Dan pick B)
 function buyItem(id){
   const it = ITEMS.find(x => x.id === id);
   if (wallet() >= it.price) {
     S.printsSpent += it.price;
     S.items[id] = itemCount(id) + 1;
+    lastBuy = {id: id, price: it.price, at: performance.now()};
     persist();
-    toast(it.icon + ' ' + it.name + ' added to the prop truck');
+    toast(it.icon + ' ' + it.name + ' — ' + it.price + '🖨 · TAP HERE TO UNDO', 4200);
   } else toast('Need ' + (it.price - wallet()) + ' more prints for ' + it.name);
   refreshHome();
 }
@@ -532,11 +537,19 @@ function costume(){
   const v = (WARDROBE[base.id] || [])[S.variants[base.id] || 0];
   return v ? Object.assign({}, base, {suit: v.suit, shoe: v.shoe}) : base;
 }
+let wardrobeArm = null;               // big-ticket colorways confirm via second tap
 function buyOrSelectVariant(id, idx){
   const v = WARDROBE[id][idx];
   if (ownedIdx(id).includes(idx)) {
     S.variants[id] = idx; persist(); toast('Wardrobe: ' + v.name);
   } else if (wallet() >= v.price) {
+    if (v.price >= 15 && wardrobeArm !== id + ':' + idx) {   // ≥15 prints: confirm
+      wardrobeArm = id + ':' + idx;
+      toast('🧵 ' + v.name + ' costs ' + v.price + ' prints — tap again to confirm', 4200);
+      refreshHome();
+      return;
+    }
+    wardrobeArm = null;
     S.printsSpent += v.price;
     S.ownedVariants[id] = ownedIdx(id).concat([idx]);
     S.variants[id] = idx; persist();
@@ -711,6 +724,7 @@ let slowmoT = 0;                     // brief slow-motion on spectacular crashes
 let gag = null;                      // the delayed falling-light BONK (comedy beat)
 let dirMood = '', dirMoodT = 0;      // director reaction override (clap on perfects)
 let chockT = 0;                      // cart clock frozen here while a chock is spent
+let chargeT = -1;                    // ≥0 while holding the Launch Rig aim meter
 let cardQueue = [];                  // pending interstitial celebrations
 let mechT = 0;                       // scene clock driving cart/boom/arm animation
 let bounced = false;                 // double-bounce stunts: second phase flag
@@ -811,7 +825,7 @@ function crashAir(popupText, quipText){
   persist();
   state = 'crash'; stateT = 0;
 }
-function startJump(){
+function startJump(power){            // power: only set by the Launch Rig hold-release
   S.takes++;
   if (TAKE_MILESTONES[S.takes]) toast('🎬 ' + TAKE_MILESTONES[S.takes]);
   if (mode === 'campaign') S.setTakes++;
@@ -837,10 +851,15 @@ function startJump(){
   }
   // arc solved so airtime ≈ T even when launching from a platform (fall = h)
   p.vy = (params.h || 0) / params.T - g * params.T / 2;
+  if (activeItem === 'launchrig' && power) { p.vx *= power; p.vy *= power; }   // hold-to-aim
   p.om = params.om * (activeItem === 'slowmo' ? 0.7 : 1);
   p.locked = false;
   p.spun = 0;                          // rotation accrued (gates the lock)
-  p.pose = 'tuck';
+  // flip pose picked by scene + spin speed (cosmetic variety — Dan option A)
+  p.pose = params.mech.wind ? 'twist'
+         : (params.mech.grav < 1) ? 'layout'
+         : Math.abs(p.om) >= 9 ? 'tuck'
+         : Math.abs(p.om) >= 6 ? 'pike' : 'layout';
   state = 'air';
   persist();
   sfx.clap(); sfx.jump();
@@ -881,6 +900,7 @@ function spawnRagdoll(){
 
 function evaluateLanding(){
   p.y = GROUND;
+  const flipPose = p.pose;             // captured before landing poses overwrite it
   // cart scenes: timing decides WHERE you land; the mat is non-negotiable
   if (params.mech.cart && (p.x < params.matL || p.x > params.matR)) {
     crashAir('MISSED THE MAT!', '"The mat. It\'s the big obvious rectangle. The ONE job of the mat."');
@@ -908,6 +928,8 @@ function evaluateLanding(){
       S.bestStreak = Math.max(S.bestStreak, perfectStreak);
       confetti(p.x, GROUND - 40);
       addVerdict(pick(PERFECT_WORDS), '#ffd166');
+      // announce the flip pose ("PIKE!") — the variety should be NAMED
+      if (flipPose !== 'stand') addPopup(flipPose.toUpperCase() + '!', p.x, GROUND - 165, '#e8d5b5', 16);
       if (perfectStreak >= 2) addPopup('STREAK ×' + perfectStreak, p.x, GROUND - 135, '#c084fc', 20);
       if (Math.random() < 0.02) {                              // the director is briefly human
         quip = '';
@@ -920,7 +942,8 @@ function evaluateLanding(){
       csEvent('perfect');
     } else {
       perfectStreak = 0;
-      addVerdict(assisted && off <= PERFECT_RAD ? 'CLEAN (ASSISTED)' : pick(CLEAN_WORDS), '#6ee7b7');
+      // never locking the spin is a legit (gutsy) strategy — name it when it works
+      addVerdict(assisted && off <= PERFECT_RAD ? 'CLEAN (ASSISTED)' : (!p.locked ? 'RODE IT OUT!' : pick(CLEAN_WORDS)), '#6ee7b7');
       sfx.land();
       csEvent('clean');
     }
@@ -1179,7 +1202,19 @@ function onTap(){
   else if (state === 'over' && stateT > 0.6) retry();   // lockout: let the CUT screen land
   // state 'card': canvas taps ignored — the card's HTML buttons own the flow
 }
-cv.addEventListener('pointerdown', function(e){ e.preventDefault(); onTap(); });
+cv.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  // Launch Rig armed: the tap becomes a HOLD — meter runs until release
+  if (state === 'ready' && armedItem === 'launchrig') { ac(); chargeT = 0; return; }
+  onTap();
+});
+window.addEventListener('pointerup', function(){
+  if (chargeT >= 0 && state === 'ready' && armedItem === 'launchrig') {
+    const power = 0.75 + 0.5 * (0.5 + 0.5 * Math.sin(chargeT * 4));   // 0.75..1.25
+    chargeT = -1;
+    startJump(power);
+  } else chargeT = -1;
+});
 window.addEventListener('keydown', function(e){ if (e.code === 'Space' && state !== 'home') onTap(); });
 window.addEventListener('resize', resize);
 
@@ -1189,6 +1224,7 @@ function update(dt){
   if (slowmoT > 0) { slowmoT -= dt; dt *= 0.3; }    // slow-mo: the crash, savored
   stateT += dt;
   dirMoodT = Math.max(0, dirMoodT - dt);
+  if (chargeT >= 0) chargeT += dt;   // Launch Rig meter clock
   shake = Math.max(0, shake - dt * 3);
   flash = Math.max(0, flash - dt * 4);
   p.squash = Math.max(0, p.squash - dt * 4);
@@ -1240,6 +1276,11 @@ function update(dt){
         addPopup('BOUNCE!', p.x, GROUND - 90, '#38bdf8', 26);
         sfx.bounce();
       } else {
+        // judge the angle at the EXACT contact instant, not a frame late —
+        // sub-frame fairness (pulled from BACKLOG by Dan's ride-it-out report:
+        // a visibly-upright unlocked landing could register past tolerance)
+        const over = Math.min(1, Math.max(0, (p.y - GROUND) / Math.max(1e-6, p.vy * dt)));
+        p.angle -= p.om * dt * over;
         evaluateLanding();
       }
     }
@@ -1389,6 +1430,40 @@ function drawGuy(x, y, angle, pose, squash, c){
     c.fillStyle = cst.skin;
     c.beginPath(); c.arc(0, -19, 8, 0, Math.PI * 2); c.fill();
     drawFace(c, -19, 'terror');                              // mid-flip = mid-scream
+    drawAccessory(cst, -19, c);
+  } else if (pose === 'pike') {                              // folded: legs straight out
+    _limb(2, 4, 14, 6, 26, -2, cst.suit, 6);
+    c.fillStyle = cst.shoe; c.fillRect(24, -6, 8, 6);
+    c.fillStyle = cst.suit;
+    c.beginPath(); c.ellipse(0, -2, 10, 13, 0.6, 0, Math.PI * 2); c.fill();
+    _limb(-6, -8, 8, -4, 20, 0, cst.skin, 5);                // arms reach for the toes
+    c.fillStyle = cst.skin;
+    c.beginPath(); c.arc(0, -19, 8, 0, Math.PI * 2); c.fill();
+    drawFace(c, -19, 'terror');
+    drawAccessory(cst, -19, c);
+  } else if (pose === 'layout') {                            // straight body, arms overhead
+    _limb(-3, 8, -3, 18, -2, 28, cst.suit, 6);
+    _limb(3, 8, 3, 18, 2, 28, cst.suit, 6);
+    c.fillStyle = cst.shoe; c.fillRect(-7, 25, 8, 5); c.fillRect(0, 25, 8, 5);
+    c.fillStyle = cst.suit;
+    c.beginPath(); c.ellipse(0, -2, 9, 14, 0, 0, Math.PI * 2); c.fill();
+    _limb(-6, -10, -8, -20, -6, -30, cst.skin, 5);
+    _limb(6, -10, 8, -20, 6, -30, cst.skin, 5);
+    c.fillStyle = cst.skin;
+    c.beginPath(); c.arc(0, -19, 8, 0, Math.PI * 2); c.fill();
+    drawFace(c, -19, 'terror');
+    drawAccessory(cst, -19, c);
+  } else if (pose === 'twist') {                             // corkscrew: limbs opposed
+    _limb(-2, 8, 6, 16, 14, 22, cst.suit, 6);
+    _limb(2, 8, -6, 16, -12, 24, cst.suit, 6);
+    c.fillStyle = cst.shoe; c.fillRect(11, 19, 8, 6); c.fillRect(-16, 21, 8, 6);
+    c.fillStyle = cst.suit;
+    c.beginPath(); c.ellipse(0, 0, 10, 13, 0.25, 0, Math.PI * 2); c.fill();
+    _limb(-8, -6, -14, -12, -18, -6, cst.skin, 5);
+    _limb(8, -6, 14, -2, 18, -10, cst.skin, 5);
+    c.fillStyle = cst.skin;
+    c.beginPath(); c.arc(0, -19, 8, 0, Math.PI * 2); c.fill();
+    drawFace(c, -19, 'terror');
     drawAccessory(cst, -19, c);
   } else {
     _limb(-4, 8, -5, 15, -5, 22, cst.suit, 6);
@@ -1760,6 +1835,16 @@ function draw(){
     ctx.textAlign = 'center';
   }
 
+  if (chargeT >= 0 && state === 'ready') {           // Launch Rig aim meter
+    const ph = 0.5 + 0.5 * Math.sin(chargeT * 4);
+    ctx.fillStyle = 'rgba(10,7,5,0.8)';
+    ctx.beginPath(); ctx.roundRect(16, 200, 20, 200, 8); ctx.fill();
+    ctx.strokeStyle = '#a08b72'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(16, 200, 20, 200, 8); ctx.stroke();
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.roundRect(13, 392 - ph * 184, 26, 10, 4); ctx.fill();
+    drawPrompt('Release to launch!', 660, '#ffd166');
+  }
   if (state === 'ready') {
     // prompts live above the tallest platform + character (y < 430 zone)
     if (!S.ftue) {                       // first-time coaching, on pills
@@ -1902,8 +1987,8 @@ function gameBar(on){ $('gameBar').classList.toggle('active', !!on); }
 // armed a Trap Door on a boom scene and it silently did nothing — never again)
 function propRelevant(id){
   const m = params.mech;
-  return {slowmo: true, griptape: true, chock: !!m.cart, windbreak: !!m.wind,
-          boombrake: !!m.boom, trapdoor: !!m.arm}[id];
+  return {slowmo: true, griptape: true, launchrig: true, chock: !!m.cart,
+          windbreak: !!m.wind, boombrake: !!m.boom, trapdoor: !!m.arm}[id];
 }
 function refreshPropBar(){
   const bar = $('propBar');
@@ -1923,13 +2008,24 @@ function refreshPropBar(){
   }
 }
 let toastTimer = null;
-function toast(msg){
+function toast(msg, ms){
   const t = $('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2600);
 }
+// tapping the toast inside the undo window refunds the last prop purchase
+$('toast').onclick = () => {
+  if (lastBuy && performance.now() - lastBuy.at < 4000 && itemCount(lastBuy.id) > 0) {
+    S.printsSpent -= lastBuy.price;
+    S.items[lastBuy.id]--;
+    const it = ITEMS.find(x => x.id === lastBuy.id);
+    lastBuy = null;
+    persist(); refreshHome();
+    toast('↩ ' + it.name + ' refunded');
+  }
+};
 // progressive disclosure: the home screen reveals itself as the player earns it
 // (FTUE research: nine buttons on first launch = cognitive overload = churn)
 function revealRules(){
