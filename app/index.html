@@ -713,6 +713,7 @@ function boomAngle(t){ return Math.sin(t * 3.2 + params.boomPhase) * 0.6; }
 function boomTip(t){ const a = boomAngle(t); return {x: 280 + Math.sin(a) * 320, y: 80 + Math.cos(a) * 320}; }
 function armX(t){ return 400 - ((t * 130 + params.armPhase) % 340); }
 let takesScene = 1;                  // campaign: attempts on current scene
+let wallCrashes = 0;                 // consecutive crashes this scene (mercy trigger)
 let perfectStreak = 0;
 let p = null;
 let popups = [], particles = [], ragdoll = [];
@@ -945,6 +946,13 @@ function evaluateLanding(){
       if (!S.set.rm) { shake = 1; flash = 1; }
       haptic([40, 40, 60]);
       quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
+      // MERCY (approved big-win #4, 2026-07-04): the 7th straight crash on one
+      // scene makes the prop department take pity — a scene-relevant prop,
+      // never progress. Fires once per scene visit (counter resets on advance).
+      if (mode === 'campaign' && ++wallCrashes === 7) {
+        const pity = ['chock', 'windbreak', 'boombrake', 'trapdoor'].find(propRelevant) || 'griptape';
+        grantItem(pity, '"The insurance guy insists."');
+      }
       addVerdict(pick(CRASH_WORDS), '#f87171');
       sfx.crash(); sfx.cut();
     }
@@ -1005,7 +1013,7 @@ function advance(){
     if (S.scene >= 50) award('longHaul');
     if (S.scene >= 100) award('franchise');
     const fresh = checkUnlocks();
-    takesScene = 1;
+    takesScene = 1; wallCrashes = 0;
     csEvent('advance');
     if (params.big) csEvent('big');
     addPopup('SCENE ' + (S.scene - 1) + ' COMPLETE', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
@@ -1102,7 +1110,7 @@ function playReshoot(n){
   mode = 'reshoot';
   rScene = n;
   refreshParams();
-  takesScene = 1; perfectStreak = 0;
+  takesScene = 1; perfectStreak = 0; wallCrashes = 0;
   p = freshPlayer();
   popups = []; ragdoll = []; quip = '';
   showScreen(null);
@@ -1113,7 +1121,7 @@ function playReshoot(n){
 function playCampaign(){
   mode = 'campaign';
   refreshParams();
-  takesScene = 1; perfectStreak = 0;
+  takesScene = 1; perfectStreak = 0; wallCrashes = 0;
   p = freshPlayer();
   popups = []; ragdoll = []; quip = '';
   showScreen(null);
@@ -1137,7 +1145,7 @@ function playDaily(){
 }
 function resetProgress(){                            // "Reshoot from Scene 1"
   S.scene = 1;
-  takesScene = 1; perfectStreak = 0; S.firstTakeChain = 0;
+  takesScene = 1; perfectStreak = 0; S.firstTakeChain = 0; wallCrashes = 0;
   persist();
   refreshParams();
   p = freshPlayer();
@@ -1485,12 +1493,14 @@ function drawMechanics(){
     ctx.beginPath(); ctx.arc(280, 78, 7, 0, Math.PI * 2); ctx.fill();
     const parked = activeItem === 'boombrake' && state !== 'ready';
     const tip = parked ? {x: 388, y: 64} : boomTip(mechT);
-    ctx.strokeStyle = '#3a2c1c'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    // contrast audit 2026-07-04: pole lightened (was ~1.0:1 vs skies — invisible)
+    // and windscreen raised to ≥4:1 on all six sets (it's THE lethal hazard)
+    ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 7; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(280, 80); ctx.lineTo(tip.x, tip.y); ctx.stroke();
     const bang = Math.atan2(tip.y - 80, tip.x - 280);
     ctx.save();
     ctx.translate(tip.x, tip.y); ctx.rotate(bang);
-    ctx.fillStyle = '#6b6b70'; ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 2.5;
+    ctx.fillStyle = '#8f8f98'; ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.ellipse(10, 0, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = '#57575c'; ctx.lineWidth = 1.5;
     for (const fx of [-6, 2, 10, 18]) { ctx.beginPath(); ctx.moveTo(fx, -11); ctx.lineTo(fx + 3, 11); ctx.stroke(); }
@@ -1501,7 +1511,7 @@ function drawMechanics(){
     }
   }
   if (m.wind && !(activeItem === 'windbreak' && state !== 'ready')) {   // Wind Break: streaks stop too
-    ctx.strokeStyle = 'rgba(180,200,230,0.35)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(180,200,230,0.55)'; ctx.lineWidth = 2;   // ≥3:1 on all sets (audit)
     const dir = Math.sign(m.wind);
     for (let i = 0; i < 7; i++) {
       const yy = 130 + i * 60;
@@ -1511,11 +1521,14 @@ function drawMechanics(){
   }
   if (m.arm && !(activeItem === 'trapdoor' && state !== 'ready')) {
     const ax = armX(mechT);
-    ctx.fillStyle = '#1f3a26';
+    // contrast audit 2026-07-04: the LETHAL arm sat at 1.06:1 against its own
+    // set's sky — near-invisible. Lifted to ≥3.2:1 (brighter rubber suit also
+    // reads MORE like a cheap kaiju costume, which is the joke)
+    ctx.fillStyle = '#4a8a5c';
     ctx.beginPath();
     ctx.moveTo(ax + 40, GROUND); ctx.quadraticCurveTo(ax + 20, GROUND - 70, ax, GROUND - 55);
     ctx.quadraticCurveTo(ax - 25, GROUND - 40, ax - 30, GROUND); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#2e5237';
+    ctx.fillStyle = '#5aa06e';
     ctx.beginPath(); ctx.arc(ax - 8, GROUND - 42, 6, 0, Math.PI * 2); ctx.arc(ax + 10, GROUND - 50, 6, 0, Math.PI * 2); ctx.fill();
   } else if (m.arm) {
     // Trap Door active: the monster fell through it. nobody talks about it.

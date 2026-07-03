@@ -1,5 +1,7 @@
 # BIG-WINS.md — five MVP additions to maximize launch success (2026-07-04, overnight audit)
 
+**STATUS (2026-07-04): ALL FIVE APPROVED by Dan.** #4 mercy system shipped same night; #1–#3 logged in PIPELINE.md for Phase 5; #5 queued parallel with beta.
+
 Full-game audit + market research. Benchmarks to beat: hybrid-casual D1 retention 30–35% (leaders 35–40%), D7 15–18%. What correlates with hitting them: competitive/social features, daily reward loops, habit anchors, and polish that survives the first 6 seconds. Ranked by impact-per-effort, all compatible with our privacy posture and "ads never buy progress."
 
 ## 1 · Game Center leaderboard for the Daily Gauntlet

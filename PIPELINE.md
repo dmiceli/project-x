@@ -25,3 +25,8 @@ Bundle ID mismatch between Capacitor config, Xcode project, and App Store Connec
 ## Dan-facing summary
 
 Two setup sessions on your side (~25 min total, steps 2-4), then it's fully automatic. Nothing needs a Mac at any point ([Capawesome overview](https://capawesome.io/blog/how-to-build-and-deploy-ios-apps-without-a-mac/), [Capgo from-Windows guide](https://capgo.app/blog/build-ios-app-from-windows-capacitor-capgo-build/)).
+
+## Phase 5 additions (approved big wins, 2026-07-04)
+- Game Center leaderboard (daily gauntlet best + furthest scene) — Capacitor plugin, no backend, no privacy-label change.
+- Local notification at midnight reset (opt-in, asked in-context after a completed daily; on-device only, no ATT).
+- Wire existing haptic() calls to Capacitor Haptics + keep settings toggle.

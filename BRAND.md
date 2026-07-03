@@ -69,3 +69,16 @@ No gradients-for-drama, no lens flares, no neon cyberpunk drift, no stock Hollyw
 
 ---
 *Research: [Storemaven — icon CVR +22.8% avg](https://www.storemaven.com/academy/app-icons-aso-guide/), [ASO World — icon optimization up to +30%](https://asoworld.com/blog/app-icon-optimization-a-practical-guide-to-boost-app-conversion-rate/), [AppTweak — single focal element, 60px test](https://www.apptweak.com/en/aso-blog/how-to-design-an-app-icon), [Design Your Way — gold = reward psychology](https://www.designyourway.net/blog/gaming-color-palettes/), [itch.io — roles-not-vibes palette discipline](https://itch.io/blog/1039646/picking-the-perfect-color-palette-for-your-game). WCAG ratios computed against WCAG 2.1 relative-luminance formula.*
+
+## Set palettes & imagery accessibility (added 2026-07-04, contrast audit)
+
+The six set-sky families are official brand extensions (all dusk-muted = the deadpan register; each set carries ONE warm "cartoon heart" light accent — Dust Gulch sun, Backlot string bulbs, High Seas moon, Saucer planet glow, Rain Street neon, Miniature City searchlights + moon-on-a-wire). Marquee Gold remains exclusive to rewards/CTAs — no set accent uses it.
+
+**Codified rules from the audit (programmatic WCAG check, all six mid-skies):**
+- **Decorative depth layers stay quiet:** ≤ 2:1 vs their own sky (measured 1.03–1.15 — correct). No gameplay information may live in a depth layer.
+- **Lethal hazards trade mutedness for legibility:** ≥ 3:1 vs every sky they appear on. Fixes applied: boom windscreen `#8f8f98` (4.1–5.4), kaiju arm `#4a8a5c` base / `#5aa06e` spots (3.2–5.5), wind streaks α .35→.55 (3.8–4.9). Boom pole (non-lethal) lifted `#7a5a30` for visibility.
+- **Hero must dominate:** suit/skin measured 6.6–11.6 vs all skies — pass. Hero's dark outline is for separation against bright overlaps, not the sky (by design).
+- **HUD small text ≥ 4.5:1 on its backing:** all current elements measured 6.8–18.8 — pass.
+- Any future set or hazard color gets run through this audit (script pattern in session scratchpad; thresholds above) before shipping.
+
+**Art-direction verdict:** warm set-black base + muted dusk sets + single warm accents = deadpan-with-heart, as intended. Brighter hazard colors are consistent with the direction — a too-green rubber suit and a too-gray foam windscreen ARE film-set jokes, and readability-first is a standing rule.
