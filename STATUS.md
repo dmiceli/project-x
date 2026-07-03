@@ -81,6 +81,8 @@
 
 - 2026-07-03 (Dan away, per his ask): **background art research + Dust Gulch depth pilot.** Market research on 2026 hybrid-casual art + background craft distilled into **ART-RESEARCH.md** (layer rules, contrast law, per-set plans for all six backgrounds). Dust Gulch pilot SHIPPED in-game (low sun focal point, hazed mesas, birds, scrub ridge, windmill silhouette — no outlines at distance); before/after sheet at assets/dustgulch-before-after.png, iterated once via render-critique loop. Remaining five sets await Dan's pilot verdict, then land as one batch. Also resolved Dan's usage question: the long-running "complex response" was a scheduled task session (daily 7am briefing/LinkedIn post), not this project.
 
+- 2026-07-03: **HUD v2 shipped** — Dan flagged persistent mid-field text; 3 icon+counter mockups rendered over the Dust Gulch pilot (assets/hud-options.png); Dan chose **C: mini clapperboard**. Scene/take now live on a small diegetic slate top-left (daily shows hearts + count, a11y intact), prints on a ticket chip top-right, stunt conditions as compact tags top-center; big scrim removed, playing field is now empty. Lifetime/furthest/set-name dropped from the persistent HUD (still on home + CUT screens). New block smoke-tested headlessly (both modes, all badge types).
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).

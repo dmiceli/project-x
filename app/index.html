@@ -1549,48 +1549,68 @@ function draw(){
     ctx.fillText('— the director', W / 2, 202);
   }
 
-  // HUD scrim: dedicated text zone — type never fights the lighting (Dan defect)
-  const scrim = ctx.createLinearGradient(0, 0, 0, 155);
-  scrim.addColorStop(0, 'rgba(12,9,8,0.92)');
-  scrim.addColorStop(0.7, 'rgba(12,9,8,0.55)');
-  scrim.addColorStop(1, 'rgba(12,9,8,0)');
-  ctx.fillStyle = scrim; ctx.fillRect(0, 0, W, 155);
-
-  // HUD
+  // HUD v2 (Dan, 2026-07-03): the playing field stays EMPTY. Scene/take live on
+  // a mini clapperboard top-left, prints on a ticket chip top-right, stunt
+  // conditions as compact tags top-center. Lifetime/furthest/set name moved to
+  // home + CUT screens. No full-width scrim — each element carries its backing.
   const g = currentGenre();
-  ctx.fillStyle = '#c9a876'; ctx.font = 'bold 15px system-ui, sans-serif';
-  ctx.fillText(mode === 'daily' ? 'DAILY · SCENE' : (mode === 'reshoot' ? 'RESHOOT · SCENE' : 'SCENE'), W / 2, 46);
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 48px system-ui, sans-serif';
-  ctx.fillText(String(currentSceneNo()), W / 2, 92);
-  ctx.fillStyle = '#c9a876'; ctx.font = '14px system-ui, sans-serif';
-  if (mode === 'campaign') {
-    ctx.fillText('TAKE ' + takesScene + ' OF THIS SCENE  ·  SET: ' + g.name, W / 2, 114);
-    let line2 = 'LIFETIME ' + S.takes + '   ·   PRINTS ' + S.prints;
-    if (S.furthest > S.scene) line2 += '   ·   FURTHEST ' + S.furthest;
-    ctx.fillText(line2, W / 2, 133);
-  } else {
+  // — mini clapperboard (diegetic slate) —
+  ctx.save();
+  ctx.translate(10, 50); ctx.rotate(-0.04);                  // clap bar, slightly ajar
+  ctx.fillStyle = '#191010'; ctx.fillRect(0, -13, 98, 13);
+  slateStripes(0, -13, 98, 13);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(16,12,10,0.92)';
+  ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(10, 50, 98, 46, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#3a2c22';
+  ctx.beginPath(); ctx.arc(14, 46, 5, 0, Math.PI * 2); ctx.fill();   // hinge
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 17px system-ui, sans-serif';
+  ctx.fillText('SC ' + currentSceneNo(), 20, 70);
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  if (mode === 'daily') {
     // lives shown as hearts AND a number — never color/symbol alone (a11y)
-    ctx.fillText('LIVES ' + '♥'.repeat(Math.max(0, dLives)) + ' (' + dLives + ')  ·  CLEARED ' + (dStep - 1) + '  ·  TODAY\'S BEST ' + S.daily.todayBest, W / 2, 114);
+    ctx.fillStyle = '#f87171';
+    ctx.fillText('♥'.repeat(Math.max(0, dLives)) + ' · ' + dLives + ' LIVES', 20, 88);
+  } else {
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText((mode === 'reshoot' ? 'RESHOOT · T' : 'TAKE ') + takesScene, 20, 88);
   }
-  // scene badge stack: stunt conditions, always text-labeled (a11y)
+  // — prints ticket chip —
+  ctx.fillStyle = 'rgba(10,7,5,0.82)';
+  ctx.beginPath(); ctx.roundRect(306, 34, 84, 26, 13); ctx.fill();
+  ctx.fillStyle = '#2e6b4f'; ctx.strokeStyle = '#6ee7b7'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(314, 40, 24, 14, 3); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#191010';
+  for (let py = 0; py < 3; py++) { ctx.fillRect(328, 41 + py * 4, 2, 2); }   // perforation
+  ctx.fillStyle = '#6ee7b7';
+  ctx.beginPath(); ctx.arc(320, 47, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8d5b5'; ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillText(String(S.prints), 344, 52);
+  ctx.textAlign = 'center';
+  // — stunt-condition tags: compact, text-labeled (a11y), out of the flight path —
   const badges = [];
-  if (params.big) badges.push(['★ BIG STUNT' + (params.mech.bounce ? ' — DOUBLE BOUNCE' : '') + ' ★', '#ef476f']);
-  if (params.golden) badges.push(['★ GOLDEN TAKE — BONUS PRINTS ★', '#ffd166']);
-  if (params.mech.cart) badges.push(['ROLLING CART — LAND ON THE MAT', '#e8a33d']);
+  if (params.big) badges.push(['★ BIG STUNT' + (params.mech.bounce ? ' ×2' : ''), '#ef476f']);
+  if (params.golden) badges.push(['★ GOLDEN TAKE', '#ffd166']);
+  if (params.mech.cart) badges.push(['ROLLING CART', '#e8a33d']);
   if (params.mech.boom) badges.push(['MIND THE BOOM', '#7dd3fc']);
-  if (params.mech.grav !== 1) badges.push([params.mech.grav < 1 ? 'WIRE WORK: LOW-G' : 'WIRE WORK: HIGH-G', '#c084fc']);
-  if (params.mech.wind) badges.push(['WIND MACHINE — SPIN DRIFT', '#93c5fd']);
+  if (params.mech.grav !== 1) badges.push([params.mech.grav < 1 ? 'LOW-G' : 'HIGH-G', '#c084fc']);
+  if (params.mech.wind) badges.push(['WIND — DRIFT', '#93c5fd']);
   if (params.mech.arm) badges.push(['TIME THE SWEEP', '#6ee7b7']);
-  if (state === 'ready' && armedItem) badges.push(['PROP ARMED: ' + ITEMS.find(x => x.id === armedItem).name.toUpperCase(), '#93c5fd']);
-  if (state === 'air' && activeItem) badges.push(['PROP: ' + ITEMS.find(x => x.id === activeItem).name.toUpperCase() + ' (NO PRINT)', '#93c5fd']);
-  let by = 156;
+  if (state === 'ready' && armedItem) badges.push(['PROP: ' + ITEMS.find(x => x.id === armedItem).name.toUpperCase(), '#93c5fd']);
+  if (state === 'air' && activeItem) badges.push(['PROP ON (NO PRINT)', '#93c5fd']);
+  if (perfectStreak >= 2) badges.push(['STREAK ×' + perfectStreak, '#c084fc']);
   if (state === 'ready' || state === 'air') {
-    ctx.font = 'bold 15px system-ui, sans-serif';
-    for (const [txt, col] of badges) { ctx.fillStyle = col; ctx.fillText(txt, W / 2, by); by += 19; }
-  }
-  if (perfectStreak >= 2) {
-    ctx.fillStyle = '#c084fc'; ctx.font = 'bold 15px system-ui, sans-serif';
-    ctx.fillText('PERFECT STREAK ×' + perfectStreak, W / 2, by);
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    let by = 44;
+    for (const [txt, col] of badges) {
+      const tw = ctx.measureText(txt).width;
+      ctx.fillStyle = 'rgba(10,7,5,0.72)';
+      ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2 - 9, by - 12, tw + 18, 17, 8); ctx.fill();
+      ctx.fillStyle = col; ctx.fillText(txt, W / 2, by);
+      by += 21;
+    }
   }
 
   if (state === 'ready') {
