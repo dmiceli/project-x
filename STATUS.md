@@ -83,6 +83,8 @@
 
 - 2026-07-03: **HUD v2 shipped** — Dan flagged persistent mid-field text; 3 icon+counter mockups rendered over the Dust Gulch pilot (assets/hud-options.png); Dan chose **C: mini clapperboard**. Scene/take now live on a small diegetic slate top-left (daily shows hearts + count, a11y intact), prints on a ticket chip top-right, stunt conditions as compact tags top-center; big scrim removed, playing field is now empty. Lifetime/furthest/set-name dropped from the persistent HUD (still on home + CUT screens). New block smoke-tested headlessly (both modes, all badge types).
 
+- 2026-07-03 (late session): **Round-3 defects + two enhancements shipped.** Quips now word-wrap (shared wrapLines helper — last of the raw-fillText cutoff family); stunt tags moved to a left rail under the slate; the rig got ONE hero spotlight whose cone pours from a visible lit lens (fixed HUD/lamp collision AND "light with no source"); floor de-bricked to 3 long boards w/ sparse joints + front-edge shadow; **THE DIRECTOR now sits on every set** (tall chair, beret, megaphone, behind the camera — quips have a body). **Home menu rebuilt as option B** (Dan pick of 3 mockups, assets/menu-options.png): poster-wall backdrop, marquee title, ticket-shaped ACTION button, ON THE LOT shelf cards, quiet footer row — all button IDs/handlers unchanged. New code smoke-tested headlessly. Backlot depth draft ready in harness (assets/backlot-before-after.png); floor per-set accents + director reactions + live poster wall → BACKLOG/rollout.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).

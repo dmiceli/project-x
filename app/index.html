@@ -68,6 +68,33 @@
   button[aria-pressed="true"]{border-color:var(--good);color:var(--good)}
   a{color:var(--dim);font-size:14px;margin-top:10px}
 
+  /* ---- home, menu B (Dan pick, 2026-07-03): marquee + poster shelf ----
+     backdrop = lit stage wall; ACTION is a ticket; features shelve as poster
+     cards; utilities retire to a quiet footer row */
+  #scr-home{background:radial-gradient(ellipse 130% 55% at 50% -10%, #2a1a12 0%, var(--bg) 62%)}
+  .wall{display:flex;gap:14px;margin:14px 0 2px}
+  .wall div{width:72px;height:96px;background:linear-gradient(#26180f,#1c120e);
+    border:2px solid #3a2a22;border-radius:4px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:6px;color:#5a4634;font-size:9px}
+  .wall div b{font-size:24px;opacity:.7}
+  #scr-home h1{margin:16px 0 0;font-size:44px;text-shadow:0 0 26px rgba(255,209,102,.28)}
+  button.ticket{width:min(320px,86vw);min-height:64px;border:none;border-radius:14px;
+    position:relative;background:var(--gold);color:#191010;font-size:20px;font-weight:800}
+  button.ticket::before,button.ticket::after{content:'';position:absolute;top:50%;
+    width:16px;height:16px;border-radius:50%;background:var(--bg);transform:translateY(-50%)}
+  button.ticket::before{left:-8px}
+  button.ticket::after{right:-8px}
+  .grouplabel{width:min(352px,90vw);text-align:left;color:var(--dim);font-size:12px;
+    letter-spacing:2px;margin:16px auto 6px;font-weight:700}
+  .shelf{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:min(360px,92vw)}
+  .shelf button{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;width:80px;min-height:96px;margin:0;font-size:12px;border-radius:10px;padding:8px 2px}
+  .shelf button .em{font-size:26px}
+  .footrow{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;margin-top:14px;
+    border-top:1px solid #3a2a22;padding-top:8px;width:min(360px,92vw)}
+  .footrow button{display:inline-block;width:auto;min-height:44px;margin:0;
+    padding:8px 10px;font-size:12px;border:none;background:transparent;color:var(--dim)}
+
   .card{width:min(340px,88vw);background:var(--panel);border:1px solid #3a2a22;
     border-radius:12px;padding:12px 16px;margin:6px auto;text-align:left}
   .card h3{margin:0 0 2px;font-size:16px;color:var(--ink)}
@@ -127,19 +154,27 @@
 <canvas id="c" role="img" aria-label="TAKE 47 gameplay: tap to jump, tap again to stop the spin"></canvas>
 
 <section id="scr-home" class="screen active" aria-label="TAKE 47 home">
+  <div class="wall" aria-hidden="true">
+    <div><b>🎬</b>SCENE 1</div><div><b>🌵</b>SCENE 11</div><div><b>⚓</b>SCENE 21</div>
+  </div>
   <h1>TAKE 47</h1>
   <p class="tag">a stunt double's life</p>
+  <button id="btnPlay" class="primary ticket">ACTION!</button>
   <p class="stats" id="homeStats"></p>
-  <button id="btnPlay" class="primary">ACTION!</button>
+  <p class="grouplabel">ON THE LOT</p>
+  <div class="shelf" role="group" aria-label="On the lot">
+    <button id="btnDaily"><span class="em" aria-hidden="true">🎬</span>DAILY</button>
+    <button id="btnCast"><span class="em" aria-hidden="true">🎭</span>CAST</button>
+    <button id="btnProps"><span class="em" aria-hidden="true">📦</span>PROPS</button>
+    <button id="btnReel"><span class="em" aria-hidden="true">🎞️</span>REEL</button>
+  </div>
   <div id="csList" aria-label="Today's call sheet"></div>
-  <button id="btnDaily">🎬 DAILY CHALLENGE</button>
-  <button id="btnReel">🎞️ THE REEL (reshoot scenes)</button>
-  <button id="btnPosters">🖼️ POSTER WALL</button>
-  <button id="btnCast">🎭 THE CAST</button>
-  <button id="btnProps">📦 PROP DEPARTMENT</button>
-  <button id="btnTrophies">🏆 BLOOPER REEL</button>
-  <button id="btnShareHome">📤 SHARE MY PROGRESS</button>
-  <button id="btnSettings">⚙️ SETTINGS</button>
+  <nav class="footrow" aria-label="More">
+    <button id="btnPosters">🖼️ POSTERS</button>
+    <button id="btnTrophies">🏆 BLOOPERS</button>
+    <button id="btnShareHome">📤 SHARE</button>
+    <button id="btnSettings">⚙️ SETTINGS</button>
+  </nav>
 </section>
 
 <section id="scr-reel" class="screen" aria-label="Reshoot completed scenes">
@@ -1454,6 +1489,18 @@ function drawPrompt(text, y, color){
   ctx.textAlign = 'center';
   ctx.fillText(text, W / 2, y - (20 - size) / 3);
 }
+// greedy word-wrap against the CURRENT ctx.font — set the font before calling
+function wrapLines(text, maxW){
+  const lines = [];
+  let cur = '';
+  for (const wd of text.split(' ')) {
+    const t = cur ? cur + ' ' + wd : wd;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = wd; }
+    else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
 function slateStripes(x, y, w, h){
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
@@ -1541,12 +1588,14 @@ function draw(){
   }
 
   if ((state === 'crash' || state === 'over') && quip) {
-    ctx.fillStyle = '#e8d5b5';
+    // long quips word-wrap (raw fillText clipped them — Dan defect)
     ctx.font = 'italic 17px Georgia, serif';
-    ctx.fillText(quip, W / 2, 180);
+    ctx.fillStyle = '#e8d5b5';
+    let qy = 168;
+    for (const ln of wrapLines(quip, W - 56)) { ctx.fillText(ln, W / 2, qy); qy += 22; }
     ctx.font = '13px system-ui, sans-serif';
     ctx.fillStyle = '#a08b72';
-    ctx.fillText('— the director', W / 2, 202);
+    ctx.fillText('— the director', W / 2, qy + 2);
   }
 
   // HUD v2 (Dan, 2026-07-03): the playing field stays EMPTY. Scene/take live on
@@ -1602,15 +1651,19 @@ function draw(){
   if (state === 'air' && activeItem) badges.push(['PROP ON (NO PRINT)', '#93c5fd']);
   if (perfectStreak >= 2) badges.push(['STREAK ×' + perfectStreak, '#c084fc']);
   if (state === 'ready' || state === 'air') {
+    // tags rail: LEFT-aligned under the slate — top-center now belongs to the
+    // hero spotlight fixture (Dan: HUD collided with the lights)
+    ctx.textAlign = 'left';
     ctx.font = 'bold 11px system-ui, sans-serif';
-    let by = 44;
+    let by = 116;
     for (const [txt, col] of badges) {
       const tw = ctx.measureText(txt).width;
       ctx.fillStyle = 'rgba(10,7,5,0.72)';
-      ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2 - 9, by - 12, tw + 18, 17, 8); ctx.fill();
-      ctx.fillStyle = col; ctx.fillText(txt, W / 2, by);
+      ctx.beginPath(); ctx.roundRect(10, by - 12, tw + 16, 17, 8); ctx.fill();
+      ctx.fillStyle = col; ctx.fillText(txt, 18, by);
       by += 21;
     }
+    ctx.textAlign = 'center';
   }
 
   if (state === 'ready') {
@@ -2134,11 +2187,31 @@ function buildSetCache(genre){
 
   c.strokeStyle = '#3a2c22'; c.lineWidth = 5;                   // it's ALWAYS a film set:
   c.beginPath(); c.moveTo(0, 24); c.lineTo(W, 24); c.stroke();  // the rig...
-  for (const lx of [58, 342]) drawSetLamp(c, lx, 38, 1.1);      // ...fixtures clear of the HUD zone...
-  const cone = c.createLinearGradient(0, 40, 0, GROUND);        // ...spotlight...
-  cone.addColorStop(0, 'rgba(255,209,102,0.13)'); cone.addColorStop(1, 'rgba(255,209,102,0.02)');
+  // ...ONE hero spotlight, top-center — the cone now pours from its lit lens
+  // (Dan: light needs a source; old flanking lamps collided with the HUD chips)
+  c.strokeStyle = '#3a2c22'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(200, 24); c.lineTo(200, 34); c.stroke();
+  const cone = c.createLinearGradient(0, 56, 0, GROUND);
+  cone.addColorStop(0, 'rgba(255,209,102,0.16)'); cone.addColorStop(1, 'rgba(255,209,102,0.02)');
   c.fillStyle = cone;
-  c.beginPath(); c.moveTo(180, 48); c.lineTo(300, 48); c.lineTo(390, GROUND); c.lineTo(120, GROUND); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(184, 56); c.lineTo(216, 56); c.lineTo(390, GROUND); c.lineTo(120, GROUND); c.closePath(); c.fill();
+  oRect(c, 178, 34, 44, 22, '#2c2018', 4);                      // fixture body
+  c.fillStyle = '#fff3cf'; c.fillRect(184, 52, 32, 5);          // lit lens = cone source
+  // THE DIRECTOR — filming every scene from the tall chair behind the camera
+  // (gives the "— the director" quips a body on set; drawn first = behind camera)
+  c.strokeStyle = OUTL_SET; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(6, GROUND); c.lineTo(16, GROUND - 52); c.stroke();
+  c.beginPath(); c.moveTo(34, GROUND); c.lineTo(24, GROUND - 52); c.stroke();
+  c.beginPath(); c.moveTo(10, GROUND - 20); c.lineTo(31, GROUND - 20); c.stroke();
+  oRect(c, 12, GROUND - 58, 18, 8, '#2c2018');                  // canvas seat
+  c.fillStyle = '#3a3430'; c.strokeStyle = OUTL_SET; c.lineWidth = 2.5;
+  c.beginPath(); c.ellipse(21, GROUND - 72, 9, 12, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = '#ecd0a8';
+  c.beginPath(); c.arc(21, GROUND - 90, 7, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = '#191010';                                      // beret
+  c.beginPath(); c.ellipse(21, GROUND - 96, 8, 3.5, -0.15, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#c94f52';                                      // megaphone, resting on knee
+  c.beginPath(); c.moveTo(28, GROUND - 62); c.lineTo(40, GROUND - 68); c.lineTo(40, GROUND - 56); c.closePath(); c.fill(); c.stroke();
   // ...a compact camera, far stage-left (launch spots start at x≈92)...
   c.strokeStyle = OUTL_SET; c.lineWidth = 4;                    // tripod
   c.beginPath(); c.moveTo(40, GROUND - 50); c.lineTo(24, GROUND - 4); c.stroke();
@@ -2151,15 +2224,15 @@ function buildSetCache(genre){
   c.fillStyle = '#c94f52';                                      // tally light
   c.beginPath(); c.arc(22, GROUND - 72, 3, 0, Math.PI * 2); c.fill();
   c.fillStyle = genre.floor; c.fillRect(0, GROUND, W, H - GROUND);
-  // stage floor = planked decking: horizontal boards w/ staggered joints.
-  // (hazard tabs removed entirely — they were the lingering "checkerboard
-  // remnants" in Dan's defect report)
-  c.strokeStyle = 'rgba(0,0,0,0.28)'; c.lineWidth = 2;
-  for (let y = GROUND + 25; y < H; y += 25) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  // stage decking: three LONG boards with sparse, non-repeating joints — the
+  // old dense stagger read as a brick wall (Dan defect). Front edge shadowed.
+  c.fillStyle = 'rgba(0,0,0,0.2)'; c.fillRect(0, GROUND, W, 3);
+  c.strokeStyle = 'rgba(0,0,0,0.22)'; c.lineWidth = 2;
+  for (const y of [GROUND + 33, GROUND + 66]) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
   c.lineWidth = 1.5;
-  for (let r = 0; r < 4; r++) {
-    const y0 = GROUND + r * 25, y1 = Math.min(H, y0 + 25);
-    for (let x = (r % 2 ? 70 : 140); x < W; x += 140) { c.beginPath(); c.moveTo(x, y0 + 2); c.lineTo(x, y1 - 2); c.stroke(); }
+  for (const [jx, row] of [[132, 0], [318, 0], [226, 1], [58, 2], [352, 2]]) {
+    const y0 = GROUND + row * 33, y1 = Math.min(H, y0 + 33);
+    c.beginPath(); c.moveTo(jx, y0 + 3); c.lineTo(jx, y1 - 3); c.stroke();
   }
   oRect(c, 170, GROUND + 1, 220, 15, '#2e4a6b', 3);             // stitched crash mat
   c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 2;
