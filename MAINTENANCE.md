@@ -4,7 +4,9 @@
 
 ## The checklist
 
-**1. Docs current & consistent**
+**1. Docs current & consistent** *(the package map lives in README.md; keep its index true)*
+- README.md index matches the actual files (new doc → new row + taxonomy group).
+- ARCHITECTURE.md still describes reality; if systems/docs changed structurally, rerun `python3 tools/render_docs_diagrams.py` and confirm the three diagrams in assets/docs/ match.
 - STATUS.md latest entry reflects the most recent work; "Next steps" list is clean, ordered, and duplicate-free.
 - Every significant change in STATUS has a DECISIONS.md row with the *why*.
 - CLAUDE.md operational lessons updated when a new lesson was learned (not per-session noise).
@@ -36,3 +38,4 @@
 
 ## Maintenance log
 - 2026-07-03 (session-end run, manual): full pass — see STATUS.md entry of same date.
+- 2026-07-03 (scheduled run, 6:38 AM): docs-only pass — STATUS next-steps de-duplicated (stale pre-consolidation items removed); BACKLOG cleared of shipped/promoted items (Game Center → Phase 5, face pass + floor accents shipped); DECISIONS row added for `.nojekyll`/Pages-CI; index.html header now lists the QA Test Mode panel + its strip gate. Sweeps clean: fully offline confirmed (only URL = GAME_URL share constant, now resolved to dmiceli.github.io), flash/flicker rules hold, README index matches files, ARCHITECTURE current. No code-logic changes → no headless run needed.

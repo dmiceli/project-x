@@ -1,4 +1,27 @@
-# QA-PLAN.md — morning session (2026-07-04) · ~75–90 min total
+# QA-PLAN.md — morning session (2026-07-04)
+
+## ⚡ EXPRESS PLAN — ~60 min (re-prioritized for limited time)
+
+Priorities: last night's UNVERIFIED code first, first-impressions second, feel last and longest. Deferred to a later pass (not skipped): full VoiceOver navigation, the dedicated copy read (just note any copy that bugs you as you go). **Test Mode:** Settings → tap version line 5×.
+
+**0 · Prep — 3 min.** Push pending commits (includes `.nojekyll` + docs package). Confirm the version line updated. Test Mode → 💾 Back up save.
+
+**1 · Rollover glance — 2 min.** It armed itself at midnight: fresh gauntlet, 3 attempts, 3 new call-sheet goals, record intact.
+
+**2 · Fresh-save FTUE — 8 min** (private tab = fresh save; your real save untouched). Coaching pills fit and retire after first landing; zero-state home shows locked cards w/ 🔒 hints + call sheet card; reach scene 3 → Daily unlock toast.
+
+**3 · Last night's features — 12 min** (real save; Test Mode: +50 prints, +1 every prop).
+Buy a prop → tap toast → refund ✓ · big wardrobe item asks a second tap ✓ · arm 🎯 Launch Rig → HOLD (meter sweeps) → release at min then max power, arcs differ ✓ · scene-jump 31/41/51 → poses vary (PIKE/LAYOUT/TWIST), perfect announces the pose ✓ · ~5 no-lock takes → spins judged fairly; if one lands: "RODE IT OUT!" ✓.
+
+**4 · A11y spot-check — 5 min.** Reduce-motion ON + sound OFF → 3 takes incl. a crash: no shake/flash/flicker, still fully judgeable silent. (Full VoiceOver pass deferred.)
+
+**5 · The feel session — 25 min.** Test Mode → ⏪ Restore save first. Just play. Then the five questions: friction/boredom where? · anything unfair? · richer or noisier? · "one more take" pull every crash? · would you show a friend today?
+
+**6 · Wrap — 5 min.** Paste defects (template at bottom) + five answers into chat. I triage.
+
+---
+
+## FULL PLAN (~90 min — reference for the next complete pass; adds full VoiceOver + dedicated copy read)
 
 One pass, logical order: cheapest checks first, immersion last (so bugs found early don't taint the feel session). **Test Mode:** Settings → tap the version line 5× (backup your save before anything that mutates state). Log defects in the template at the bottom — screenshots beat descriptions.
 

@@ -108,17 +108,14 @@
 
 - 2026-07-04: **Exploration batch SHIPPED** (Dan approved all three recommendations): cosmetic flip poses (TUCK/PIKE/LAYOUT/TWIST by spin speed + scene, wind=twist, low-G=layout, announced on perfects); prop purchases now instant + 4s tap-toast UNDO, wardrobe ≥15 prints gets a second-tap confirm; **Launch Rig prop** (4🖨, hold-to-aim power meter 0.75–1.25×, canvas meter + release prompt) as the power-meter trial balloon. **Plus Dan's ride-it-out defect fixed:** landing angle now judged at exact sub-frame ground contact (was one frame late), unlocked clean landings earn "RODE IT OUT!" — sub-frame fairness item retired from BACKLOG. All five changes verified headlessly with real sequences.
 
+- 2026-07-04 (session close): **documentation package shipped** — README.md (repo front door: taxonomy table w/ cadence per doc, renders on the GitHub repo page), ARCHITECTURE.md (plain-language code map + standing invariants + verification approach), three regenerable diagrams in assets/docs/ (system architecture, game loop, doc taxonomy) via tools/render_docs_diagrams.py. Upkeep wired into MAINTENANCE.md item 1.
+
+- 2026-07-04: **Pages CI investigated** (flagged by Dan's inbox session: "failing on every push"). Facts from the public Actions API: 27 successes vs 13 failures TOTAL; all 13 failures clustered in one ~5h window (July 2 ~4–9:30 PM local), self-resolved; the LATEST run (#42) succeeded and deployed tonight's newest verified commit — the live build is current, so every on-device verification tonight was against fresh code. Prevention: added `.nojekyll` (we never use Jekyll; branch-based Pages was running it on every deploy — skipping it removes the likeliest failure class AND speeds deploys). Failure emails should stop on their own.
+
 ## Next steps
 1. **Tomorrow morning: run QA-PLAN.md** (~75–90 min, one pass) — consolidates ALL remaining BETA-READINESS core items + last night's feature verifications: rollover check, fresh-save FTUE, feature smoke, a11y sweep, copy read, big feel session. Paste defects + the five feel answers into chat for triage.
 2. Schedule the **cold playtest volunteer** this week.
 3. Then **Phase 5 begins**: PIPELINE.md runbook — Capacitor wrap, Preferences save migration (hard gate), QA-panel strip (hard gate), Game Center + notifications + haptics (approved wins), hello-world TestFlight build; "TAKE 47" name check at first ASC touch.
-4. Beta-parallel: store-conversion kit (screenshots + 15s preview per BRAND/MARKETING).
-2. **Fresh-save FTUE run** (~10 min, private tab).
-3. **Combined a11y sweep** (~15 min).
-4. **Full copy read** (~15 min).
-5. **Daily rollover check** (passive — first open after midnight: fresh gauntlet, 3 attempts, 3 new call-sheet goals).
-6. **The big feel session** (one sitting).
-7. **Cold playtest** (needs a volunteer — schedule when you can).
+4. Beta-parallel: store-conversion kit (screenshots + 15s preview per BRAND/MARKETING); App Store screenshot set per BRAND.md ("the fail is the ad").
 
-Then: App Store screenshot set per BRAND.md ("the fail is the ad") → Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability hard gate) → hello-world TestFlight build → verify "TAKE 47" name at first App Store Connect touch.
-(Standalone device check: retired — covered by tonight's many on-device rounds.)
+(Older itemized QA steps consolidated into item 1's QA-PLAN.md run; standalone device check retired — covered by the many on-device rounds of 07-03/04.)

@@ -3,7 +3,6 @@
 Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgotten; nothing here blocks launch.
 
 ## v1.1 candidates
-- Game Center leaderboard (deferred from v1 scope discussion)
 - Characters 7–8: Robot Double, Grandma
 - Slow-mo replay of spectacular crashes (crash-comedy amplifier)
 - More director quips; quip packs per scene range
@@ -22,10 +21,10 @@ Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgot
 
 ## Fairness / polish candidates (pre-launch review)
 - Hybrid mute pass on remaining wardrobe: the other five cast members' Classic colorways (+ variants) should get the same muted-flat treatment as Stunt Guy during the art pass.
-- In-game character face pass: bring the icon's terror-face (eyes/mouth/sweat) into the flight animation and share card — "one character, everywhere" (see DESIGN.md franchise-face note).
 - Icon art: current version is polished programmatic art (MVP per Dan); optionally commission an artist pre-launch using icon-final.png as the exact brief.
 
 ## Deferred process items
 - Third-party analytics: reconsider before public launch only if TestFlight feedback is insufficient (decided 2026-07-02: Apple built-in only for v1).
 - Home poster-wall thumbnails could reflect actually wrapped sets (live data, not decorative)
-- Per-set floor accents (scifi panel seams, noir wet sheen, western sand drifts) — fold into 5-set background rollout if cheap
+
+*(Removed as shipped/promoted, 2026-07-03 maintenance: Game Center leaderboard → Phase 5 via BIG-WINS; in-game face pass → shipped; per-set floor accents → shipped with the six-set background rollout.)*
