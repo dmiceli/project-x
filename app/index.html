@@ -1185,8 +1185,13 @@ function update(dt){
     // aerial hazards (both telegraphed by constant visible motion)
     if (params.mech.boom && activeItem !== 'boombrake') {
       const tip = boomTip(mechT);
-      // only the MIC kills (Dan's call): the pole is jumpable — thread it
-      if (Math.hypot(p.x - tip.x, p.y - tip.y) < 28) {
+      // hitbox = the WINDSCREEN exactly as drawn: its center sits 10px past
+      // the tip along the pole. v1 centered the circle on the bare tip, so it
+      // killed pole-grazes below the mic and forgave the mic's far end —
+      // Dan: "sometimes passes through the post, others it causes failure"
+      const bang = Math.atan2(tip.y - 80, tip.x - 280);
+      const mcx = tip.x + 10 * Math.cos(bang), mcy = tip.y + 10 * Math.sin(bang);
+      if (Math.hypot(p.x - mcx, p.y - mcy) < 26) {
         crashAir('CLIPPED IT!', '"The boom. THE BOOM. It was RIGHT THERE."');
         return;
       }

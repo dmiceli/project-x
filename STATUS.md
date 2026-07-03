@@ -97,6 +97,8 @@
 
 - 2026-07-03: one-time Trap Door refund shipped (make-good for the pre-gating no-op consume) — flag-guarded in S.reveals, existing saves only (takes > 0), toast on grant. Remove or keep harmlessly post-beta.
 
+- 2026-07-03: boom hitbox aligned to the drawn windscreen (center +10 along pole, r26) — v1 centered it on the bare tip, killing pole-grazes below the mic and forgiving the fuzz's far end (Dan: inconsistent collisions). Verified across the full sweep: pole ≥45px clear, windscreen always deadly.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).
