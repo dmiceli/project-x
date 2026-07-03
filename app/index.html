@@ -876,7 +876,7 @@ function evaluateLanding(){
     if (!S.ftue) { S.ftue = 1; }         // first landed scene: coaching retires
     if (wasPerfect) {
       perfectStreak++;
-      dirMood = 'clap'; dirMoodT = 1.4;              // even HE has to admit it
+      dirMood = 'clap'; dirMoodT = 2.2;              // even HE has to admit it
       S.prints++;
       if (mode !== 'daily') S.printed[currentSceneNo()] = 1;   // collection flag (posters)
       S.bestStreak = Math.max(S.bestStreak, perfectStreak);
@@ -2050,11 +2050,15 @@ function oEllipse(c, x, y, rx, ry, fill){
 // megaphone while his quote shows, hands up on perfects. State-based poses,
 // no motion loops (reduce-motion safe).
 function drawDirector(){
+  // crash = instant facepalm; the CUT screen = megaphone verdict. (v1 mapped
+  // facepalm to "crash without a quote" — but every crash HAS a quote, so the
+  // pose was unreachable. Caught by Dan on device.)
   let pose = 'watch';
   if (state === 'air') pose = 'lean';
-  if (state === 'crash' || state === 'over') pose = quip ? 'shout' : 'face';
+  if (state === 'crash') pose = 'face';
+  else if (state === 'over') pose = quip ? 'shout' : 'face';
   if (dirMoodT > 0 && dirMood === 'clap') pose = 'clap';
-  const x = 17, lean = pose === 'lean' ? 3 : 0;
+  const x = 17, lean = pose === 'lean' ? 5 : 0;
   ctx.strokeStyle = OUTL_SET; ctx.lineWidth = 3;                 // tall chair
   ctx.beginPath(); ctx.moveTo(2, GROUND); ctx.lineTo(12, GROUND - 52); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(30, GROUND); ctx.lineTo(20, GROUND - 52); ctx.stroke();
@@ -2083,6 +2087,11 @@ function drawDirector(){
   } else {                                                       // megaphone rests on the knee
     ctx.fillStyle = '#c94f52';
     ctx.beginPath(); ctx.moveTo(24, GROUND - 62); ctx.lineTo(36, GROUND - 68); ctx.lineTo(36, GROUND - 56); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (pose === 'lean') {                                       // visor hand: watching the stunt
+      ctx.strokeStyle = OUTL_SET; ctx.lineWidth = 2;
+      ctx.fillStyle = '#ecd0a8';
+      ctx.beginPath(); ctx.ellipse(hx2 + 7, hy - 3, 5, 2.5, -0.35, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
   }
 }
 // the recognizable lamp fixture (same design family as icon + gag)

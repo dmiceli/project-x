@@ -87,6 +87,8 @@
 
 - 2026-07-03 (round 4): quotes/spotlight/floor/director all validated by Dan ✓. **Menu zero-state fixed** — locked features now visible-but-dimmed with 🔒 unlock hints (scene 3 / scene 5 / scene 11 / earn a print / first trophy) instead of hidden; **call sheet is an always-on card** (header + right-aligned payout chips, seeded day one). **Director reactions shipped to MVP** (Dan promotion): watches, leans in during flight, facepalms crashes, raises the megaphone while his quote shows, hands up on perfects — moved out of the set cache to animate, reduce-motion safe (pose swaps, no motion loops). Poses + call-sheet seeding verified headlessly.
 
+- 2026-07-03: director pose fix (Dan: only megaphone showed) — facepalm was unreachable (gated on "crash without quote"; every crash has a quote). Now: crash = facepalm, CUT screen = megaphone quote, lean enlarged + visor hand, clap held 2.2s. Every pose verified reachable via real state sequences. Test lesson: drive headless checks with states the game actually produces, not synthetic ones.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).
