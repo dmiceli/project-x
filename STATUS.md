@@ -99,17 +99,16 @@
 
 - 2026-07-03: boom hitbox aligned to the drawn windscreen (center +10 along pole, r26) — v1 centered it on the bare tip, killing pole-grazes below the mic and forgiving the fuzz's far end (Dan: inconsistent collisions). Verified across the full sweep: pole ≥45px clear, windscreen always deadly.
 
+- 2026-07-04 (overnight, per Dan's work order): **maintenance run + explorations + big wins.** Maintenance: MAINTENANCE.md codified + scheduled task `take47-maintenance` (daily 6:38 AM); CLAUDE.md ops lessons updated (real-state testing, visual coherence rules, grep display quirk, harness rebuild note); STATUS next-steps de-duplicated; code fixes — dead drawSetLamp removed, gag-lens flicker cut from ~7Hz to <3Hz + reduce-motion gated (photosensitivity/App Store), file header refreshed (depth backgrounds decorative, hitbox=visual rule). **EXPLORATIONS.md** (flip variety / purchase confirms / power meter — 2 mockup sheets in assets/) and **BIG-WINS.md** (Game Center daily leaderboard, reset notification, real haptics, mercy system, store-conversion kit) await Dan's morning review.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
-1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
+1. **Morning review queue (Dan):** EXPLORATIONS.md (flip variety / purchase confirms / power meter — mockups attached) + BIG-WINS.md (5 MVP proposals).
 2. **Fresh-save FTUE run** (~10 min, private tab).
 3. **Combined a11y sweep** (~15 min).
 4. **Full copy read** (~15 min).
-5. **Daily rollover** (passive, next midnight).
+5. **Daily rollover check** (passive — first open after midnight: fresh gauntlet, 3 attempts, 3 new call-sheet goals).
 6. **The big feel session** (one sitting).
 7. **Cold playtest** (needs a volunteer — schedule when you can).
-3. **App Store screenshot set** per BRAND.md ("the fail is the ad").
-4. Then Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability gate) → hello-world TestFlight build.
-2. Then: polish phase (real icon art, sound design, crash comedy pass) → PIPELINE.md → TestFlight.
-2. Then: tuning/polish batch → icon + real sound design.
-3. PIPELINE.md runbook → first hello-world TestFlight build.
-4. Later: verify "TAKE 47" name in App Store Connect.
+
+Then: App Store screenshot set per BRAND.md ("the fail is the ad") → Phase 5: PIPELINE.md runbook → Capacitor wrap (save-durability hard gate) → hello-world TestFlight build → verify "TAKE 47" name at first App Store Connect touch.
+(Standalone device check: retired — covered by tonight's many on-device rounds.)

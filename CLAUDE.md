@@ -27,6 +27,11 @@ Vanilla JS + HTML5 canvas, single-file during prototyping (no game engine — pr
 - **Verification pays:** headless drivers caught a game-breaking exploit (instant-lock), an untouchable hazard (boom placed above all flight paths), and multiple driver-side false alarms — always distinguish game bug vs test bug before patching the game.
 - **Visual asset workflow:** PIL in the sandbox, written directly to the mount; supersample 4× + LANCZOS downscale, soft light via GaussianBlur, grain/vignette to escape flat "programmer art." Render → Read (view) → self-critique honestly → iterate with Dan in short loops. Keep a 60px test strip for icons.
 - **Skip zero-gain refactors:** micro-optimizations that add churn risk to verified code are declined deliberately (noted in session log) — cleanup passes target real waste, a11y, comments, docs.
+- **Test with REAL state sequences (2026-07-03):** a headless pose test passed with synthetic inputs the game never produces (crash without a quote) and hid an unreachable branch Dan caught on device. Drive verification with the sequences actual play generates.
+- **Visual coherence rules (2026-07-03, also in the code header):** outlines mark foreground only; an active prop must visibly change the scene, not just the physics; a hitbox is exactly what's drawn (a 10px draw-vs-hitbox offset on the boom caused "inconsistent" collisions).
+- **Search-output display quirk:** grep-style results can render `//` as `\` on lines containing em-dashes — display artifact, not corruption. Read is the authority; don't fix phantom syntax errors.
+- **Routine maintenance is codified:** MAINTENANCE.md holds the checklist; scheduled task `take47-maintenance` runs it daily 6:38 AM (or on next app launch). Manual run at session end after big batches.
+- **PIL study harness:** per-set study scripts live in the session scratchpad (dustgulch_study.py = importable base). Scratchpad clears between sessions — rebuild from ART-RESEARCH.md's pattern when needed; approved sheets persist in assets/.
 
 ## Phases
 0. Environment + stack decision; start Apple Developer enrollment

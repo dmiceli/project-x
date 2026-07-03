@@ -10,8 +10,11 @@
   prop department (earned-only consumables) → audio → call sheet → engine
   (campaign/daily/reshoot) → interstitial cards + ad-pacing placeholder →
   FTUE coaching + progressive home disclosure → achievements w/ progress →
-  render (cached set, mechanics telegraphs, cart trajectory preview) →
-  share card (challenge + on-image link) → UI wiring → safety net.
+  render (cached set w/ layered-depth backgrounds, live director reactions,
+  mechanics telegraphs w/ hitboxes matching visuals, cart trajectory
+  preview) → share card (challenge + on-image link) → UI wiring → safety net.
+  Standing visual rules: outlines mark foreground only; an active prop must
+  visibly change the scene; a hitbox is exactly what's drawn.
 
   PRIVACY: fully offline. One localStorage key holds all game state; no
   network requests, no analytics, no identifiers, no third-party code.
@@ -20,8 +23,10 @@
   Preferences in Phase 5 — hard gate, see STATUS watch list.)
 
   ACCESSIBILITY: outcomes pair color with text labels (never color alone);
-  reduce-motion kills shake/flash and calms FTUE pulses (no strobing
-  anywhere); sound optional; hazards telegraph by constant visible motion
+  reduce-motion kills shake/flash, calms FTUE pulses, and skips the gag-lamp
+  lens flicker (all luminance flicker held under 3Hz — photosensitivity);
+  depth-layer backgrounds are decorative only (no gameplay info lives in
+  them); sound optional; hazards telegraph by constant visible motion
   + text badges; menus are native HTML with aria-pressed toggles and a
   polite live region for toasts; touch targets ≥48px; canvas gameplay is
   one-tap with keyboard equivalent (Space). Canvas itself is labeled but
@@ -1641,7 +1646,9 @@ function draw(){
     ctx.strokeStyle = '#1a1310'; ctx.lineWidth = 3;
     ctx.fillStyle = '#2c2018';
     ctx.beginPath(); ctx.roundRect(-22, -14, 44, 22, 5); ctx.fill(); ctx.stroke();
-    const lit = gag.phase !== 'dead' || (gag.t < 0.35 && Math.sin(gag.t * 45) > 0);
+    // lens death flicker held under 3Hz + skipped on reduce-motion
+    // (photosensitivity: the old 45 rad/s ≈ 7Hz — a11y + App Store risk)
+    const lit = gag.phase !== 'dead' || (gag.t < 0.35 && !S.set.rm && Math.sin(gag.t * 16) > 0);
     ctx.fillStyle = lit ? '#fff3cf' : '#5a5044';               // lens flickers out on impact
     ctx.fillRect(-15, 6, 30, 6);
     ctx.restore();
@@ -2155,13 +2162,6 @@ function drawDirector(){
       ctx.beginPath(); ctx.ellipse(hx2 + 7, hy - 3, 5, 2.5, -0.35, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
   }
-}
-// the recognizable lamp fixture (same design family as icon + gag)
-function drawSetLamp(c, x, y, s){
-  c.strokeStyle = '#3a2c22'; c.lineWidth = 3 * s;
-  c.beginPath(); c.moveTo(x, y - 10 * s); c.lineTo(x, y - 3 * s); c.stroke();
-  oRect(c, x - 11 * s, y - 3 * s, 22 * s, 12 * s, '#2c2018', 3 * s);
-  c.fillStyle = '#fff3cf'; c.fillRect(x - 7 * s, y + 6 * s, 14 * s, 3 * s);
 }
 
 function propsStudio(c){
