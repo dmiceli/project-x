@@ -108,8 +108,11 @@
 
 - 2026-07-04: **Exploration batch SHIPPED** (Dan approved all three recommendations): cosmetic flip poses (TUCK/PIKE/LAYOUT/TWIST by spin speed + scene, wind=twist, low-G=layout, announced on perfects); prop purchases now instant + 4s tap-toast UNDO, wardrobe ≥15 prints gets a second-tap confirm; **Launch Rig prop** (4🖨, hold-to-aim power meter 0.75–1.25×, canvas meter + release prompt) as the power-meter trial balloon. **Plus Dan's ride-it-out defect fixed:** landing angle now judged at exact sub-frame ground contact (was one frame late), unlocked clean landings earn "RODE IT OUT!" — sub-frame fairness item retired from BACKLOG. All five changes verified headlessly with real sequences.
 
-## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
-1. ~~Morning review queue~~ — all exploration + big-win verdicts in and shipped.
+## Next steps
+1. **Tomorrow morning: run QA-PLAN.md** (~75–90 min, one pass) — consolidates ALL remaining BETA-READINESS core items + last night's feature verifications: rollover check, fresh-save FTUE, feature smoke, a11y sweep, copy read, big feel session. Paste defects + the five feel answers into chat for triage.
+2. Schedule the **cold playtest volunteer** this week.
+3. Then **Phase 5 begins**: PIPELINE.md runbook — Capacitor wrap, Preferences save migration (hard gate), QA-panel strip (hard gate), Game Center + notifications + haptics (approved wins), hello-world TestFlight build; "TAKE 47" name check at first ASC touch.
+4. Beta-parallel: store-conversion kit (screenshots + 15s preview per BRAND/MARKETING).
 2. **Fresh-save FTUE run** (~10 min, private tab).
 3. **Combined a11y sweep** (~15 min).
 4. **Full copy read** (~15 min).
