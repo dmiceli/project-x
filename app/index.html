@@ -2103,6 +2103,50 @@ function drawSetLamp(c, x, y, s){
 }
 
 function propsStudio(c){
+  // layered depth (ART-RESEARCH.md): work-lamp glow, scaffold towers with
+  // string lights, parked camera crane — dark sets read distance via light
+  const glow2 = c.createRadialGradient(330, 470, 8, 330, 470, 70);
+  glow2.addColorStop(0, 'rgba(255,220,150,0.12)'); glow2.addColorStop(1, 'rgba(255,220,150,0)');
+  c.fillStyle = glow2; c.fillRect(260, 400, 140, 140);
+  const far = '#362016';
+  for (const [tx, top] of [[30, 470], [205, 500], [352, 452]]) {   // scaffold towers
+    c.strokeStyle = far; c.lineWidth = 3;
+    c.strokeRect(tx, top, 34, GROUND - top);
+    c.lineWidth = 2;
+    for (let yy = top; yy < GROUND - 20; yy += 26) {
+      c.beginPath(); c.moveTo(tx, yy); c.lineTo(tx + 34, yy + 26); c.stroke();
+      c.beginPath(); c.moveTo(tx + 34, yy); c.lineTo(tx, yy + 26); c.stroke();
+    }
+  }
+  c.fillStyle = '#2e1c12'; c.fillRect(342, 452, 14, 10);           // work-lamp head
+  c.fillStyle = '#fff3cf'; c.fillRect(344, 462, 10, 3);
+  for (const [x0, y0, x1, y1, sag, bulbs] of [[47, 474, 222, 504, 26, 4], [222, 504, 369, 456, 30, 4], [64, 478, 369, 460, 44, 5]]) {
+    c.strokeStyle = '#3a2418'; c.lineWidth = 2;                    // cable swags
+    c.beginPath();
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t + sag * Math.sin(Math.PI * t);
+      i ? c.lineTo(x, y) : c.moveTo(x, y);
+    }
+    c.stroke();
+    for (let b = 1; b <= bulbs; b++) {                             // string-light bulbs
+      const t = b / (bulbs + 1), x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t + sag * Math.sin(Math.PI * t) + 4;
+      c.fillStyle = 'rgba(255,217,160,0.16)';
+      c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ffd9a0';
+      c.beginPath(); c.arc(x, y, 1.5, 0, Math.PI * 2); c.fill();
+    }
+  }
+  c.fillStyle = 'rgba(255,200,140,0.04)'; c.fillRect(0, 545, W, GROUND - 545);
+  const mid = '#241509';                                           // parked camera crane
+  c.fillStyle = mid;
+  c.fillRect(70, GROUND - 14, 64, 8);
+  for (const wx2 of [80, 124]) { c.beginPath(); c.arc(wx2, GROUND - 3, 6, 0, Math.PI * 2); c.fill(); }
+  c.strokeStyle = mid; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(98, GROUND - 14); c.lineTo(98, 552); c.stroke();
+  c.lineWidth = 5;
+  c.beginPath(); c.moveTo(76, 566); c.lineTo(186, 508); c.stroke();
+  c.fillRect(64, 558, 20, 14);
+  c.fillRect(182, 498, 18, 12);
   // a painted BACKDROP flat (sky + hills, clearly a painting in a wooden
   // frame) leaning on the wall, plus a raw-canvas flat behind it + kick brace
   c.save(); c.translate(368, GROUND); c.rotate(-10 * Math.PI / 180);
@@ -2169,6 +2213,39 @@ function propsWestern(c){
   oRect(c, 228, GROUND - 54, 10, 28, '#22301a', 5);
 }
 function propsPirate(c){
+  // depth: low moon + sea shimmer, moonlit cloud bank, sister-ship cutout,
+  // and the cardboard sea serpent on a visible stick (deadpan)
+  const glowP = c.createRadialGradient(80, 458, 8, 80, 458, 66);
+  glowP.addColorStop(0, 'rgba(200,225,255,0.11)'); glowP.addColorStop(1, 'rgba(200,225,255,0)');
+  c.fillStyle = glowP; c.fillRect(14, 392, 132, 132);
+  c.fillStyle = '#8fa5b8';
+  c.beginPath(); c.arc(80, 458, 26, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#1c3a58';                                        // moonlit clouds
+  for (const [cx2, cy2, w2] of [[30, 500, 90], [150, 516, 120], [300, 494, 110]]) {
+    c.beginPath(); c.ellipse(cx2, cy2, w2 / 2, 16, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(cx2, cy2 - 10, w2 / 3, 16, 0, 0, Math.PI * 2); c.fill();
+  }
+  c.fillStyle = '#14283e';                                        // sister-ship cutout
+  c.beginPath(); c.moveTo(52, 566); c.lineTo(130, 566); c.lineTo(118, 552); c.lineTo(64, 552); c.closePath(); c.fill();
+  c.strokeStyle = '#14283e'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(74, 552); c.lineTo(74, 516); c.stroke();
+  c.beginPath(); c.moveTo(104, 552); c.lineTo(104, 524); c.stroke();
+  c.beginPath(); c.moveTo(74, 518); c.lineTo(74, 544); c.lineTo(94, 544); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(170,200,255,0.045)'; c.fillRect(0, 540, W, GROUND - 540);
+  c.strokeStyle = 'rgba(190,215,255,0.18)'; c.lineWidth = 2;      // moon shimmer
+  for (let i = 0; i < 5; i++) {
+    const wd = 26 - i * 4, sy = 556 + i * 8;
+    c.beginPath(); c.moveTo(80 - wd / 2, sy); c.lineTo(80 + wd / 2, sy); c.stroke();
+  }
+  const srp = '#081220';                                          // the serpent
+  c.strokeStyle = srp; c.lineWidth = 5;
+  for (const hx3 of [196, 232, 268]) { c.beginPath(); c.arc(hx3, 566, 18, Math.PI, 0); c.stroke(); }
+  c.fillStyle = srp;
+  c.beginPath(); c.ellipse(292, 550, 12, 10, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.moveTo(300, 546); c.lineTo(314, 542); c.lineTo(300, 554); c.closePath(); c.fill();
+  c.strokeStyle = srp; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(240, 566); c.lineTo(240, GROUND); c.stroke();
+  c.beginPath(); c.moveTo(228, GROUND); c.lineTo(252, GROUND); c.lineTo(240, GROUND - 8); c.closePath(); c.fill();
   // mast with crow's nest, boom, rigging; scalloped painted waves
   c.strokeStyle = '#2a2118'; c.lineWidth = 9;
   c.beginPath(); c.moveTo(342, GROUND); c.lineTo(342, 112); c.stroke();
@@ -2185,6 +2262,35 @@ function propsPirate(c){
   }
 }
 function propsScifi(c){
+  // depth: faint nebula washes (corners only — corridor stays clean), tiny
+  // second moon, cratered moonscape ridge, cardboard rocket on a stick
+  let neb = c.createRadialGradient(355, 150, 5, 355, 150, 85);
+  neb.addColorStop(0, 'rgba(120,80,200,0.06)'); neb.addColorStop(1, 'rgba(120,80,200,0)');
+  c.fillStyle = neb; c.fillRect(270, 65, 130, 170);
+  neb = c.createRadialGradient(25, 365, 5, 25, 365, 75);
+  neb.addColorStop(0, 'rgba(80,60,160,0.05)'); neb.addColorStop(1, 'rgba(80,60,160,0)');
+  c.fillStyle = neb; c.fillRect(-40, 290, 130, 150);
+  c.fillStyle = '#6a5a8a';
+  c.beginPath(); c.arc(350, 168, 12, 0, Math.PI * 2); c.fill();   // second moon
+  c.fillStyle = '#584a75';
+  c.beginPath(); c.arc(349, 167, 3, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(150,120,255,0.04)'; c.fillRect(0, 540, W, GROUND - 540);
+  const msc = '#1b1236';
+  c.fillStyle = msc;                                              // moonscape ridge
+  c.beginPath(); c.moveTo(0, GROUND); c.lineTo(0, 570); c.lineTo(60, 558); c.lineTo(130, 572); c.lineTo(210, 556); c.lineTo(290, 570); c.lineTo(360, 560); c.lineTo(400, 568); c.lineTo(400, GROUND); c.closePath(); c.fill();
+  c.strokeStyle = '#241a48'; c.lineWidth = 2;                     // craters
+  for (const [cx2, cy2, cr] of [[96, 576, 10], [250, 578, 12], [330, 574, 7]]) {
+    c.beginPath(); c.ellipse(cx2, cy2, cr, cr * 0.45, 0, 0, Math.PI * 2); c.stroke();
+  }
+  c.fillStyle = msc;                                              // the rocket
+  c.beginPath(); c.moveTo(150, 508); c.lineTo(141, 524); c.lineTo(159, 524); c.closePath(); c.fill();
+  c.fillRect(141, 524, 18, 36);
+  c.beginPath(); c.moveTo(141, 560); c.lineTo(131, 574); c.lineTo(141, 574); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(159, 560); c.lineTo(169, 574); c.lineTo(159, 574); c.closePath(); c.fill();
+  c.beginPath(); c.arc(150, 538, 4, 0, Math.PI * 2); c.stroke();  // porthole
+  c.strokeStyle = msc; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(150, 574); c.lineTo(150, GROUND); c.stroke();
+  c.beginPath(); c.moveTo(138, GROUND); c.lineTo(162, GROUND); c.lineTo(150, GROUND - 8); c.closePath(); c.fill();
   // saucer: dome, rim, dangling legs, VERY visible string; ringed planet
   c.strokeStyle = 'rgba(232,213,181,0.55)'; c.lineWidth = 2;
   c.beginPath(); c.moveTo(300, 26); c.lineTo(300, 112); c.stroke();
@@ -2202,6 +2308,34 @@ function propsScifi(c){
   for (let i = 0; i < 22; i++) c.fillRect((i * 73) % W, (i * 137) % 300 + 30, 2, 2);
 }
 function propsNoir(c){
+  // depth: far skyline w/ sparse lit windows + water tower, one distant neon
+  // block, near rooftop w/ fire escape. The HOTEL sign stays the focal point.
+  const skl = '#14141c';
+  const bldgs = [[0, 60, 488], [55, 48, 508], [98, 70, 470], [163, 44, 500], [202, 58, 482]];
+  c.fillStyle = skl;
+  for (const [bx, bw, top] of bldgs) c.fillRect(bx, top, bw, GROUND - top);
+  c.fillStyle = 'rgba(255,230,150,0.25)';
+  for (const [bx, bw, top] of bldgs) {
+    for (const [wx, wy] of [[bx + 10, top + 18], [bx + bw - 16, top + 40], [bx + 18, top + 66]]) {
+      if (wy < GROUND - 14) c.fillRect(wx, wy, 5, 7);
+    }
+  }
+  c.fillStyle = skl;                                              // water tower
+  c.fillRect(112, 444, 28, 22);
+  c.beginPath(); c.moveTo(108, 444); c.lineTo(144, 444); c.lineTo(126, 432); c.closePath(); c.fill();
+  c.strokeStyle = skl; c.lineWidth = 2;
+  for (const lx of [114, 126, 138]) { c.beginPath(); c.moveTo(lx, 466); c.lineTo(lx, 470); c.stroke(); }
+  const ng = c.createRadialGradient(60, 516, 4, 60, 516, 34);     // distant neon
+  ng.addColorStop(0, 'rgba(255,92,138,0.12)'); ng.addColorStop(1, 'rgba(255,92,138,0)');
+  c.fillStyle = ng; c.fillRect(26, 482, 68, 68);
+  c.fillStyle = 'rgba(255,92,138,0.35)'; c.fillRect(48, 510, 26, 12);
+  c.fillStyle = 'rgba(150,170,220,0.03)'; c.fillRect(0, 540, W, GROUND - 540);
+  c.fillStyle = '#0e0e15';                                        // near rooftop
+  c.fillRect(0, 544, 130, GROUND - 544);
+  c.strokeStyle = '#1a1a26'; c.lineWidth = 2;                     // fire escape
+  for (const fy of [556, 568, 580]) { c.beginPath(); c.moveTo(96, fy); c.lineTo(122, fy); c.stroke(); }
+  c.beginPath(); c.moveTo(96, 550); c.lineTo(96, 586); c.stroke();
+  c.beginPath(); c.moveTo(122, 550); c.lineTo(122, 586); c.stroke();
   // brick wall w/ mortar, blinded window, glowing neon, angled rain
   oRect(c, 250, GROUND - 170, 150, 170, '#181820');
   c.strokeStyle = '#101017'; c.lineWidth = 1;
@@ -2218,6 +2352,33 @@ function propsNoir(c){
   for (let i = 0; i < 34; i++) { const x = (i * 53) % W, y = (i * 97) % 380; c.beginPath(); c.moveTo(x, y); c.lineTo(x - 5, y + 16); c.stroke(); }
 }
 function propsKaiju(c){
+  // depth: crossing premiere searchlights, the "real city" painted backdrop
+  // (the joke: the miniature stands before the skyline it imitates), and a
+  // to-scale moon hanging from the rig on a wire
+  c.fillStyle = 'rgba(220,255,230,0.035)';                        // searchlights
+  c.beginPath(); c.moveTo(-20, GROUND); c.lineTo(158, 40); c.lineTo(178, 40); c.lineTo(4, GROUND); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(420, GROUND); c.lineTo(252, 48); c.lineTo(272, 48); c.lineTo(400, GROUND); c.closePath(); c.fill();
+  const city = '#1b3826';
+  const backs = [[10, 54, 512], [70, 66, 494], [142, 50, 524], [196, 72, 500], [274, 56, 516], [336, 70, 506]];
+  c.fillStyle = city;
+  for (const [bx, bw, top] of backs) c.fillRect(bx, top, bw, GROUND - top);
+  c.fillStyle = 'rgba(255,230,150,0.18)';
+  for (const [bx, bw, top] of backs) {
+    for (let r = 0; r < 2; r++) {
+      const wy = top + 20 + r * 30;
+      if (wy < GROUND - 20) { c.fillRect(bx + 12, wy, 5, 7); c.fillRect(bx + bw - 20, wy + 12, 5, 7); }
+    }
+  }
+  c.fillStyle = 'rgba(180,255,200,0.03)'; c.fillRect(0, 540, W, GROUND - 540);
+  c.strokeStyle = 'rgba(232,213,181,0.28)'; c.lineWidth = 1;      // the wire
+  c.beginPath(); c.moveTo(356, 26); c.lineTo(356, 148); c.stroke();
+  const mg = c.createRadialGradient(356, 158, 3, 356, 158, 22);
+  mg.addColorStop(0, 'rgba(230,240,255,0.12)'); mg.addColorStop(1, 'rgba(230,240,255,0)');
+  c.fillStyle = mg; c.fillRect(334, 136, 44, 44);
+  c.fillStyle = '#c8cdd0';
+  c.beginPath(); c.arc(356, 158, 10, 0, Math.PI * 2); c.fill();   // the moon (to scale)
+  c.fillStyle = '#aab2b8';
+  c.beginPath(); c.arc(354, 156, 3, 0, Math.PI * 2); c.fill();
   // miniature skyline (outlined, window grids) + the rubber arm — WITH ZIPPER
   const bl = [[16, 46], [50, 72], [86, 40], [118, 60], [152, 46]];
   for (const [x, h] of bl) {
@@ -2292,6 +2453,20 @@ function buildSetCache(genre){
   for (const [jx, row] of [[132, 0], [318, 0], [226, 1], [58, 2], [352, 2]]) {
     const y0 = GROUND + row * 33, y1 = Math.min(H, y0 + 33);
     c.beginPath(); c.moveTo(jx, y0 + 3); c.lineTo(jx, y1 - 3); c.stroke();
+  }
+  // per-set floor accents (cheap, one each — the floor changes with the theme)
+  if (genre.id === 'noir') {                                      // wet-street sheen
+    c.fillStyle = 'rgba(170,190,230,0.05)'; c.fillRect(0, GROUND, W, 12);
+    c.fillStyle = 'rgba(170,190,230,0.08)';
+    for (const [px, pw] of [[60, 50], [250, 70], [330, 40]]) c.fillRect(px, GROUND + 20, pw, 2);
+  } else if (genre.id === 'scifi') {                              // deck-panel seam glints
+    c.strokeStyle = 'rgba(140,120,220,0.12)'; c.lineWidth = 1.5;
+    for (const px of [100, 200, 300]) { c.beginPath(); c.moveTo(px, GROUND + 2); c.lineTo(px, H); c.stroke(); }
+  } else if (genre.id === 'western') {                            // sand drifts
+    c.fillStyle = 'rgba(200,160,110,0.07)';
+    for (const [px, pw] of [[30, 70], [300, 60]]) {
+      c.beginPath(); c.ellipse(px + pw / 2, GROUND + 14, pw / 2, 5, 0, 0, Math.PI * 2); c.fill();
+    }
   }
   oRect(c, 170, GROUND + 1, 220, 15, '#2e4a6b', 3);             // stitched crash mat
   c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 2;

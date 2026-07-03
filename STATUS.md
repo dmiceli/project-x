@@ -89,6 +89,8 @@
 
 - 2026-07-03: director pose fix (Dan: only megaphone showed) — facepalm was unreachable (gated on "crash without quote"; every crash has a quote). Now: crash = facepalm, CUT screen = megaphone quote, lean enlarged + visor hand, clap held 2.2s. Every pose verified reachable via real state sequences. Test lesson: drive headless checks with states the game actually produces, not synthetic ones.
 
+- 2026-07-03: **Background rollout COMPLETE — all six sets** (Dan approved the Dust Gulch pattern). Shipped: BACKLOT (scaffold towers, string lights on cable swags, parked crane, work-lamp glow), HIGH SEAS (low moon + sea shimmer, moonlit clouds, sister ship, cardboard sea serpent on a stick), SAUCER STAGE (nebula washes, second moon, cratered moonscape, cardboard rocket on a stick), RAIN STREET (lit-window skyline, water tower, distant neon, fire-escape rooftop), MINIATURE CITY (premiere searchlights, "real city" backdrop behind the miniature, to-scale moon on a wire). Per-set floor accents added (noir wet sheen, scifi panel glints, western sand drifts). All drafts iterated in the render harness first (assets/foursets-depth.png, backlot-before-after.png); every ported block smoke-tested. Task #33 closed.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).
