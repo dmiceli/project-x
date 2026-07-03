@@ -246,6 +246,20 @@
   <button id="btnRestore" disabled>RESTORE PURCHASES (App Store build)</button>
   <a href="../PRIVACY.md" target="_blank" rel="noopener">Privacy policy</a>
   <p class="stats" id="verLine">TAKE 47</p>
+  <!-- QA panel (beta only — revealed by tapping the version line 5×).
+       PHASE 5 HARD GATE: remove this section + its wiring before submission. -->
+  <div id="qaPanel" style="display:none">
+    <h2>🧪 TEST MODE</h2>
+    <p class="stats">Beta testing only. Back up your save first.</p>
+    <button id="qaBackup">💾 Back up save</button>
+    <button id="qaRestoreSave">⏪ Restore backed-up save</button>
+    <button id="qaScene">🎬 Jump to scene…</button>
+    <button id="qaPrints">🖨 +50 prints</button>
+    <button id="qaProps">📦 +1 of every prop</button>
+    <button id="qaMercy">🩹 Arm mercy (next crash = 7th)</button>
+    <button id="qaFtue">🐣 Reset FTUE + reveals</button>
+    <button id="qaRollover">🌙 Force midnight rollover</button>
+  </div>
   <button class="back" data-to="home">← BACK</button>
 </section>
 
@@ -2109,6 +2123,36 @@ $('btnReset').onclick = () => {
   refreshHome();
 };
 $('btnShare').onclick = shareCard;
+
+// ---- QA panel (beta only): tap the version line 5× to reveal ----
+// Sets game state to verification prerequisites so Dan never has to grind
+// into a test condition. PHASE 5 HARD GATE: strip before App Store build.
+let qaTaps = 0;
+$('verLine').onclick = () => {
+  if (++qaTaps === 5) { $('qaPanel').style.display = ''; toast('🧪 Test mode revealed'); }
+};
+function qaDone(msg){ persist(); refreshHome(); toast('🧪 ' + msg); }
+$('qaBackup').onclick = () => {
+  localStorage.setItem(SAVE_KEY + '_qa_backup', localStorage.getItem(SAVE_KEY) || '');
+  toast('🧪 Save backed up');
+};
+$('qaRestoreSave').onclick = () => {
+  const b = localStorage.getItem(SAVE_KEY + '_qa_backup');
+  if (b) { localStorage.setItem(SAVE_KEY, b); location.reload(); }
+  else toast('🧪 No backup found');
+};
+$('qaScene').onclick = () => {
+  const n = parseInt(prompt('Jump to scene #', String(S.scene + 10)) || '0', 10);
+  if (n > 0) { S.scene = n; S.furthest = Math.max(S.furthest, n); qaDone('Scene ' + n); }
+};
+$('qaPrints').onclick = () => { S.prints += 50; qaDone('+50 prints'); };
+$('qaProps').onclick = () => {
+  for (const it of ITEMS) S.items[it.id] = itemCount(it.id) + 1;
+  qaDone('+1 of every prop');
+};
+$('qaMercy').onclick = () => { wallCrashes = 6; toast('🧪 Next crash triggers mercy'); };
+$('qaFtue').onclick = () => { S.ftue = 0; S.reveals = {}; qaDone('FTUE + reveals reset'); };
+$('qaRollover').onclick = () => { S.daily.date = ''; S.cs.date = ''; qaDone('Rollover forced — go home'); };
 $('btnShareHome').onclick = () => { mode = 'campaign'; shareCard(); };
 $('btnHome').onclick = () => { gameBar(false); popups = []; ragdoll = []; showScreen('home'); };
 for (const b of document.querySelectorAll('.back')) b.onclick = () => showScreen(b.dataset.to);

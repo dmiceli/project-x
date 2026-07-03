@@ -31,6 +31,7 @@ Vanilla JS + HTML5 canvas, single-file during prototyping (no game engine — pr
 - **Visual coherence rules (2026-07-03, also in the code header):** outlines mark foreground only; an active prop must visibly change the scene, not just the physics; a hitbox is exactly what's drawn (a 10px draw-vs-hitbox offset on the boom caused "inconsistent" collisions).
 - **Search-output display quirk:** grep-style results can render `//` as `\` on lines containing em-dashes — display artifact, not corruption. Read is the authority; don't fix phantom syntax errors.
 - **Routine maintenance is codified:** MAINTENANCE.md holds the checklist; scheduled task `take47-maintenance` runs it daily 6:38 AM (or on next app launch). Manual run at session end after big batches.
+- **Verification prerequisites (Dan, 2026-07-04):** every on-device verification request must include exact QA-panel setup steps (Settings → tap version line 5× → Test Mode: scene jump, prints, props, mercy arm, FTUE reset, rollover force, save backup/restore). Always tell Dan to back up his save first when a step mutates state. Panel is a Phase 5 strip-before-submission hard gate.
 - **PIL study harness:** per-set study scripts live in the session scratchpad (dustgulch_study.py = importable base). Scratchpad clears between sessions — rebuild from ART-RESEARCH.md's pattern when needed; approved sheets persist in assets/.
 
 ## Phases
