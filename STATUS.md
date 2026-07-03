@@ -112,6 +112,8 @@
 
 - 2026-07-04: **Pages CI investigated** (flagged by Dan's inbox session: "failing on every push"). Facts from the public Actions API: 27 successes vs 13 failures TOTAL; all 13 failures clustered in one ~5h window (July 2 ~4–9:30 PM local), self-resolved; the LATEST run (#42) succeeded and deployed tonight's newest verified commit — the live build is current, so every on-device verification tonight was against fresh code. Prevention: added `.nojekyll` (we never use Jekyll; branch-based Pages was running it on every deploy — skipping it removes the likeliest failure class AND speeds deploys). Failure emails should stop on their own.
 
+- 2026-07-04 (morning): **Express QA PASSED** — rollover ✓, fresh-save FTUE ✓, feature smoke ✓, a11y spot-check ✓. Five feel findings, all fixed same morning: (1) flip pose now random per take (was seeded → same scene always same pose); (2) High Seas wave cloth moved from mid-sky to a horizon sea band + serpent eye (it reads as a swimming serpent now); (3) CUT copy → "TAP FOR TAKE n"; (4) home poster wall shows real career (WRAPPED / NOW SHOWING / COMING SOON in set colors), marquee stays the TAKE 47 sign; (5) BLOOPER REEL → HIGHLIGHT REEL. Wall/pose logic verified headlessly. **BETA-READINESS core: complete** (full VoiceOver pass + dedicated copy read deferred to the pre-Phase-5 full QA; cold playtest still needs a volunteer).
+
 ## Next steps
 1. **Tomorrow morning: run QA-PLAN.md** (~75–90 min, one pass) — consolidates ALL remaining BETA-READINESS core items + last night's feature verifications: rollover check, fresh-save FTUE, feature smoke, a11y sweep, copy read, big feel session. Paste defects + the five feel answers into chat for triage.
 2. Schedule the **cold playtest volunteer** this week.

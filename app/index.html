@@ -80,10 +80,12 @@
      cards; utilities retire to a quiet footer row */
   #scr-home{background:radial-gradient(ellipse 130% 55% at 50% -10%, #2a1a12 0%, var(--bg) 62%)}
   .wall{display:flex;gap:14px;margin:14px 0 2px}
-  .wall div{width:72px;height:96px;background:linear-gradient(#26180f,#1c120e);
+  .wall div{width:88px;height:96px;background:linear-gradient(#26180f,#1c120e);
     border:2px solid #3a2a22;border-radius:4px;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:6px;color:#5a4634;font-size:9px}
-  .wall div b{font-size:24px;opacity:.7}
+    align-items:center;justify-content:center;gap:7px;text-align:center;
+    padding:0 5px;box-sizing:border-box}
+  .wall div b{font-size:8px;letter-spacing:1.5px;color:var(--gold);opacity:.85}
+  .wall div span{font-size:10px;font-weight:700;color:#f3e6cd;line-height:1.25}
   #scr-home h1{margin:16px 0 0;font-size:44px;text-shadow:0 0 26px rgba(255,209,102,.28)}
   button.ticket{width:min(320px,86vw);min-height:64px;border:none;border-radius:14px;
     position:relative;background:var(--gold);color:#191010;font-size:20px;font-weight:800}
@@ -172,9 +174,7 @@
 <canvas id="c" role="img" aria-label="TAKE 47 gameplay: tap to jump, tap again to stop the spin"></canvas>
 
 <section id="scr-home" class="screen active" aria-label="TAKE 47 home">
-  <div class="wall" aria-hidden="true">
-    <div><b>🎬</b>SCENE 1</div><div><b>🌵</b>SCENE 11</div><div><b>⚓</b>SCENE 21</div>
-  </div>
+  <div class="wall" id="wallRow" aria-hidden="true"></div>
   <h1>TAKE 47</h1>
   <p class="tag">a stunt double's life</p>
   <button id="btnPlay" class="primary ticket">ACTION!</button>
@@ -189,7 +189,7 @@
   <div id="csList" aria-label="Today's call sheet"></div>
   <nav class="footrow" aria-label="More">
     <button id="btnPosters">🖼️ POSTERS</button>
-    <button id="btnTrophies">🏆 BLOOPERS</button>
+    <button id="btnTrophies">🏆 HIGHLIGHTS</button>
     <button id="btnShareHome">📤 SHARE</button>
     <button id="btnSettings">⚙️ SETTINGS</button>
   </nav>
@@ -234,7 +234,7 @@
 </section>
 
 <section id="scr-trophies" class="screen" aria-label="Achievements">
-  <h2>BLOOPER REEL</h2>
+  <h2>HIGHLIGHT REEL</h2>
   <div id="trophyList"></div>
   <button class="back" data-to="home">← BACK</button>
 </section>
@@ -857,11 +857,12 @@ function startJump(power){            // power: only set by the Launch Rig hold-
   p.om = params.om * (activeItem === 'slowmo' ? 0.7 : 1);
   p.locked = false;
   p.spun = 0;                          // rotation accrued (gates the lock)
-  // flip pose picked by scene + spin speed (cosmetic variety — Dan option A)
+  // flip pose: scene mechanics claim their signature pose; otherwise RANDOM
+  // per take (v1 derived it from the seeded spin speed — same scene always
+  // showed the same pose, so the variety was invisible. Dan QA finding.)
   p.pose = params.mech.wind ? 'twist'
          : (params.mech.grav < 1) ? 'layout'
-         : Math.abs(p.om) >= 9 ? 'tuck'
-         : Math.abs(p.om) >= 6 ? 'pike' : 'layout';
+         : ['tuck', 'pike', 'layout'][Math.floor(Math.random() * 3)];
   state = 'air';
   persist();
   sfx.clap(); sfx.jump();
@@ -1893,7 +1894,8 @@ function draw(){
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
       ctx.fillText('Lifetime takes: ' + S.takes, W / 2, 380);
       ctx.fillStyle = '#6ee7b7';
-      ctx.fillText('TAP FOR ONE MORE TAKE', W / 2, 420);
+      // takes count UP, forever — "one more" implied a last chance (Dan)
+      ctx.fillText('TAP FOR TAKE ' + (takesScene + 1), W / 2, 420);
     } else if (dLives > 0) {
       ctx.fillText('LIVES LEFT: ' + dLives, W / 2, 335);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
@@ -2038,7 +2040,7 @@ function revealRules(){
     ['btnPosters',   S.furthest >= 11,              '🖼️ The Poster Wall'],
     ['btnProps',     S.prints >= 1,                 '📦 The Prop Department'],
     ['btnCast',      S.unlocked.length > 1,         '🎭 The Cast'],
-    ['btnTrophies',  Object.keys(S.ach).length > 0, '🏆 The Blooper Reel']
+    ['btnTrophies',  Object.keys(S.ach).length > 0, '🏆 The Highlight Reel']
   ];
 }
 function refreshHome(){
@@ -2046,6 +2048,22 @@ function refreshHome(){
   $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  Wallet: ' + wallet() + ' prints' +
     (S.furthest > S.scene ? '  ·  Record: Scene ' + S.furthest : '') + tomorrow;
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
+  // the poster wall shows the CAREER, not placeholders (Dan QA finding):
+  // last wrap · now showing · coming soon
+  const wr = $('wallRow');
+  if (wr) {
+    const wIdx = Math.floor((S.scene - 1) / 10);
+    const wCur = GENRES[wIdx % GENRES.length];
+    const wNxt = GENRES[(wIdx + 1) % GENRES.length];
+    const wPrv = wIdx > 0 ? GENRES[(wIdx - 1) % GENRES.length] : null;
+    const cell = (label, name, style) =>
+      '<div style="' + style + '"><b>' + label + '</b><span>' + name + '</span></div>';
+    wr.innerHTML =
+      (wPrv ? cell('WRAPPED', wPrv.name, 'background:linear-gradient(' + wPrv.sky[1] + ',' + wPrv.sky[2] + ')')
+            : cell('YOUR DEBUT', 'TAKE ONE', '')) +
+      cell('NOW SHOWING', wCur.name, 'background:linear-gradient(' + wCur.sky[1] + ',' + wCur.sky[2] + ');border-color:var(--gold)') +
+      cell('COMING SOON', wNxt.name, 'opacity:.55');
+  }
   // locked features stay VISIBLE but dimmed with an unlock hint (Dan: the zero
   // state hid the future — an empty shelf reads as a broken app, not a promise)
   const HINTS = {btnDaily: 'scene 3', btnShareHome: 'scene 5', btnReel: 'scene 11',
@@ -2460,6 +2478,8 @@ function propsPirate(c){
   c.fillStyle = srp;
   c.beginPath(); c.ellipse(292, 550, 12, 10, 0, 0, Math.PI * 2); c.fill();
   c.beginPath(); c.moveTo(300, 546); c.lineTo(314, 542); c.lineTo(300, 554); c.closePath(); c.fill();
+  c.fillStyle = '#8fa5b8';                                        // one moonlit eye: it's ALIVE
+  c.beginPath(); c.arc(288, 546, 2.5, 0, Math.PI * 2); c.fill();
   c.strokeStyle = srp; c.lineWidth = 3;
   c.beginPath(); c.moveTo(240, 566); c.lineTo(240, GROUND); c.stroke();
   c.beginPath(); c.moveTo(228, GROUND); c.lineTo(252, GROUND); c.lineTo(240, GROUND - 8); c.closePath(); c.fill();
@@ -2471,10 +2491,15 @@ function propsPirate(c){
   c.beginPath(); c.moveTo(342, 165); c.lineTo(252, 242); c.stroke();
   c.lineWidth = 1.5; c.strokeStyle = 'rgba(232,213,181,0.25)';
   for (const dx of [-60, -30, 30, 60]) { c.beginPath(); c.moveTo(342, 130); c.lineTo(342 + dx, GROUND); c.stroke(); }
-  c.strokeStyle = 'rgba(70,130,170,0.4)'; c.lineWidth = 3;
-  for (let y = 210; y < 320; y += 26) {                          // scalloped wave cloth
+  // the painted SEA sits at the horizon where water belongs — the old wave
+  // cloth floated mid-sky (Dan QA: "what are the wavy lines?"). This band is
+  // also what the serpent swims in, which makes the serpent read as a serpent.
+  c.fillStyle = 'rgba(30,70,110,0.30)';
+  c.fillRect(0, 548, W, GROUND - 548);
+  c.strokeStyle = 'rgba(120,180,220,0.30)'; c.lineWidth = 3;
+  for (let wy = 554; wy < 596; wy += 14) {
     c.beginPath();
-    for (let x = 0; x <= 200; x += 40) c.arc(x + 20, y, 20, Math.PI, 0, true);
+    for (let wx2 = -10; wx2 <= W; wx2 += 36) c.arc(wx2 + 18, wy, 18, Math.PI, 0, true);
     c.stroke();
   }
 }
