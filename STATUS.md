@@ -77,6 +77,8 @@
 
 - 2026-07-03: **Dan's screenshot defect report fixed** (all three): HUD gets a cinematic top scrim + prompts on pill backings (text never fights lighting; rig lamps moved clear of the HUD zone); launch platform is now stacked APPLE BOXES (real film gear) and all launch spots/cart path moved clear of a more compact camera; backlot flats are now an obvious painted-sky backdrop + raw flat with braces; full-width floor tape (the "checkerboard") replaced by hazard tabs at the mat ends. Verified by full line-by-line inspection of the real file; mirror chain retired after drift (lesson in CLAUDE.md).
 
+- 2026-07-03: **Defect round 2 fixed** (Dan's screenshots): prompt pills + verdict chips now MEASURE their text (shrink-to-fit + on-screen clamp — the old length-estimate math caused every cutoff); FTUE coaching split into two shorter lines and all ready-prompts moved above the platform zone (no more pill-over-character); Dust Gulch cactus relocated mid-stage clear of the camera; apple boxes redrawn as staggered crates with oval grab slots (the centered square slot read as drawer knobs); floor is now planked stage decking; hazard tabs (the last "checkerboard remnants") removed; crash mat got corner ties. **Open question for Dan: background art direction — CC0 asset library decision (replace / augment / influence), options presented in chat.**
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).

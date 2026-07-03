@@ -1351,16 +1351,19 @@ function drawRagdollPart(q){
 function drawMechanics(){
   const m = params.mech;
   if (params.h > 0) {                                       // apple boxes: real film gear
+    // staggered crates w/ oval grab slots + lid lines — the old centered square
+    // slot on a seam read as drawer knobs (Dan defect: "unrecognizable")
     const bx = params.startX;
     const stack = params.h >= 120 ? 3 : 2;
     for (let i = 0; i < stack; i++) {
-      const bw = 58 - i * 7, bh = params.h / stack;
+      const bw = 60 - i * 8, bh = params.h / stack;
+      const ox = (i % 2 ? 5 : -4);
       const by = GROUND - bh * (i + 1);
-      oRect(ctx, bx - bw / 2, by, bw, bh, '#3a2a18', 3);
-      ctx.strokeStyle = '#241808'; ctx.lineWidth = 2;       // plank seam + grab slot
-      ctx.beginPath(); ctx.moveTo(bx - bw / 2 + 6, by + bh / 2); ctx.lineTo(bx + bw / 2 - 6, by + bh / 2); ctx.stroke();
-      ctx.fillStyle = '#241808';
-      ctx.fillRect(bx - 9, by + bh / 2 - 3, 18, 6);
+      oRect(ctx, bx + ox - bw / 2, by, bw, bh, '#3f2d19', 3);
+      ctx.strokeStyle = 'rgba(120,88,50,0.8)'; ctx.lineWidth = 2;   // lid edge
+      ctx.beginPath(); ctx.moveTo(bx + ox - bw / 2 + 3, by + 4); ctx.lineTo(bx + ox + bw / 2 - 3, by + 4); ctx.stroke();
+      ctx.fillStyle = '#1c1208';                            // oval grab slot
+      ctx.beginPath(); ctx.ellipse(bx + ox, by + bh / 2, 9, 3.5, 0, 0, Math.PI * 2); ctx.fill();
     }
   }
   if (m.cart) {
@@ -1432,15 +1435,24 @@ function drawMechanics(){
 }
 
 // ========== render: frame ==========
-// gameplay prompts sit on quiet pills so they read over any set (Dan defect)
+// gameplay prompts sit on quiet pills; width is MEASURED (est. formulas lied —
+// Dan defect: long FTUE line burst both screen edges) and shrinks to fit
 function drawPrompt(text, y, color){
-  const w = text.length * 11 + 40;
+  let size = 20;
+  ctx.font = 'bold ' + size + 'px system-ui, sans-serif';
+  let tw = ctx.measureText(text).width;
+  const maxW = W - 24;
+  if (tw + 40 > maxW) {
+    size = Math.max(14, Math.floor(20 * (maxW - 40) / tw));
+    ctx.font = 'bold ' + size + 'px system-ui, sans-serif';
+    tw = ctx.measureText(text).width;
+  }
+  const w = Math.min(maxW, tw + 40);
   ctx.fillStyle = 'rgba(10,7,5,0.72)';
   ctx.beginPath(); ctx.roundRect(W / 2 - w / 2, y - 24, w, 36, 18); ctx.fill();
   ctx.fillStyle = color || '#e8d5b5';
-  ctx.font = 'bold 20px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(text, W / 2, y);
+  ctx.fillText(text, W / 2, y - (20 - size) / 3);
 }
 function slateStripes(x, y, w, h){
   ctx.save();
@@ -1476,17 +1488,28 @@ function draw(){
       // the stamp: slate chip, serif verdict, tilt + pop-in punch (static if rm)
       ctx.globalAlpha = Math.max(0, 1 - Math.max(0, pop.t - 1.3) / 0.7);
       const punch = S.set.rm ? 1 : (pop.t < 0.1 ? 0.6 + (pop.t / 0.1) * 0.55 : (pop.t < 0.28 ? 1.15 - ((pop.t - 0.1) / 0.18) * 0.15 : 1));
+      // measure the verdict, shrink long ones, and clamp the CHIP (not just the
+      // anchor) inside the screen — Dan defect: long verdicts clipped
+      let vsize = 30;
+      ctx.font = 'bold ' + vsize + 'px Georgia, serif';
+      let tw = ctx.measureText(pop.text).width;
+      const maxVW = W - 20;
+      if (tw + 44 > maxVW) {
+        vsize = Math.max(20, Math.floor(30 * (maxVW - 44) / tw));
+        ctx.font = 'bold ' + vsize + 'px Georgia, serif';
+        tw = ctx.measureText(pop.text).width;
+      }
+      const w = Math.min(maxVW, Math.max(160, tw + 44));
+      const vx2 = Math.max(w / 2 + 10, Math.min(W - w / 2 - 10, pop.x));
       ctx.save();
-      ctx.translate(pop.x, pop.y);
+      ctx.translate(vx2, pop.y);
       ctx.rotate(pop.rot || 0);
       ctx.scale(punch, punch);
-      const w = Math.max(160, pop.text.length * 16 + 44);
       ctx.fillStyle = 'rgba(10,7,5,0.88)';
       ctx.fillRect(-w / 2, -28, w, 46);
       slateStripes(-w / 2, -28, w, 7);
       ctx.fillStyle = pop.color;
-      ctx.font = 'bold 30px Georgia, serif';
-      ctx.fillText(pop.text, 0, 9);
+      ctx.fillText(pop.text, 0, 9 - (30 - vsize) / 4);
       ctx.restore();
     } else {
       ctx.globalAlpha = Math.max(0, 1 - pop.t / 1.4);
@@ -1571,11 +1594,12 @@ function draw(){
   }
 
   if (state === 'ready') {
+    // prompts live above the tallest platform + character (y < 430 zone)
     if (!S.ftue) {                       // first-time coaching, on pills
-      drawPrompt('TAP to jump.', 396);
-      drawPrompt('TAP AGAIN to stop the spin — land feet-down.', 438);
+      drawPrompt('TAP to jump.', 330);
+      drawPrompt('TAP AGAIN to stop the spin. Land feet-down.', 372);
     } else {
-      drawPrompt(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), 420);
+      drawPrompt(params.mech.cart ? 'ACTION!  (time the cart!)' : (params.mech.arm ? 'ACTION!  (time the sweep!)' : 'ACTION!  (tap to jump)'), 350);
     }
   } else if (state === 'air' && !p.locked) {
     // FTUE: pulse a TAP NOW! cue when the rookie is near upright
@@ -1963,10 +1987,11 @@ function propsWestern(c){
   oRect(c, 340, GROUND - 92, 20, 44, '#241208');
   c.strokeStyle = '#241208'; c.lineWidth = 4;
   c.beginPath(); c.moveTo(286, GROUND - 150); c.lineTo(246, GROUND); c.stroke();   // the brace: it's a SET
-  // cactus with actual arms
-  oRect(c, 34, GROUND - 62, 12, 62, '#22301a', 6);
-  oRect(c, 20, GROUND - 48, 10, 24, '#22301a', 5);
-  oRect(c, 48, GROUND - 54, 10, 28, '#22301a', 5);
+  // cactus with actual arms — mid-stage, clear of the shared camera (x16-75),
+  // the launch spots (x92-128), and the saloon brace (Dan defect: overlap)
+  oRect(c, 214, GROUND - 62, 12, 62, '#22301a', 6);
+  oRect(c, 200, GROUND - 48, 10, 24, '#22301a', 5);
+  oRect(c, 228, GROUND - 54, 10, 28, '#22301a', 5);
 }
 function propsPirate(c){
   // mast with crow's nest, boom, rigging; scalloped painted waves
@@ -2078,17 +2103,22 @@ function buildSetCache(genre){
   c.fillStyle = '#c94f52';                                      // tally light
   c.beginPath(); c.arc(22, GROUND - 72, 3, 0, Math.PI * 2); c.fill();
   c.fillStyle = genre.floor; c.fillRect(0, GROUND, W, H - GROUND);
+  // stage floor = planked decking: horizontal boards w/ staggered joints.
+  // (hazard tabs removed entirely — they were the lingering "checkerboard
+  // remnants" in Dan's defect report)
+  c.strokeStyle = 'rgba(0,0,0,0.28)'; c.lineWidth = 2;
+  for (let y = GROUND + 25; y < H; y += 25) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  c.lineWidth = 1.5;
+  for (let r = 0; r < 4; r++) {
+    const y0 = GROUND + r * 25, y1 = Math.min(H, y0 + 25);
+    for (let x = (r % 2 ? 70 : 140); x < W; x += 140) { c.beginPath(); c.moveTo(x, y0 + 2); c.lineTo(x, y1 - 2); c.stroke(); }
+  }
   oRect(c, 170, GROUND + 1, 220, 15, '#2e4a6b', 3);             // stitched crash mat
   c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 2;
   for (let x = 214; x < 390; x += 44) { c.beginPath(); c.moveTo(x, GROUND + 3); c.lineTo(x, GROUND + 13); c.stroke(); }
-  // hazard tabs at the mat's ends only (the old full-width tape read as a
-  // checkerboard — Dan defect report)
-  c.fillStyle = '#ffd166';
-  for (const tx of [162, 392]) {
-    c.save(); c.beginPath(); c.rect(tx - 8, GROUND - 4, 16, 5); c.clip();
-    c.translate(tx - 8, GROUND - 4); c.rotate(0.5);
-    c.fillRect(0, -6, 6, 16); c.fillRect(11, -6, 6, 16);
-    c.restore();
+  c.fillStyle = 'rgba(255,255,255,0.5)';                        // corner ties: reads "mat"
+  for (const [mx, my] of [[175, GROUND + 4], [385, GROUND + 4], [175, GROUND + 12], [385, GROUND + 12]]) {
+    c.beginPath(); c.arc(mx, my, 2, 0, Math.PI * 2); c.fill();
   }
 }
 
