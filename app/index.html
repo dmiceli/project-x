@@ -346,8 +346,35 @@ function loadSave(){
     }
   } catch (e) { S = JSON.parse(JSON.stringify(DEFAULTS)); }
 }
-function persist(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+// ---- iOS save durability (Phase 5 hard gate) ----
+// localStorage stays the live, synchronous store; every persist() also mirrors
+// the blob to Capacitor Preferences (native storage iOS never purges). On boot
+// inside the app shell, if localStorage came up EMPTY but a mirror exists
+// (WebView data was purged), restore it and reload once. No-op in browsers.
+const capPrefs = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
+function persist(){
+  try {
+    const raw = JSON.stringify(S);
+    localStorage.setItem(SAVE_KEY, raw);
+    const P = capPrefs();
+    if (P) P.set({key: SAVE_KEY, value: raw}).catch(() => {});
+  } catch (e) {}
+}
 loadSave();
+(function restoreFromMirror(){
+  const P = capPrefs();
+  if (!P) return;
+  try {
+    if (localStorage.getItem(SAVE_KEY) || sessionStorage.getItem('t47_restored')) return;
+    P.get({key: SAVE_KEY}).then(r => {
+      if (r && r.value) {
+        localStorage.setItem(SAVE_KEY, r.value);
+        sessionStorage.setItem('t47_restored', '1');
+        location.reload();
+      }
+    }).catch(() => {});
+  } catch (e) {}
+})();
 
 // ========== deterministic scene design ==========
 function mulberry32(a){

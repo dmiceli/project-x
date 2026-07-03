@@ -30,3 +30,17 @@ Two setup sessions on your side (~25 min total, steps 2-4), then it's fully auto
 - Game Center leaderboard (daily gauntlet best + furthest scene) — Capacitor plugin, no backend, no privacy-label change.
 - Local notification at midnight reset (opt-in, asked in-context after a completed daily; on-device only, no ATT).
 - Wire existing haptic() calls to Capacitor Haptics + keep settings toggle.
+
+## ✅ Step 1 complete (2026-07-04) — repo is Capacitor-ized
+
+In the repo now: `package.json` + lockfile, `capacitor.config.json` (bundle ID `com.dmiceli.take47`, webDir `app`, set-black background), the generated `ios/` Xcode project (our real 1024px icon in the asset catalog, brand splash screens, portrait-locked, `ITSAppUsesNonExemptEncryption=false`), `codemagic.yaml` (manual-trigger TestFlight workflow), and the save write-through to Capacitor Preferences inside the game (browser no-op; restores + reloads once if iOS ever purges WebView storage). `node_modules/` is gitignored — Codemagic installs fresh via `npm ci`.
+
+## ▶ Dan's setup checklist (~25 min, steps 2–4 of the runbook — do in this order)
+
+**A · App Store Connect app record (~10 min)** — appstoreconnect.apple.com → My Apps → ➕ → New App → platform **iOS** · name **TAKE 47** *(this is the name-availability moment — if taken, stop and we regroup on naming)* · language English (U.S.) · bundle ID **com.dmiceli.take47** (register it at developer.apple.com → Identifiers if the dropdown doesn't offer it: ➕ → App IDs → App → explicit `com.dmiceli.take47`, no extra capabilities yet) · SKU `take47`.
+
+**B · API key (~5 min)** — App Store Connect → Users and Access → Integrations → App Store Connect API → ➕ generate key, role **App Manager**. Download the `.p8` **once** and keep it somewhere safe on your PC; note the **Key ID** and **Issuer ID**. ⚠️ Never paste the key contents into chat or the repo.
+
+**C · Codemagic (~10 min)** — codemagic.io → sign up with your GitHub login → grant access to `project-x` → Teams → Personal team → Integrations → **App Store Connect** → add the key from B (upload the .p8, enter Key ID + Issuer ID) and name the integration exactly **`take47-asc-key`** (codemagic.yaml references that name) → Applications → Add application → `project-x` → select **codemagic.yaml**.
+
+**D · First build (with Claude, next session)** — press "Start new build" on the `ios-testflight` workflow and we debug whatever the first build throws (the runbook budgeted a session for this). When it's green: TestFlight → your iPhone.

@@ -114,10 +114,10 @@
 
 - 2026-07-04 (morning): **Express QA PASSED** — rollover ✓, fresh-save FTUE ✓, feature smoke ✓, a11y spot-check ✓. Five feel findings, all fixed same morning: (1) flip pose now random per take (was seeded → same scene always same pose); (2) High Seas wave cloth moved from mid-sky to a horizon sea band + serpent eye (it reads as a swimming serpent now); (3) CUT copy → "TAP FOR TAKE n"; (4) home poster wall shows real career (WRAPPED / NOW SHOWING / COMING SOON in set colors), marquee stays the TAKE 47 sign; (5) BLOOPER REEL → HIGHLIGHT REEL. Wall/pose logic verified headlessly. **BETA-READINESS core: complete** (full VoiceOver pass + dedicated copy read deferred to the pre-Phase-5 full QA; cold playtest still needs a volunteer).
 
-## Next steps
-1. **Tomorrow morning: run QA-PLAN.md** (~75–90 min, one pass) — consolidates ALL remaining BETA-READINESS core items + last night's feature verifications: rollover check, fresh-save FTUE, feature smoke, a11y sweep, copy read, big feel session. Paste defects + the five feel answers into chat for triage.
-2. Schedule the **cold playtest volunteer** this week.
-3. Then **Phase 5 begins**: PIPELINE.md runbook — Capacitor wrap, Preferences save migration (hard gate), QA-panel strip (hard gate), Game Center + notifications + haptics (approved wins), hello-world TestFlight build; "TAKE 47" name check at first ASC touch.
-4. Beta-parallel: store-conversion kit (screenshots + 15s preview per BRAND/MARKETING); App Store screenshot set per BRAND.md ("the fail is the ad").
+- 2026-07-04: **PHASE 5 OPENED.** Repo Capacitor-ized (runbook step 1 ✓): package.json/lockfile, capacitor.config (com.dmiceli.take47), generated ios/ Xcode project customized (real 1024 icon in the asset catalog, brand splash ×3, portrait-only, ITSAppUsesNonExemptEncryption=false), codemagic.yaml (manual-trigger ios-testflight workflow), node_modules gitignored. **Save-durability hard gate SHIPPED:** persist() mirrors the blob to Capacitor Preferences; boot restores + reloads once if iOS purged WebView storage; pure no-op in browsers — all three paths verified headlessly. Dan's ~25-min account checklist appended to PIPELINE.md.
 
-(Older itemized QA steps consolidated into item 1's QA-PLAN.md run; standalone device check retired — covered by the many on-device rounds of 07-03/04.)
+## Next steps
+1. **Dan: PIPELINE.md checklist A–C** (~25 min: App Store Connect app record — the "TAKE 47" name-availability moment — API key, Codemagic hookup).
+2. **Together: first hello-world TestFlight build** (checklist D — budgeted as its own debugging session).
+3. Then in the wrapper: real haptics → Game Center leaderboard → reset notification (approved wins); QA-panel strip gate before *submission* (panel stays through TestFlight).
+4. Beta-parallel: store-conversion kit ("the fail is the ad"); schedule the cold playtest volunteer; pre-submission full QA (VoiceOver pass + dedicated copy read).
