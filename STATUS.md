@@ -93,6 +93,10 @@
 
 - 2026-07-03: **Boom rebuilt + prop coherence batch** (Dan defects). Boom now hangs from the rig (strut + pivot mount) and ends in a gray windscreen-blimp mic with fuzz — reads as sound gear, hitbox unchanged. New rule (DECISIONS): an active prop must visibly change the scene — Boom Brake ties the boom up to the rig, Trap Door removes the arm and opens a hatch in the floor, Wheel Chock parks the cart with a visible wedge, Wind Break stops the wind streaks; all revert on the next take's ready screen. Prop Dept copy now states the lifecycle (stack, saved with the game, spent per take win-or-lose, barred from daily). All visual gates verified headlessly with real state sequences.
 
+- 2026-07-03: **Prop relevance + mic-only boom.** Belt now offers only props that counter THIS scene's mechanic (Dan armed a Trap Door on a boom scene — silent no-op, prop wasted; belt gating + a consume guard make that impossible), arming fires a confirmation toast. Boom collision reduced to the mic only (r28 at tip) — the pole and handle are jumpable, per Dan; matches the new windscreen visual. Verified headlessly (relevance across boom/cart/combo scenes; midpoint no longer deadly).
+
+- 2026-07-03: one-time Trap Door refund shipped (make-good for the pre-gating no-op consume) — flag-guarded in S.reveals, existing saves only (takes > 0), toast on grant. Remove or keep harmlessly post-beta.
+
 ## Next steps — BETA-READINESS core, in level-of-effort order (Dan's call)
 1. **Standalone device check** (~5 min) — also confirms these defect fixes on your phone.
 2. **Fresh-save FTUE run** (~10 min, private tab).

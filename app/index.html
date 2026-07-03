@@ -501,6 +501,10 @@ function grantItem(id, why){
 function armItem(id){
   if (mode === 'daily') { toast('No props in the gauntlet — fair fight.'); return; }
   armedItem = (armedItem === id) ? null : (itemCount(id) > 0 ? id : null);
+  if (armedItem === id) {
+    const it = ITEMS.find(x => x.id === id);
+    toast(it.icon + ' ' + it.name + ' armed — spent on your next take');
+  }
   refreshPropBar();
 }
 function ownedIdx(id){ return S.ownedVariants[id] || [0]; }
@@ -794,7 +798,7 @@ function startJump(){
   csEvent('take');
   // props: consume the armed item; its effect lasts exactly this take
   activeItem = null;
-  if (armedItem && itemCount(armedItem) > 0 && mode !== 'daily') {
+  if (armedItem && itemCount(armedItem) > 0 && mode !== 'daily' && propRelevant(armedItem)) {
     activeItem = armedItem;
     if (activeItem === 'chock') chockT = mechT;      // park the cart where it stands
     S.items[armedItem]--;
@@ -1181,8 +1185,8 @@ function update(dt){
     // aerial hazards (both telegraphed by constant visible motion)
     if (params.mech.boom && activeItem !== 'boombrake') {
       const tip = boomTip(mechT);
-      const mx = (280 + tip.x) / 2, my = (80 + tip.y) / 2;           // outer half of the boom
-      if (Math.hypot(p.x - tip.x, p.y - tip.y) < 30 || Math.hypot(p.x - mx, p.y - my) < 26) {
+      // only the MIC kills (Dan's call): the pole is jumpable — thread it
+      if (Math.hypot(p.x - tip.x, p.y - tip.y) < 28) {
         crashAir('CLIPPED IT!', '"The boom. THE BOOM. It was RIGHT THERE."');
         return;
       }
@@ -1855,14 +1859,22 @@ function showScreen(name){
 }
 function gameBar(on){ $('gameBar').classList.toggle('active', !!on); }
 // prop belt: shown on the ready screen (campaign/reshoot only), lists owned props
+// a prop is only offered when THIS scene has the mechanic it counters (Dan
+// armed a Trap Door on a boom scene and it silently did nothing — never again)
+function propRelevant(id){
+  const m = params.mech;
+  return {slowmo: true, griptape: true, chock: !!m.cart, windbreak: !!m.wind,
+          boombrake: !!m.boom, trapdoor: !!m.arm}[id];
+}
 function refreshPropBar(){
   const bar = $('propBar');
-  const show = state === 'ready' && mode !== 'daily' && ITEMS.some(it => itemCount(it.id) > 0);
+  const show = state === 'ready' && mode !== 'daily' &&
+    ITEMS.some(it => itemCount(it.id) > 0 && propRelevant(it.id));
   bar.classList.toggle('active', show);
   if (!show) { bar.innerHTML = ''; return; }
   bar.innerHTML = '';
   for (const it of ITEMS) {
-    if (itemCount(it.id) === 0) continue;
+    if (itemCount(it.id) === 0 || !propRelevant(it.id)) continue;
     const b = document.createElement('button');
     b.className = armedItem === it.id ? 'armed' : '';
     b.textContent = it.icon + ' ' + it.name + ' ×' + itemCount(it.id) + (armedItem === it.id ? ' ✓' : '');
@@ -1913,6 +1925,15 @@ function refreshHome(){
   }
   dailyRollover();
   csRollover();
+  // one-time make-good (2026-07-03): a Trap Door was consumed as a silent
+  // no-op before the belt gated props by scene relevance. Refund existing
+  // saves once (fresh installs skip — takes must be > 0).
+  if (!S.reveals.fixTrapdoor1 && S.takes > 0) {
+    S.reveals.fixTrapdoor1 = 1;
+    S.items.trapdoor = (S.items.trapdoor || 0) + 1;
+    persist();
+    toast('🕳️ Prop dept sends a replacement Trap Door — sorry about that');
+  }
   // call sheet (today's 3 goals)
   const cs = $('csList'); cs.innerHTML = '';
   S.cs.goals.forEach((gid, i) => {
