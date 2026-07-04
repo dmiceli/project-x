@@ -139,15 +139,18 @@
   /* D-022: the production slip — home stats get a quiet frame: panel + film
      sprocket rails (echoes the prints chip), gold scene number. Subtle on
      purpose; it's a slate line, not a billboard. */
-  #homeStats{position:relative;background:var(--panel);border:1px solid #3a2a22;
+  .slip{position:relative;background:var(--panel);border:1px solid #3a2a22;
     border-radius:8px;padding:9px 22px;max-width:min(360px,90vw);margin:10px auto 18px;
     font-size:13px;line-height:1.6}
-  #homeStats::before,#homeStats::after{content:'';position:absolute;top:4px;bottom:4px;
+  .slip::before,.slip::after{content:'';position:absolute;top:4px;bottom:4px;
     width:5px;border-radius:2px;
     background:repeating-linear-gradient(to bottom,#3a2c22 0 4px,transparent 4px 9px)}
-  #homeStats::before{left:7px}
-  #homeStats::after{right:7px}
-  #homeStats b{color:var(--gold)}
+  .slip::before{left:7px}
+  .slip::after{right:7px}
+  .slip b{color:var(--gold)}
+  /* D-026: the daily's quieter variant — no rails, just the frame */
+  .slip.subtle{padding:8px 16px;font-size:12.5px;margin:8px auto 12px}
+  .slip.subtle::before,.slip.subtle::after{display:none}
   /* D-021: inline stat-link (wallet → shop) — overrides the block button base */
   button.linky{display:inline;width:auto;min-height:0;margin:0;padding:0 2px;
     background:none;border:none;color:var(--gold);font-size:inherit;font-weight:700;
@@ -159,15 +162,36 @@
   .chips{margin-top:8px}
   .chips button{display:inline-block;width:auto;min-height:34px;margin:2px 4px 2px 0;
     padding:4px 10px;font-size:12px;border-radius:16px}
-  .reelgrid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:min(360px,90vw)}
+  /* D-027: chip states speak — worn is gold, owned is solid, unowned is a
+     dashed price tag. One glance, three facts. */
+  .chips button.worn{background:var(--gold);color:#191010;border-color:var(--gold);font-weight:800}
+  .chips button.owned{border-style:solid;border-color:#8a6a2a;color:var(--ink)}
+  .chips button.pricetag{border-style:dashed;color:var(--dim)}
+  .reelgrid{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:min(360px,90vw);margin:0 auto}
   .reelgrid button{display:inline-block;width:54px;min-height:48px;margin:0;font-size:13px;padding:4px}
   .reelgrid button.printed{border-color:var(--gold);color:var(--gold)}
   .reelgrid button.golden{background:#3a2c10}
+  /* D-028: set headers turn the reel into a filmography with gild targets */
+  #reelGrid{display:block;width:min(360px,90vw)}
+  .reelset{display:flex;gap:10px;align-items:center;margin:16px 0 8px;text-align:left}
+  .reelset img{width:56px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #3a2a22}
+  .reelset b{display:block;font-size:13px;letter-spacing:1px;color:var(--ink)}
+  .reelset span{font-size:11.5px;color:var(--dim)}
+  .reelset.gold b,.reelset.gold span{color:var(--gold)}
+  .reelset.gold img{border-color:var(--gold)}
+  /* D-025: posters ARE posters — one-sheet art, title plate, star strip.
+     Gold frame + glow when gilded: the reward should look like one. */
   .poster{width:min(340px,88vw);background:var(--panel);border:2px solid #3a2a22;border-radius:12px;
-    padding:14px 16px;margin:6px auto;text-align:center}
-  .poster .art{font-size:44px}
+    padding:12px 14px;margin:8px auto;text-align:left;display:flex;gap:14px;align-items:center}
+  .poster img.sheet{width:96px;height:144px;object-fit:cover;border:3px solid #8a6a2a;
+    border-radius:4px;flex-shrink:0;background:#140e0b}
   .poster.gold{border-color:var(--gold);background:#2a2010}
+  .poster.gold img.sheet{border-color:var(--gold);box-shadow:0 0 16px rgba(255,209,102,.35)}
+  .poster h3{margin:0 0 3px;font-family:Georgia,serif;letter-spacing:1px}
   .poster p{margin:2px 0;font-size:13px;color:var(--dim)}
+  .poster .stars{letter-spacing:3px;font-size:14px;color:var(--gold);margin-top:4px}
+  .poster .stars .off{color:#4a3a2a}
+  .poster .ribbon{color:var(--gold);font-weight:800;font-size:12px;letter-spacing:1px}
   /* call sheet: its own card, present from day zero (Dan) */
   #csList{width:min(352px,90vw);margin:16px auto 0;text-align:left;background:var(--panel);
     border:1px solid #3a2a22;border-radius:12px;padding:10px 14px 12px;box-sizing:border-box}
@@ -233,7 +257,7 @@
        Store SUBTITLE stays keyword-bearing and separate (MARKETING.md). -->
   <p class="tag">the first 46 didn't land.</p>
   <button id="btnPlay" class="primary ticket">ACTION!</button>
-  <p class="stats" id="homeStats"></p>
+  <p class="stats slip" id="homeStats"></p>
   <p class="grouplabel">ON THE LOT</p>
   <div class="shelf" role="group" aria-label="On the lot">
     <!-- D-014: data-ico spans are swapped for drawn glyphs at boot; the emoji
@@ -271,7 +295,7 @@
   <p class="stats">Three lives per attempt. Same gauntlet as the whole world.<br>Three crashes and it's a wrap.</p>
   <!-- D-005: the call slate — today's seeded gimmick, same for everyone -->
   <p class="stats" id="dailyMod" style="border:1.5px solid var(--gold);border-radius:10px;padding:10px 14px;color:var(--gold)"></p>
-  <p class="stats" id="dailyInfo"></p>
+  <p class="stats slip subtle" id="dailyInfo"></p>
   <!-- D-015: buttons/instructions say "challenge"; "gauntlet" stays as flavor -->
   <button id="btnDailyPlay" class="primary">PLAY TODAY'S CHALLENGE</button>
   <button id="btnDailyAd">🍿 EXTRA ATTEMPT<span class="sub">watch an ad · 3/3 left today</span></button>
@@ -310,8 +334,8 @@
   <button id="tglNotif" aria-pressed="false">🌙 MIDNIGHT REMINDER: OFF</button>
   <!-- D-015: "RESHOOT FROM SCENE 1" read as a scary wipe AND collided with the
        Reel's harmless reshoots (cold-reader find); D-019 two-line CTA -->
-  <button id="btnReset">🔄 START OVER<span class="sub">back to Scene 1 — your record is kept</span></button>
-  <button id="btnRestore" disabled>RESTORE PURCHASES (App Store build)</button>
+  <button id="btnReset"><span class="fem" data-ico="startover" aria-hidden="true">🔄</span> START OVER<span class="sub">back to Scene 1 — your record is kept</span></button>
+  <button id="btnRestore" disabled><span class="fem" data-ico="prints" aria-hidden="true">🎞️</span> RESTORE PURCHASES (App Store build)</button>
   <a href="../PRIVACY.md" target="_blank" rel="noopener">Privacy policy</a>
   <p class="stats" id="verLine">TAKE 47</p>
   <!-- QA panel (beta only — revealed by tapping the version line 5×).
@@ -342,7 +366,7 @@
   <div id="cardButtons"></div>
 </div>
 <div id="gameBar">
-  <button id="btnShare" class="primary">📤 SHARE</button>
+  <button id="btnShare" class="primary"><span class="fem" data-ico="share" aria-hidden="true">📤</span> SHARE</button>
   <button id="btnHome"><span class="fem" data-ico="home" aria-hidden="true">🏠</span> HOME</button>
 </div>
 <div id="propBar" aria-label="Prop belt"></div>
@@ -838,6 +862,41 @@ function uiIconURL(name){
       ln(30 + 10 * Math.cos(a), 30 + 10 * Math.sin(a),
          30 + 16 * Math.cos(a + 0.35), 30 + 16 * Math.sin(a + 0.35), GOLD, 2.5);
     }
+  } else if (name === 'sound') {         // foley horn + waves
+    poly([[14, 24], [28, 16], [28, 44], [14, 36]], OCH);
+    rr(10, 24, 5, 12, '#7a5a30');
+    for (let k = 0; k < 3; k++) {
+      c.strokeStyle = GOLD; c.lineWidth = 2.5;
+      c.beginPath(); c.arc(30, 30, 8 + k * 6, -0.7, 0.7); c.stroke();
+    }
+  } else if (name === 'haptics') {       // phone mid-buzz
+    rr(22, 12, 16, 30, '#241515', 4);
+    dot(30, 37, 1.6, DIM, false);
+    for (const s of [-1, 1]) {
+      c.strokeStyle = GOLD; c.lineWidth = 2.5;
+      c.beginPath(); c.arc(30 + s * 16, 27, 5, s < 0 ? Math.PI * 0.6 : -Math.PI * 0.4, s < 0 ? Math.PI * 1.4 : Math.PI * 0.4); c.stroke();
+    }
+  } else if (name === 'motion') {        // a frame outrunning its speed lines
+    rr(26, 18, 20, 20, '#241515', 3);
+    ln(10, 22, 22, 22, DIM, 2.5); ln(6, 28, 22, 28, DIM, 2.5); ln(10, 34, 22, 34, DIM, 2.5);
+    dot(36, 28, 4, GOLD);
+  } else if (name === 'moon') {          // the midnight slate change
+    c.fillStyle = GOLD;
+    c.beginPath(); c.arc(30, 30, 13, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#191010';
+    c.beginPath(); c.arc(24, 26, 11, 0, Math.PI * 2); c.fill();
+  } else if (name === 'startover') {     // rewind to scene 1
+    c.strokeStyle = GOLD; c.lineWidth = 3.5;
+    c.beginPath(); c.arc(30, 30, 13, -0.4, Math.PI * 1.5); c.stroke();
+    poly([[30, 11], [38, 17], [30, 23]], GOLD);
+    c.fillStyle = CREAM; c.font = 'bold 11px system-ui, sans-serif'; c.textAlign = 'center';
+    c.fillText('1', 30, 34);
+  } else if (name === 'adbreak') {       // the sponsor's retro television
+    ln(24, 16, 16, 6, DIM, 2.5); ln(36, 16, 44, 6, DIM, 2.5);   // antennas
+    rr(12, 16, 36, 26, '#7a5a30', 4);
+    rr(17, 20, 20, 18, '#241515', 3);
+    dot(42, 25, 2.2, GOLD, false); dot(42, 33, 2.2, DIM, false);
+    ln(20, 46, 24, 42, O, 3); ln(40, 46, 36, 42, O, 3);          // legs
   } else {                               // prints: the film-print ticket (Dan,
     rr(8, 20, 44, 20, '#2e6b4f', 6);     // #1-adjacent) — matches the HUD chip
     c.strokeStyle = '#6ee7b7'; c.lineWidth = 2;
@@ -850,6 +909,9 @@ function uiIconURL(name){
   }
   return (uiIconCache[name] = cnv.toDataURL());
 }
+// inline glyph helper for labels rebuilt at refresh time (settings toggles):
+// cached data URLs make this free after first render
+const ico = n => '<span class="fem" aria-hidden="true"><img src="' + uiIconURL(n) + '" alt=""></span> ';
 // swap the generic emoji tier for drawn glyphs (emoji remain as fallback)
 function applyUiIcons(){
   try {
@@ -1461,7 +1523,9 @@ function showNextCard(){
   const cfg = cardQueue.shift();
   if (cfg.after) lastCardAfter = cfg.after;
   document.getElementById('cardKicker').textContent = cfg.kicker || '';
-  document.getElementById('cardIcon').textContent = cfg.icon || '🎬';
+  // D-024: cards can carry drawn art (ad-break TV, cast portraits) or emoji
+  if (cfg.iconImg) document.getElementById('cardIcon').innerHTML = '<img src="' + cfg.iconImg + '" alt="" style="width:64px;height:64px;object-fit:contain">';
+  else document.getElementById('cardIcon').textContent = cfg.icon || '🎬';
   document.getElementById('cardTitle').textContent = cfg.title;
   document.getElementById('cardBody').textContent = cfg.body || '';
   const bb = document.getElementById('cardButtons');
@@ -1513,7 +1577,7 @@ function advance(){
         buttons: [{label: '🎬 KEEP ROLLING', primary: true}]});
     }
     for (const cst of fresh) {
-      queueCard({kicker: 'NEW CAST MEMBER', icon: cst.icon, title: cst.name,
+      queueCard({kicker: 'NEW CAST MEMBER', iconImg: portraitURL(cst.id, 0, false), title: cst.name,
         body: cst.bio + ' — Surviving ' + cst.unlock + ' scenes earned their respect. Put them in the spotlight?',
         buttons: [
           {label: '⭐ MAKE THEM THE STAR', primary: true, action: () => { S.selected = cst.id; persist(); }},
@@ -1623,7 +1687,7 @@ function maybeAdBreak(){
   if (performance.now() - lastAdMs < 90000) return;
   crashesSinceAd = 0;
   lastAdMs = performance.now();
-  queueCard({kicker: 'AD BREAK', icon: '📺', title: 'PLACEHOLDER',
+  queueCard({kicker: 'AD BREAK', iconImg: uiIconURL('adbreak'), title: 'PLACEHOLDER',
     body: 'A real ad appears here in the App Store build — testing the pacing, not selling you anything yet.',
     buttons: [{label: 'CONTINUE', primary: true}]});
   showNextCard();
@@ -2727,31 +2791,55 @@ function refreshHome(){
     row.appendChild(left); row.appendChild(pay);
     cs.appendChild(row);
   });
-  // the reel: every completed scene is reshootable
+  // D-028: the reel is a FILMOGRAPHY, not a checkerboard — scenes grouped by
+  // set with real art, per-set printed counts, and a gild target per section
   const rg = $('reelGrid'); rg.innerHTML = '';
-  for (let n = 1; n < S.scene; n++) {
-    const b = document.createElement('button');
-    const pr = !!S.printed[n];
-    b.className = (pr ? 'printed' : '') + (sceneParams(n).golden ? ' golden' : '');
-    b.textContent = (pr ? '★' : '') + n;
-    b.setAttribute('aria-label', 'Reshoot scene ' + n + (pr ? ' (printed)' : ''));
-    b.onclick = () => { ac(); playReshoot(n); };
-    rg.appendChild(b);
+  const lastScene = S.scene - 1;
+  for (let si = 0; si * 10 < lastScene; si++) {
+    const gen = GENRES[si % GENRES.length];
+    const from = si * 10 + 1, to = Math.min(lastScene, si * 10 + 10);
+    let printedCount = 0;
+    for (let n = from; n <= si * 10 + 10; n++) if (S.printed[n]) printedCount++;
+    const gilded = printedCount === 10;
+    const head = document.createElement('div');
+    head.className = 'reelset' + (gilded ? ' gold' : '');
+    head.innerHTML = '<img alt="" src="' + setThumbURL(gen) + '">' +
+      '<div><b>' + gen.name + '</b><span>' +
+      (gilded ? '★ GILDED — every scene printed'
+              : printedCount + '/10 printed' + (to === si * 10 + 10 ? ' — print all ten to gild the poster' : ' · still shooting here')) +
+      '</span></div>';
+    rg.appendChild(head);
+    const grid = document.createElement('div');
+    grid.className = 'reelgrid';
+    for (let n = from; n <= to; n++) {
+      const b = document.createElement('button');
+      const pr = !!S.printed[n];
+      b.className = (pr ? 'printed' : '') + (sceneParams(n).golden ? ' golden' : '');
+      b.textContent = (pr ? '★' : '') + n;
+      b.setAttribute('aria-label', 'Reshoot scene ' + n + (pr ? ' (printed)' : ''));
+      b.onclick = () => { ac(); playReshoot(n); };
+      grid.appendChild(b);
+    }
+    rg.appendChild(grid);
   }
-  // poster wall: one per wrapped set; gold when all ten scenes are printed
+  // D-025: poster wall rebuilt — real one-sheets from the sets you shot in,
+  // star strip for printed progress, gold frame + DIRECTOR'S CUT when gilded
   const pl = $('posterList'); pl.innerHTML = '';
-  const ART = ['🎬', '🤠', '🏴‍☠️', '🛸', '🌧️', '🦖'];
   const wrapped = Math.floor((S.scene - 1) / 10);
   for (let k = 0; k < wrapped; k++) {
     const gen = GENRES[k % GENRES.length];
     let printedCount = 0;
     for (let n = k * 10 + 1; n <= k * 10 + 10; n++) if (S.printed[n]) printedCount++;
     const gold = printedCount === 10;
+    const stars = '★'.repeat(printedCount) + '<span class="off">' + '★'.repeat(10 - printedCount) + '</span>';
     const div = document.createElement('div');
     div.className = 'poster' + (gold ? ' gold' : '');
-    div.innerHTML = '<div class="art">' + ART[k % ART.length] + '</div><h3>' + gen.name + '</h3>' +
+    div.innerHTML = '<img class="sheet" alt="" src="' + setThumbURL(gen, true) + '">' +
+      '<div><h3>' + gen.name + '</h3>' +
       '<p>Scenes ' + (k * 10 + 1) + '–' + (k * 10 + 10) + '</p>' +
-      '<p>' + (gold ? '★ DIRECTOR\'S CUT — all ten printed ★' : printedCount + '/10 printed — reshoot to gild it') + '</p>';
+      '<p class="stars" aria-label="' + printedCount + ' of 10 printed">' + stars + '</p>' +
+      (gold ? '<p class="ribbon">★ DIRECTOR\'S CUT — ALL TEN PRINTED ★</p>'
+            : '<p>' + printedCount + '/10 printed — reshoot to gild it</p>') + '</div>';
     pl.appendChild(div);
   }
   if (wrapped === 0) pl.innerHTML = '<p class="stats">Wrap your first set (10 scenes) to hang a poster.</p>';
@@ -2785,7 +2873,8 @@ function refreshHome(){
       const sel = document.createElement('button');
       sel.textContent = S.selected === cst.id ? 'STARRING' : 'SELECT';
       sel.disabled = S.selected === cst.id;
-      sel.className = 'chips-select';
+      // D-027: an actionable SELECT is a real CTA, not wallpaper
+      sel.className = 'chips-select' + (S.selected === cst.id ? '' : ' primary');
       sel.onclick = () => { S.selected = cst.id; persist(); refreshHome(); toast('Now starring: ' + cst.name); };
       div.appendChild(sel);
       const chips = document.createElement('div');
@@ -2794,6 +2883,7 @@ function refreshHome(){
         const c = document.createElement('button');
         const own = ownedIdx(cst.id).includes(idx);
         const active = (S.variants[cst.id] || 0) === idx;
+        c.className = active ? 'worn' : (own ? 'owned' : 'pricetag');   // D-027
         c.textContent = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + '🎞️'));
         c.setAttribute('aria-label', v.name + (own ? (active ? ', worn' : ', owned') : ', costs ' + v.price + ' prints; tap to preview'));
         c.onclick = () => {
@@ -2849,13 +2939,14 @@ function refreshHome(){
     plist.appendChild(div);
   }
   // settings labels
-  $('tglSound').textContent = 'SOUND: ' + (S.set.sound ? 'ON' : 'OFF');
+  // D-024 policy: EVERY settings row carries a drawn glyph — none are "special"
+  $('tglSound').innerHTML = ico('sound') + 'SOUND: ' + (S.set.sound ? 'ON' : 'OFF');
   $('tglSound').setAttribute('aria-pressed', String(!!S.set.sound));
-  $('tglHaptics').textContent = 'HAPTICS: ' + (S.set.haptics ? 'ON' : 'OFF') + (capHaptics() ? '' : ' (phone builds)');
+  $('tglHaptics').innerHTML = ico('haptics') + 'HAPTICS: ' + (S.set.haptics ? 'ON' : 'OFF') + (capHaptics() ? '' : ' (phone builds)');
   $('tglHaptics').setAttribute('aria-pressed', String(!!S.set.haptics));
-  $('tglMotion').textContent = 'REDUCE MOTION: ' + (S.set.rm ? 'ON' : 'OFF');
+  $('tglMotion').innerHTML = ico('motion') + 'REDUCE MOTION: ' + (S.set.rm ? 'ON' : 'OFF');
   $('tglMotion').setAttribute('aria-pressed', String(!!S.set.rm));
-  $('tglNotif').textContent = '🌙 MIDNIGHT REMINDER: ' + (S.set.notif ? 'ON' : 'OFF') + (capNotif() ? '' : ' (phone builds)');
+  $('tglNotif').innerHTML = ico('moon') + 'MIDNIGHT REMINDER: ' + (S.set.notif ? 'ON' : 'OFF') + (capNotif() ? '' : ' (phone builds)');
   $('tglNotif').setAttribute('aria-pressed', String(!!S.set.notif));
 }
 $('btnPlay').onclick = () => { ac(); playCampaign(); };
@@ -2894,11 +2985,11 @@ $('btnReset').onclick = () => {
   if (!resetArmed) {
     resetArmed = true;
     $('btnReset').innerHTML = '⚠️ SURE?<span class="sub">progress resets, record kept — tap again to confirm</span>';
-    setTimeout(() => { resetArmed = false; $('btnReset').innerHTML = '🔄 START OVER<span class="sub">back to Scene 1 — your record is kept</span>'; }, 3000);
+    setTimeout(() => { resetArmed = false; $('btnReset').innerHTML = ico('startover') + 'START OVER<span class="sub">back to Scene 1 — your record is kept</span>'; }, 3000);
     return;
   }
   resetArmed = false;
-  $('btnReset').innerHTML = '🔄 START OVER<span class="sub">back to Scene 1 — your record is kept</span>';
+  $('btnReset').innerHTML = ico('startover') + 'START OVER<span class="sub">back to Scene 1 — your record is kept</span>';
   resetProgress();
   refreshHome();
 };
@@ -3321,19 +3412,27 @@ function propsKaiju(c){
 // scenic band, restores the gameplay cache), so posters can never drift from
 // what the player actually shoots in. Cached: 6 renders max per session.
 const setThumbCache = {};
-function setThumbURL(genre){
-  if (setThumbCache[genre.id]) return setThumbCache[genre.id];
+function setThumbURL(genre, poster){
+  const key = genre.id + (poster ? ':poster' : '');
+  if (setThumbCache[key]) return setThumbCache[key];
   if (typeof document.createElement !== 'function') return '';  // headless guard
   const keepCache = setCache, keepId = cachedGenreId;
   buildSetCache(genre);
   const t = document.createElement('canvas');
-  t.width = 176; t.height = 192;                 // 2× the 88×96 wall cell
   const g = t.getContext('2d');
-  // crop the scenic band (horizon props → floor), skipping rig/HUD space
-  const sy = setCache.height * (300 / H), sh = setCache.height * (330 / H);
-  g.drawImage(setCache, 0, sy, setCache.width, sh, 0, 0, 176, 192);
+  if (poster) {
+    // D-025: one-sheet crop (2:3 portrait) — posters should look like posters
+    t.width = 192; t.height = 288;
+    const sy = setCache.height * (150 / H), sh = setCache.height * (480 / H);
+    g.drawImage(setCache, 0, sy, setCache.width, sh, 0, 0, 192, 288);
+  } else {
+    t.width = 176; t.height = 192;               // 2× the 88×96 wall cell
+    // crop the scenic band (horizon props → floor), skipping rig/HUD space
+    const sy = setCache.height * (300 / H), sh = setCache.height * (330 / H);
+    g.drawImage(setCache, 0, sy, setCache.width, sh, 0, 0, 176, 192);
+  }
   setCache = keepCache; cachedGenreId = keepId;  // gameplay cache untouched
-  return (setThumbCache[genre.id] = t.toDataURL());
+  return (setThumbCache[key] = t.toDataURL());
 }
 
 function buildSetCache(genre){

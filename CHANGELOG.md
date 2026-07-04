@@ -2,6 +2,29 @@
 
 One entry per build that reaches a phone (TestFlight or App Store). Newest first. Format loosely follows [Keep a Changelog](https://keepachangelog.com): Added / Changed / Fixed / Removed. User-facing release notes live in `releases/`; this file is the engineering truth.
 
+## [1.0 (build 11)] — 2026-07-04 · beta feedback batch 1 (auto-shipped, unattended)
+
+Shipped by the `take47-ship-take11` scheduled task after Dan's approval and push (commit 2d8c7e7). Pipeline 3m 10s, App.ipa uploaded to ASC.
+
+**Added**
+- D-020: 📣 SHARE TODAY'S RESULT directly on the daily screen (visible once played today; forces the daily share variant); in-game prints chip redesigned as an unmistakable film-print ticket (dark ticket, sprocket hole columns, gold count, PRINTS caption) — no longer reads as a second iPhone battery.
+- D-021: home-screen wallet stat is now a tappable shortcut to the Prop Department. In-gameplay HUD stays untappable BY DESIGN (canvas = one big button; ratified by Dan).
+- D-022: home stats line reframed as the "production slip" — slim panel with film-sprocket rails, gold scene number, wallet link preserved.
+- New home tagline: "the first 46 didn't land."
+
+**Changed**
+- D-016: cold open no longer auto-advances on a 2.3s timer — after the ACTION! beat the scene HOLDS with a pulsing "TAP TO ROLL" prompt (static under reduce-motion); the player's tap rolls the guided first take.
+- D-018: daily-end canvas decluttered to CUT! + quip + "🎬 TAP FOR YOUR DAILIES REPORT"; stats live on the DAILIES REPORT card alone; miss-angle lesson suppressed on the final life.
+- D-019: two-line CTA pattern (bold main line + small dim `.sub` detail line) on the EXTRA ATTEMPT ad button and START OVER — wraps are now intentional.
+
+**Fixed**
+- D-017: toast hidden state now translates by calc(-100% − sat − 24px) with opacity:0 + pointer-events:none — no more half-visible toasts stuck under the clock (or intercepting taps).
+- D-023: in-game HUD prints chip now draws wallet() (earned − spent) like every other surface, instead of lifetime `S.prints`; all other displays audited clean.
+
+**Notes**
+- GitHub Pages was serving the previous build at ship time (deploy/CDN lag, up to ~10 min); the post-push runtime smoke was run by injecting the verified raw-main file into a live browser tab instead. Codemagic pulls the repo directly, so TestFlight is unaffected.
+- The red post-upload "App Store distribution" step (open since build 7) is decoded for this build: upload succeeded (delivery bd6c2af4, ASC processing complete); the red is the workflow's auto-submit to TestFlight beta review failing with 422 "Another build is in review" (build 9 holds the version's review slot). Benign — internal Crew distribution is automatic and unaffected.
+
 ## [1.0 (build 10)] — 2026-07-04 · beta-night build (icons, copy, share grid, reminder)
 
 **Added**
