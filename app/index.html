@@ -59,7 +59,7 @@
   /* ---- overlay screens (real HTML for screen readers) ---- */
   .screen{position:fixed;inset:0;background:var(--bg);display:none;
     flex-direction:column;align-items:center;justify-content:flex-start;
-    padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));
+    padding:max(24px,var(--sat,env(safe-area-inset-top))) 24px max(24px,var(--sab,env(safe-area-inset-bottom)));
     overflow-y:auto;z-index:10}
   .screen.active{display:flex}
   h1{font-family:Georgia,serif;color:var(--gold);font-size:52px;margin:40px 0 0;letter-spacing:2px}
@@ -84,8 +84,11 @@
     border:2px solid #3a2a22;border-radius:4px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:7px;text-align:center;
     padding:0 5px;box-sizing:border-box}
-  .wall div b{font-size:8px;letter-spacing:1.5px;color:var(--gold);opacity:.85}
-  .wall div span{font-size:10px;font-weight:700;color:#f3e6cd;line-height:1.25}
+  .wall div b{font-size:8px;letter-spacing:1.5px;color:var(--gold);opacity:.95;
+    text-shadow:0 1px 3px #000,0 0 6px #000}                /* legible over art (D-003) */
+  .wall div span{font-size:10px;font-weight:700;color:#f3e6cd;line-height:1.25;
+    text-shadow:0 1px 3px #000,0 0 6px #000}
+  .wall div.soon{filter:brightness(.5) saturate(.55)}       /* COMING SOON tease */
   #scr-home h1{margin:16px 0 0;font-size:44px;text-shadow:0 0 26px rgba(255,209,102,.28)}
   button.ticket{width:min(320px,86vw);min-height:64px;border:none;border-radius:14px;
     position:relative;background:var(--gold);color:#191010;font-size:20px;font-weight:800}
@@ -111,6 +114,9 @@
   .card.locked{opacity:.5}
   .card.done{border-color:var(--gold)}
   .card .who{float:right;font-size:26px;line-height:1}
+  /* D-006: rig-rendered portraits on cast cards (and colorway previews) */
+  .card .portrait{float:right;width:64px;height:78px;margin:0 0 4px 8px;
+    background:#140e0b;border:1px solid #3a2a22;border-radius:8px}
   .chips{margin-top:8px}
   .chips button{display:inline-block;width:auto;min-height:34px;margin:2px 4px 2px 0;
     padding:4px 10px;font-size:12px;border-radius:16px}
@@ -139,20 +145,20 @@
     display:block;font-size:9px;color:var(--dim);font-weight:600}
 
   /* ---- prop belt: consumables armed from the ready screen ---- */
-  #propBar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));
+  #propBar{position:fixed;left:0;right:0;bottom:max(14px,var(--sab,env(safe-area-inset-bottom)));
     display:none;justify-content:center;gap:8px;z-index:5;flex-wrap:wrap;padding:0 10px}
   #propBar.active{display:flex}
   #propBar button{width:auto;min-height:48px;margin:0;padding:6px 12px;font-size:13px;border-radius:12px}
   #propBar button.armed{border-color:var(--gold);color:var(--gold)}
 
   /* ---- in-game bottom bar (share/home on the CUT screen) ---- */
-  #gameBar{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));
+  #gameBar{position:fixed;left:0;right:0;bottom:max(14px,var(--sab,env(safe-area-inset-bottom)));
     display:none;justify-content:center;gap:12px;z-index:5}
   #gameBar.active{display:flex}
   #gameBar button{width:150px;margin:0}
 
   /* ---- achievement / info toast (aria-live announces it) ---- */
-  #toast{position:fixed;top:max(16px,env(safe-area-inset-top));left:50%;
+  #toast{position:fixed;top:max(16px,var(--sat,env(safe-area-inset-top)));left:50%;
     transform:translateX(-50%) translateY(-120%);transition:transform .25s ease;
     background:var(--panel);border:1.5px solid var(--gold);color:var(--gold);
     padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;z-index:20;
@@ -212,9 +218,11 @@
 <section id="scr-daily" class="screen" aria-label="Daily challenge">
   <h2>DAILY CHALLENGE</h2>
   <p class="stats">Three lives per attempt. Same gauntlet as the whole world.<br>Three crashes and it's a wrap.</p>
+  <!-- D-005: the call slate — today's seeded gimmick, same for everyone -->
+  <p class="stats" id="dailyMod" style="border:1.5px solid var(--gold);border-radius:10px;padding:10px 14px;color:var(--gold)"></p>
   <p class="stats" id="dailyInfo"></p>
   <button id="btnDailyPlay" class="primary">SHOOT TODAY'S GAUNTLET</button>
-  <button id="btnDailyAd">🎞️ EXTRA ATTEMPT (ad — placeholder in beta)</button>
+  <button id="btnDailyAd">🎞️ EXTRA ATTEMPT (ad · 3/3 left today)</button>
   <button class="back" data-to="home">← BACK</button>
 </section>
 
@@ -261,6 +269,9 @@
     <button id="qaMercy">🩹 Arm mercy (next crash = 7th)</button>
     <button id="qaFtue">🐣 Reset FTUE + reveals</button>
     <button id="qaRollover">🌙 Force midnight rollover</button>
+    <!-- D-002 diagnostics: real device inset/viewport values, refreshed each
+         time the panel opens — lets Dan verify the safe-area math on-device -->
+    <p class="stats" id="qaDiag" aria-label="layout diagnostics"></p>
   </div>
   <button class="back" data-to="home">← BACK</button>
 </section>
@@ -450,7 +461,42 @@ function dailyParams(step){
           tol: goodDeg * Math.PI / 180, h: h, startX: startX, gi: 0, cycle: 0, mech: mech,
           matL: matC - 55, matR: matC + 55, boomPhase: rnd() * Math.PI * 2, armPhase: rnd() * 300};
 }
-function todayStr(){ return new Date().toISOString().slice(0, 10); }
+// ========== daily modifiers — "Today's Gimmick" (D-005, Dan-approved) ==========
+// One named mutator per calendar date, seeded from dailySeed() so the whole
+// world shoots under the same conditions. Every gimmick is built from
+// mechanics that already exist (params tweaks or draw/update flags) — no new
+// physics, no new art. a11y: gimmicks change difficulty, never readability;
+// FOG dims scenery but never HUD/text, and no gimmick adds flashing.
+const DAILY_MODS = [
+  {id:'gale',   name:'GALE WARNING',  quip:'The wind-machine guy is showing off today.',
+    apply: p => { p.mech.wind = (p.mech.wind || 0) + 1.4; }},
+  {id:'wire',   name:'WIRE WORK',     quip:'Low gravity. The insurance guy loves it.',
+    apply: p => { p.mech.grav = Math.min(p.mech.grav || 1, 0.62); }},
+  {id:'budget', name:'BUDGET CUTS',   quip:'The mat shrank. Nobody is saying why.',
+    apply: p => { const c = (p.matL + p.matR) / 2; p.matL = c - 38; p.matR = c + 38; }},
+  {id:'mirror', name:'MIRROR MODE',   quip:'The director wants it "the other way." All of it.',
+    apply: p => { p.om = -p.om; }},
+  {id:'fog',    name:'FOG OF WAR',    quip:'The fog machine jammed open. Shoot anyway.',
+    apply: null},                          // draw-level: scenery dimmed, no aim preview
+  {id:'golden', name:'GOLDEN HOUR',   quip:'Magic light. Every print pays double.',
+    apply: null},                          // payout-level: daily PB prints ×2
+  {id:'crank',  name:'OVERCRANKED',   quip:'Camera runs fast; so does your spin.',
+    apply: p => { p.om *= 1.22; }}
+];
+function dailyMod(){
+  const r = mulberry32((dailySeed() ^ 0x51ED2701) >>> 0);
+  return DAILY_MODS[Math.floor(r() * DAILY_MODS.length)];
+}
+const modActive = id => mode === 'daily' && dailyMod().id === id;
+
+// LOCAL calendar date (D-007): rollover happens at the player's own midnight,
+// matching the "at midnight 🌙" copy (toISOString was UTC = 8 PM EDT resets).
+// dailySeed() below is already local — every calendar date is one worldwide
+// gauntlet, Wordle-style.
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function dailyRollover(){                      // reset counters on a new day
   if (S.daily.date !== todayStr()) {
     S.daily.date = todayStr(); S.daily.used = 0; S.daily.adExtras = 0; S.daily.todayBest = 0;
@@ -482,13 +528,43 @@ const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
 let SCALE = 1, setCache = null, cachedGenreId = null;
 
+// Safe-area insets (D-002): the Capacitor WebView is full-bleed under the
+// notch/home-indicator, unlike the Pages standalone build (opaque status bar)
+// where this file was originally tuned. env() is read via a probe element so
+// the values are available to canvas math, not just CSS; if the WebView
+// reports 0 on a native iOS build (known WKWebView flakiness), fall back to
+// conservative notch-era constants. Real device values are surfaced in the
+// QA panel so the fallback can be corrected against evidence.
+let SAFE_T = 0, SAFE_B = 0;
+function measureInsets(){
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:-999px;top:0;' +
+    'padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  SAFE_T = parseFloat(cs.paddingTop) || 0;
+  SAFE_B = parseFloat(cs.paddingBottom) || 0;
+  probe.remove();
+  if (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'ios' && SAFE_T === 0){
+    SAFE_T = 47; SAFE_B = 34;   // typical Face-ID iPhone; verify via QA panel
+  }
+  // hand the resolved values to CSS (toast, prop belt, overlay padding)
+  document.documentElement.style.setProperty('--sat', SAFE_T + 'px');
+  document.documentElement.style.setProperty('--sab', SAFE_B + 'px');
+}
+
 function resize(){
   const dpr = window.devicePixelRatio || 1;
-  SCALE = Math.min(window.innerWidth / W, window.innerHeight / H);
+  measureInsets();
+  // fit the 400×700 stage between the insets, then center the leftover as
+  // symmetric letterbox bands (they're pure black — cinematic on purpose)
+  const availH = window.innerHeight - SAFE_T - SAFE_B;
+  SCALE = Math.min(window.innerWidth / W, availH / H);
   cv.width = Math.round(W * SCALE * dpr);
   cv.height = Math.round(H * SCALE * dpr);
   cv.style.width = (W * SCALE) + 'px';
   cv.style.height = (H * SCALE) + 'px';
+  cv.style.marginTop = Math.round(SAFE_T + Math.max(0, (availH - H * SCALE) / 2)) + 'px';
   ctx.setTransform(SCALE * dpr, 0, 0, SCALE * dpr, 0, 0);
   buildSetCache(currentGenre());
 }
@@ -561,10 +637,35 @@ function armItem(id){
   refreshPropBar();
 }
 function ownedIdx(id){ return S.ownedVariants[id] || [0]; }
-function costume(){
+let portraitCostume = null;           // D-006: lets the portrait renderer pose
+function costume(){                   // ANY costume, not just the selected one
+  if (portraitCostume) return portraitCostume;
   const base = COSTUMES.find(x => x.id === S.selected) || COSTUMES[0];
   const v = (WARDROBE[base.id] || [])[S.variants[base.id] || 0];
   return v ? Object.assign({}, base, {suit: v.suit, shoe: v.shoe}) : base;
+}
+// D-006: cast/wardrobe portraits rendered from the real in-game rig — the
+// preview IS the sprite you'll play, so it can never drift from the truth.
+// Cached per costume+colorway+locked; locked cast = dark silhouette tease.
+const portraitCache = {};
+function portraitURL(cstId, varIdx, locked){
+  const key = cstId + ':' + (varIdx || 0) + (locked ? ':L' : '');
+  if (portraitCache[key]) return portraitCache[key];
+  const base = COSTUMES.find(x => x.id === cstId) || COSTUMES[0];
+  const v = (WARDROBE[cstId] || [])[varIdx || 0];
+  const pc = document.createElement('canvas');
+  pc.width = 140; pc.height = 170;                 // 2× for retina cards
+  const g = pc.getContext('2d');
+  g.scale(2.4, 2.4);
+  portraitCostume = v ? Object.assign({}, base, {suit: v.suit, shoe: v.shoe}) : base;
+  try { drawGuy(29, 62, 0, 'stand', 0, g); }
+  finally { portraitCostume = null; }              // never leak into gameplay
+  if (locked) {                                    // silhouette: shape stays, identity teased
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(14,10,8,0.88)'; g.fillRect(0, 0, 140, 170);
+  }
+  return (portraitCache[key] = pc.toDataURL());
 }
 let wardrobeArm = null;               // big-ticket colorways confirm via second tap
 function buyOrSelectVariant(id, idx){
@@ -785,6 +886,10 @@ function currentGenre(){
 function currentSceneNo(){ return mode === 'daily' ? dStep : (mode === 'reshoot' ? rScene : S.scene); }
 function refreshParams(){
   params = mode === 'daily' ? dailyParams(dStep) : sceneParams(currentSceneNo());
+  if (mode === 'daily') {                       // D-005: apply today's gimmick
+    const dm = dailyMod();
+    if (dm.apply) dm.apply(params);
+  }
   if (setCache && currentGenre().id !== cachedGenreId) buildSetCache(currentGenre());
 }
 
@@ -1128,8 +1233,10 @@ function afterCrash(){
       // daily pays on personal best: +1 print per scene of improvement (un-farmable)
       const delta = cleared - S.daily.todayBest;
       if (delta > 0) {
-        S.prints += delta;
-        toast('🖨 Personal best — +' + delta + ' print' + (delta > 1 ? 's' : ''));
+        const pay = modActive('golden') ? delta * 2 : delta;   // D-005 GOLDEN HOUR
+        S.prints += pay;
+        toast('🖨 Personal best — +' + pay + ' print' + (pay > 1 ? 's' : '') +
+              (modActive('golden') ? ' (GOLDEN HOUR ×2)' : ''));
       }
       S.daily.todayBest = Math.max(S.daily.todayBest, cleared);
       S.daily.best = Math.max(S.daily.best, cleared);
@@ -1577,8 +1684,9 @@ function drawMechanics(){
     ctx.strokeStyle = '#6ee7b7'; ctx.lineWidth = 2;
     ctx.strokeRect(params.matL, GROUND, params.matR - params.matL, 6);
     // live trajectory preview (Dan: launch timing must be AIMED, not guessed) —
-    // dotted arc + landing marker track the cart in real time; launch on green
-    if (state === 'ready') {
+    // dotted arc + landing marker track the cart in real time; launch on green.
+    // FOG OF WAR gimmick (D-005): the preview is exactly what the fog takes.
+    if (state === 'ready' && !modActive('fog')) {
       const vx = (params.matL + params.matR) / 2 - 110;
       const pvx = vx / params.T + ((armedItem === 'chock') ? 0 : cartVx(mechT));
       const pvy = -grav() * params.T / 2;
@@ -1712,6 +1820,10 @@ function draw(){
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
   if (setCache) ctx.drawImage(setCache, 0, 0, W, H);
+  if (modActive('fog')) {                            // D-005 FOG OF WAR: a flat
+    ctx.fillStyle = 'rgba(190,190,200,0.32)';        // haze over SCENERY only —
+    ctx.fillRect(0, 0, W, H);                        // player/HUD drawn after
+  }                                                  // stay full-contrast (a11y)
   drawDirector();                                    // reacts live, so not cached
   drawMechanics();
 
@@ -1821,6 +1933,12 @@ function draw(){
     // lives shown as hearts AND a number — never color/symbol alone (a11y)
     ctx.fillStyle = '#f87171';
     ctx.fillText('♥'.repeat(Math.max(0, dLives)) + ' · ' + dLives + ' LIVES', 20, 88);
+    // D-005: the gimmick rides the slate chip so it's never forgotten mid-run
+    ctx.fillStyle = 'rgba(10,7,5,0.82)';
+    const gname = dailyMod().name;
+    ctx.beginPath(); ctx.roundRect(10, 100, 14 + ctx.measureText(gname).width, 20, 4); ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText(gname, 17, 114);
   } else {
     ctx.fillStyle = '#ffd166';
     ctx.fillText((mode === 'reshoot' ? 'RESHOOT · T' : 'TAKE ') + takesScene, 20, 88);
@@ -1930,11 +2048,14 @@ function draw(){
       ctx.fillStyle = '#6ee7b7';
       ctx.fillText('TAP TO KEEP SHOOTING', W / 2, 420);
     } else {
-      ctx.fillText('THAT\'S A WRAP ON THIS ATTEMPT', W / 2, 335);
+      // D-005 DAILIES REPORT: the wrap screen is the daily's shareable moment
+      ctx.fillText('🎬 DAILIES REPORT — ' + dailyMod().name, W / 2, 328);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
-      ctx.fillText('Scenes cleared: ' + (dStep - 1) + '   Best today: ' + S.daily.todayBest, W / 2, 372);
+      ctx.fillText('Scenes cleared: ' + (dStep - 1) + '   Best today: ' + S.daily.todayBest, W / 2, 362);
+      ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = '#e8d5b5';
+      ctx.fillText('All-time record: ' + S.daily.best + '   ·   New slate at midnight 🌙', W / 2, 390);
       ctx.fillStyle = '#6ee7b7';
-      ctx.fillText('TAP TO CONTINUE', W / 2, 420);
+      ctx.fillText('TAP TO CONTINUE — SHARE YOUR REPORT BELOW', W / 2, 424);
     }
   }
   if (flash > 0 && !S.set.rm) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(0, 0, W, H); }
@@ -1956,7 +2077,8 @@ function buildShareCard(){
   c.fillText('BEAT THIS.', 500, 340);
   c.fillStyle = '#e8d5b5'; c.font = '44px system-ui, sans-serif';
   if (mode === 'daily') {
-    c.fillText('TODAY\'S GAUNTLET · SCENES CLEARED', 500, 500);
+    // D-005: the gimmick IS the taunt — "you crashed under MY conditions"
+    c.fillText('TODAY\'S GAUNTLET · ' + dailyMod().name + ' · SCENES CLEARED', 500, 500);
     c.fillStyle = '#fff'; c.font = 'bold 190px system-ui, sans-serif';
     c.fillText(String(S.daily.todayBest), 500, 720);
     c.fillStyle = '#a08b72'; c.font = '40px system-ui, sans-serif';
@@ -2083,13 +2205,18 @@ function refreshHome(){
     const wCur = GENRES[wIdx % GENRES.length];
     const wNxt = GENRES[(wIdx + 1) % GENRES.length];
     const wPrv = wIdx > 0 ? GENRES[(wIdx - 1) % GENRES.length] : null;
-    const cell = (label, name, style) =>
-      '<div style="' + style + '"><b>' + label + '</b><span>' + name + '</span></div>';
+    // D-003: cells carry real set-art thumbnails (Dan: names alone were dull)
+    const cell = (label, name, genre, extra, cls) => {
+      const url = genre ? setThumbURL(genre) : '';
+      return '<div' + (cls ? ' class="' + cls + '"' : '') + ' style="' +
+        (url ? 'background-image:url(' + url + ');background-size:cover;background-position:center;' : '') +
+        (extra || '') + '"><b>' + label + '</b><span>' + name + '</span></div>';
+    };
     wr.innerHTML =
-      (wPrv ? cell('WRAPPED', wPrv.name, 'background:linear-gradient(' + wPrv.sky[1] + ',' + wPrv.sky[2] + ')')
-            : cell('YOUR DEBUT', 'TAKE ONE', '')) +
-      cell('NOW SHOWING', wCur.name, 'background:linear-gradient(' + wCur.sky[1] + ',' + wCur.sky[2] + ');border-color:var(--gold)') +
-      cell('COMING SOON', wNxt.name, 'opacity:.55');
+      (wPrv ? cell('WRAPPED', wPrv.name, wPrv)
+            : cell('YOUR DEBUT', 'TAKE ONE', null)) +
+      cell('NOW SHOWING', wCur.name, wCur, 'border-color:var(--gold)') +
+      cell('COMING SOON', wNxt.name, wNxt, '', 'soon');
   }
   // locked features stay VISIBLE but dimmed with an unlock hint (Dan: the zero
   // state hid the future — an empty shelf reads as a broken app, not a promise)
@@ -2161,15 +2288,27 @@ function refreshHome(){
   const left = DAILY_FREE + S.daily.adExtras - S.daily.used;
   $('dailyInfo').textContent = 'Attempts left today: ' + left + '  ·  Today\'s best: ' + S.daily.todayBest + '  ·  All-time: ' + S.daily.best;
   $('btnDailyPlay').disabled = left <= 0;
-  $('btnDailyAd').disabled = S.daily.adExtras >= DAILY_AD_MAX;
+  const adsLeft = DAILY_AD_MAX - S.daily.adExtras;      // D-004: visible cap
+  $('btnDailyAd').disabled = adsLeft <= 0;
+  $('btnDailyAd').textContent = adsLeft > 0
+    ? '🎞️ EXTRA ATTEMPT (ad · ' + adsLeft + '/' + DAILY_AD_MAX + ' left today)'
+    : '🎞️ NO MORE EXTRAS TODAY — back at midnight 🌙';
+  // D-005: today's gimmick on the daily screen (same slate worldwide)
+  const dm = dailyMod();
+  $('dailyMod').innerHTML = '<b>TODAY\'S GIMMICK · ' + dm.name + '</b><br>' + dm.quip;
   // cast + wardrobe (variant chips bought with print wallet)
   const cl = $('castList'); cl.innerHTML = '';
   for (const cst of COSTUMES) {
     const owned = S.unlocked.includes(cst.id);
     const div = document.createElement('div');
     div.className = 'card' + (owned ? '' : ' locked') + (S.selected === cst.id ? ' done' : '');
-    div.innerHTML = '<span class="who">' + cst.icon + '</span><h3>' + cst.name + (S.selected === cst.id ? ' ✓' : '') + '</h3><p>' +
-      (owned ? cst.bio : 'Unlocks at Scene ' + cst.unlock) + '</p>';
+    // D-006: real rig portrait on every card — owned in the WORN colorway,
+    // locked as a silhouette tease (shape promises, identity withholds)
+    const pvIdx = owned ? (S.variants[cst.id] || 0) : 0;
+    div.innerHTML = '<img class="portrait" id="pv-' + cst.id + '" alt="" ' +
+      'src="' + portraitURL(cst.id, pvIdx, !owned) + '">' +
+      '<h3>' + cst.name + (S.selected === cst.id ? ' ✓' : '') + '</h3><p>' +
+      (owned ? cst.bio : 'Unlocks at Scene ' + cst.unlock + ' — who could it be?') + '</p>';
     if (owned) {
       const sel = document.createElement('button');
       sel.textContent = S.selected === cst.id ? 'STARRING' : 'SELECT';
@@ -2184,8 +2323,14 @@ function refreshHome(){
         const own = ownedIdx(cst.id).includes(idx);
         const active = (S.variants[cst.id] || 0) === idx;
         c.textContent = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + '🖨'));
-        c.setAttribute('aria-label', v.name + (own ? (active ? ', worn' : ', owned') : ', costs ' + v.price + ' prints'));
-        c.onclick = () => buyOrSelectVariant(cst.id, idx);
+        c.setAttribute('aria-label', v.name + (own ? (active ? ', worn' : ', owned') : ', costs ' + v.price + ' prints; tap to preview'));
+        c.onclick = () => {
+          // D-006: EVERY unowned tap previews on the card portrait first —
+          // buying is always the second tap, never a surprise
+          const img = $('pv-' + cst.id);
+          if (img) img.src = portraitURL(cst.id, idx, false);
+          buyOrSelectVariant(cst.id, idx);
+        };
         chips.appendChild(c);
       });
       div.appendChild(chips);
@@ -2234,11 +2379,14 @@ $('btnDaily').onclick = () => showScreen('daily');
 $('btnDailyPlay').onclick = () => { ac(); playDaily(); };
 $('btnDailyAd').onclick = () => {
   // REWARDED-AD PLACEHOLDER: real SDK arrives in Phase 5; same flow, real ad.
+  // D-004 hardening: cap enforced HERE too, not only via the disabled state —
+  // and the label (set in refreshHome) always shows how many remain, so the
+  // 3/day limit is visible to players and to App Review.
+  if (S.daily.adExtras >= DAILY_AD_MAX) return;
   const b = $('btnDailyAd');
   b.disabled = true; b.textContent = '🎞️ AD PLAYING (placeholder)…';
   setTimeout(() => {
     S.daily.adExtras++; persist();
-    b.textContent = '🎞️ EXTRA ATTEMPT (ad — placeholder in beta)';
     refreshHome();
     toast('+1 attempt earned');
   }, 3000);
@@ -2272,8 +2420,14 @@ $('btnShare').onclick = shareCard;
 // into a test condition. PHASE 5 HARD GATE: strip before App Store build.
 let qaTaps = 0;
 $('verLine').onclick = () => {
-  if (++qaTaps === 5) { $('qaPanel').style.display = ''; toast('🧪 Test mode revealed'); }
+  if (++qaTaps === 5) { $('qaPanel').style.display = ''; qaDiag(); toast('🧪 Test mode revealed'); }
 };
+function qaDiag(){    // D-002 on-device layout evidence (env-probe vs fallback)
+  $('qaDiag').textContent =
+    `insets T/B: ${SAFE_T}/${SAFE_B}px · viewport: ${window.innerWidth}×${window.innerHeight}` +
+    ` · scale: ${SCALE.toFixed(3)} · dpr: ${window.devicePixelRatio || 1}` +
+    ` · platform: ${(window.Capacitor && window.Capacitor.getPlatform) ? window.Capacitor.getPlatform() : 'web'}`;
+}
 function qaDone(msg){ persist(); refreshHome(); toast('🧪 ' + msg); }
 $('qaBackup').onclick = () => {
   localStorage.setItem(SAVE_KEY + '_qa_backup', localStorage.getItem(SAVE_KEY) || '');
@@ -2671,6 +2825,26 @@ function propsKaiju(c){
     const zx = 396 + (322 - 396) * t, zy = 196 + (252 - 196) * t;
     c.beginPath(); c.moveTo(zx - 2, zy - 2); c.lineTo(zx + 2, zy + 2); c.stroke();
   }
+}
+
+// D-003: poster-wall thumbnails — REAL set art, not gradients. Reuses
+// buildSetCache wholesale (renders the genre into the global cache, crops the
+// scenic band, restores the gameplay cache), so posters can never drift from
+// what the player actually shoots in. Cached: 6 renders max per session.
+const setThumbCache = {};
+function setThumbURL(genre){
+  if (setThumbCache[genre.id]) return setThumbCache[genre.id];
+  if (typeof document.createElement !== 'function') return '';  // headless guard
+  const keepCache = setCache, keepId = cachedGenreId;
+  buildSetCache(genre);
+  const t = document.createElement('canvas');
+  t.width = 176; t.height = 192;                 // 2× the 88×96 wall cell
+  const g = t.getContext('2d');
+  // crop the scenic band (horizon props → floor), skipping rig/HUD space
+  const sy = setCache.height * (300 / H), sh = setCache.height * (330 / H);
+  g.drawImage(setCache, 0, sy, setCache.width, sh, 0, 0, 176, 192);
+  setCache = keepCache; cachedGenreId = keepId;  // gameplay cache untouched
+  return (setThumbCache[genre.id] = t.toDataURL());
 }
 
 function buildSetCache(genre){
