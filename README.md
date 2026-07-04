@@ -15,6 +15,7 @@ Everything lives in this repo, organized in five groups. **Start here, then foll
 | Group | Doc | What it holds | Update cadence |
 |---|---|---|---|
 | **Governance** | [CLAUDE.md](CLAUDE.md) | Working rules, roles, operational lessons | on new lessons |
+| | [CASE-STUDY.md](CASE-STUDY.md) | Honest living case study of the AI-native collaboration | **weekly (Sun)** |
 | | [STATUS.md](STATUS.md) | Session log + current next steps | **every session** |
 | | [DECISIONS.md](DECISIONS.md) | Every significant choice and its *why* | **every session** |
 | | [MAINTENANCE.md](MAINTENANCE.md) | The routine checklist (automated daily) | on process change |
