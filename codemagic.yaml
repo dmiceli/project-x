@@ -12,9 +12,8 @@ workflows:
     environment:
       xcode: latest
       node: 20
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.dmiceli.take47
+      vars:
+        BUNDLE_ID: com.dmiceli.take47
     triggering:
       events: []                 # manual "Start new build" while we stabilize;
                                  # switch to push-triggered once the first build is green
@@ -23,8 +22,16 @@ workflows:
         script: npm ci
       - name: Sync web game into the iOS shell
         script: npx cap sync ios
-      - name: Use signing profiles
-        script: xcode-project use-profiles
+      - name: Fetch or CREATE signing files via App Store Connect
+        # first build on a fresh Apple account: --create makes the distribution
+        # certificate + App Store provisioning profile through the API key.
+        # (The environment ios_signing block only FETCHES already-stored files —
+        # that's what failed builds #1/#2 before any step ran.)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Stamp build number
         script: |
           cd ios/App

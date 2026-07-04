@@ -20,7 +20,7 @@ Dan pushes → Codemagic builds/signs → TestFlight processes (~15-30 min) → 
 
 ## Known failure points (and pre-answers)
 
-Bundle ID mismatch between Capacitor config, Xcode project, and App Store Connect record (keep it identical everywhere, set once). API key with insufficient role (use App Manager). Missing 1024×1024 app icon — TestFlight upload rejects without it (icon lands early in Phase 5, not last). First build always takes debugging — schedule the *hello-world TestFlight build* as its own session before the game is final ([common issues](https://docs.codemagic.io/troubleshooting/common-ios-issues/)).
+Bundle ID mismatch between Capacitor config, Xcode project, and App Store Connect record (keep it identical everywhere, set once). API key with insufficient role (use App Manager). Missing 1024×1024 app icon — TestFlight upload rejects without it (icon lands early in Phase 5, not last). First build always takes debugging — schedule the *hello-world TestFlight build* as its own session before the game is final. **Learned 2026-07-04 (builds #1–#2):** the yaml `environment.ios_signing` block only FETCHES signing files already stored in Codemagic — on a fresh Apple account it fails instantly with "No matching profiles found." Fresh accounts must use the script flow: `keychain initialize` → `app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create` → `keychain add-certificates` → `xcode-project use-profiles` — the `--create` makes the cert + profile through the API key ([common issues](https://docs.codemagic.io/troubleshooting/common-ios-issues/)).
 
 ## Dan-facing summary
 
