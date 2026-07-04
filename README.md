@@ -29,8 +29,11 @@ Everything lives in this repo, organized in five groups. **Start here, then foll
 | **Quality** | [ARCHITECTURE.md](ARCHITECTURE.md) | Code map, diagrams, invariants | on structural change |
 | | [BETA-READINESS.md](BETA-READINESS.md) | The calibrated (5/10 rigor) gate list to TestFlight | per gate |
 | | [QA-PLAN.md](QA-PLAN.md) | Structured test sessions w/ Test Mode steps | per session plan |
+| | [DEFECTS.md](DEFECTS.md) | Defect register: report → root cause → fix → verified | **on every report** |
 | | `tools/` | `render_docs_diagrams.py` (regenerates the diagrams) | with diagrams |
 | **Launch** | [PIPELINE.md](PIPELINE.md) | The no-Mac build runbook (Capacitor + Codemagic) | Phase 5 |
+| | [CHANGELOG.md](CHANGELOG.md) | Engineering changelog, one entry per shipped build | per build |
+| | [`releases/`](releases/) | Per-build record: release notes, QA report, known issues, store metadata | per build |
 | | [MARKETING.md](MARKETING.md) | ASO + launch plan ("the fail is the ad") | pre-launch |
 | | [TRENDS.md](TRENDS.md) | Market research snapshot | stable |
 | | [PRIVACY.md](PRIVACY.md) | Privacy policy (offline-first) | on any SDK change |

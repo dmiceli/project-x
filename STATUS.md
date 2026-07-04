@@ -116,8 +116,11 @@
 
 - 2026-07-04: **PHASE 5 OPENED.** Repo Capacitor-ized (runbook step 1 ✓): package.json/lockfile, capacitor.config (com.dmiceli.take47), generated ios/ Xcode project customized (real 1024 icon in the asset catalog, brand splash ×3, portrait-only, ITSAppUsesNonExemptEncryption=false), codemagic.yaml (manual-trigger ios-testflight workflow), node_modules gitignored. **Save-durability hard gate SHIPPED:** persist() mirrors the blob to Capacitor Preferences; boot restores + reloads once if iOS purged WebView storage; pure no-op in browsers — all three paths verified headlessly. Dan's ~25-min account checklist appended to PIPELINE.md.
 
+- 2026-07-04 (late night): **🎬 TAKE 47 IS ON TESTFLIGHT.** Checklist A–C done by Dan (name "TAKE 47" was available ✓; ASC API key; Codemagic integration `take47-asc-key`). First build session took 7 takes, on-brand: #1/#2 empty signing vault + misnamed integration; #3 Capacitor CLI needs Node 22; #4 script-flow `--create` can't mint a cert without a private-key secret; #5 proved the automatic path *also* only fetches (vault still empty); #6 **signing solved** — cert generated in Codemagic's vault via the integration (UI button, no key material handled), App Store profile created at developer.apple.com + fetched into the vault → IPA built & signed, Apple upload check bounced portrait-only-without-fullscreen (90474); #7 after `UIRequiresFullScreen` → **uploaded, processed, "Ready to Submit."** Internal group **"Crew"** created (automatic distribution ON = every green build auto-lands on testers); Dan invited. Total cost: ~12 of 500 free build minutes. Known noise: Codemagic's post-upload "App Store distribution" step shows red even though the upload succeeded — investigate log on next build.
+
 ## Next steps
-1. **Dan: PIPELINE.md checklist A–C** (~25 min: App Store Connect app record — the "TAKE 47" name-availability moment — API key, Codemagic hookup).
-2. **Together: first hello-world TestFlight build** (checklist D — budgeted as its own debugging session).
-3. Then in the wrapper: real haptics → Game Center leaderboard → reset notification (approved wins); QA-panel strip gate before *submission* (panel stays through TestFlight).
-4. Beta-parallel: store-conversion kit ("the fail is the ad"); schedule the cold playtest volunteer; pre-submission full QA (VoiceOver pass + dedicated copy read).
+1. **Dan: accept the TestFlight invite** (email → TestFlight app → install TAKE 47) and play the real thing on-device: launch, splash/icon, save survives app kill, feel vs. the Pages build.
+2. Wrapper features now that the pipeline is proven: real haptics → Game Center leaderboard → reset notification (approved wins).
+3. Pipeline housekeeping: diagnose the red post-processing step; flip codemagic.yaml to push-triggered once stable; fix its stale "creates and stores" comment (it only fetches — the vault does the storing); update PIPELINE.md failure table.
+4. QA-panel strip gate before *submission* (panel stays through TestFlight).
+5. Beta-parallel: store-conversion kit ("the fail is the ad"); schedule the cold playtest volunteer; pre-submission full QA (VoiceOver pass + dedicated copy read).

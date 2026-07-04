@@ -11,6 +11,7 @@
 - Every significant change in STATUS has a DECISIONS.md row with the *why*.
 - CLAUDE.md operational lessons updated when a new lesson was learned (not per-session noise).
 - BACKLOG.md: new ideas landed there, shipped items removed.
+- **Release records** (from TestFlight beta on): every reported defect has a DEFECTS.md row with current status; every shipped build has its CHANGELOG.md entry and `releases/X.Y-buildN.md` file (notes + QA report + known issues; store metadata snapshot on App Store submissions).
 
 **2. Codebase health (app/index.html — use Read/Edit tools, never shell reads: mount READ-cap)**
 - File header block still true (architecture, privacy posture, a11y posture).

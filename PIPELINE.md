@@ -20,7 +20,20 @@ Dan pushes → Codemagic builds/signs → TestFlight processes (~15-30 min) → 
 
 ## Known failure points (and pre-answers)
 
-Bundle ID mismatch between Capacitor config, Xcode project, and App Store Connect record (keep it identical everywhere, set once). API key with insufficient role (use App Manager). Missing 1024×1024 app icon — TestFlight upload rejects without it (icon lands early in Phase 5, not last). First build always takes debugging — schedule the *hello-world TestFlight build* as its own session before the game is final. **Learned 2026-07-04 (builds #1–#2):** the yaml `environment.ios_signing` block only FETCHES signing files already stored in Codemagic — on a fresh Apple account it fails instantly with "No matching profiles found." Fresh accounts must use the script flow: `keychain initialize` → `app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create` → `keychain add-certificates` → `xcode-project use-profiles` — the `--create` makes the cert + profile through the API key ([common issues](https://docs.codemagic.io/troubleshooting/common-ios-issues/)).
+Bundle ID mismatch between Capacitor config, Xcode project, and App Store Connect record (keep it identical everywhere, set once). API key with insufficient role (use App Manager). Missing 1024×1024 app icon — TestFlight upload rejects without it (icon lands early in Phase 5, not last). First build always takes debugging — schedule the *hello-world TestFlight build* as its own session before the game is final. **Learned 2026-07-04, corrected after builds #1–#7 (final):** the yaml `environment.ios_signing` block only FETCHES signing files already stored in **Codemagic's Code signing identities vault** — an empty vault fails instantly with "No matching profiles found," and the script flow (`fetch-signing-files --create`) is no rescue because creating a certificate requires a `CERTIFICATE_PRIVATE_KEY` secret. **The right one-time fix is filling the vault in the UI (~5 min, no key material handled):** Codemagic → Team settings → Code signing identities → iOS certificates → *Generate certificate* (Apple Distribution, via the ASC integration) → developer.apple.com → Profiles → create an App Store profile for the bundle ID using that certificate → back in Codemagic → iOS provisioning profiles → *Fetch profiles*. Then the plain `ios_signing` block just works, forever.
+
+## ✅ First-build session log (2026-07-04, "7 takes" — total ~12 build minutes)
+
+| # | Failure | Lesson |
+|---|---------|--------|
+| 1–2 | "No matching profiles found" (instant) | Vault empty + integration then misnamed |
+| 3 | Capacitor CLI: NodeJS >= 22 required | `node: 22` in yaml |
+| 4 | Archive: "requires a provisioning profile"; log: "Cannot save Signing Certificates without certificate private key" | Script `--create` can't mint certs without a key secret |
+| 5 | "No matching profiles found" (instant) | Proved `ios_signing` never creates — vault was still empty |
+| 6 | Upload check 90474: portrait-only needs all orientations or fullscreen | `UIRequiresFullScreen=true` in Info.plist |
+| 7 | **NONE — uploaded, processed, "Ready to Submit" in TestFlight** | Known noise: Codemagic's post-upload "App Store distribution" step showed red despite success — check log next build |
+
+Vault contents (Codemagic → Code signing identities): certificate `take47_distribution` + profile `take47_appstore_profile` (both expire 2027-07-03 — renew both then). Internal group **Crew** (automatic distribution ON) + Dan invited. The per-release loop below is now LIVE (manual trigger for now; flip `triggering` to push events once stable).
 
 ## Dan-facing summary
 

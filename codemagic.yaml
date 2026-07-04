@@ -12,11 +12,11 @@ workflows:
     environment:
       xcode: latest
       node: 22       # Capacitor 8 CLI hard-requires Node >= 22 (build #3 lesson)
-      # automatic signing via the ASC integration: Codemagic creates AND stores
-      # the distribution certificate + App Store profile itself — no private
-      # key secret needed. (Builds #1/#2 only failed on this path because the
-      # integration was misnamed at the time; build #4 showed the script path
-      # needs a CERTIFICATE_PRIVATE_KEY secret we'd rather not manage.)
+      # ios_signing FETCHES from Codemagic's Code signing identities vault —
+      # it never creates. The vault was filled once via UI (2026-07-04):
+      # certificate take47_distribution + profile take47_appstore_profile,
+      # both expire 2027-07-03. No key secrets in the yaml, ever.
+      # Full story: PIPELINE.md "First-build session log".
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.dmiceli.take47
