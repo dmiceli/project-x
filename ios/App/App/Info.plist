@@ -40,6 +40,11 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<!-- Portrait-only apps must opt out of iPad multitasking (Apple upload
+	     check 90474, build #6): declaring fullscreen-always makes portrait-only
+	     legal on iPad. Right for a one-thumb portrait game anyway. -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
