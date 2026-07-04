@@ -2,6 +2,20 @@
 
 One entry per build that reaches a phone (TestFlight or App Store). Newest first. Format loosely follows [Keep a Changelog](https://keepachangelog.com): Added / Changed / Fixed / Removed. User-facing release notes live in `releases/`; this file is the engineering truth.
 
+## [1.0 (build 10)] — 2026-07-04 · beta-night build (icons, copy, share grid, reminder)
+
+**Added**
+- D-014 icon system in-game: 10 runtime-drawn glyphs (director's-chair HOME, slate DAILY, masks CAST, crate PROPS, projector REEL, framed-star POSTERS, trophy-v2 AWARDS, megaphone SHARE, aperture SETTINGS, film-print ticket for prints) replacing the generic emoji tier; emoji retained as fallback; prints glyph on wallet chip + BUY buttons.
+- Wordle-style daily share grid (NEXT-10 #2): 🟩 perfect / 🟨 clean / 🟥 crash per take, in shareText with date + gimmick.
+- 🌙 Midnight call-sheet reminder (approved big win): local notification (fully on-device), offered once in-context on the DAILIES REPORT card, Settings toggle, web no-op.
+
+**Changed (D-015 cold-read verdicts, all Dan-approved)**
+- First print earn now introduces the currency explicitly; first clean landing teaches clean-vs-perfect.
+- 🏆 AWARDS / THE AWARDS SHELF (was HIGHLIGHTS / HIGHLIGHT REEL — collided with THE REEL).
+- "START OVER (back to Scene 1 — your record is kept)" (was RESHOOT FROM SCENE 1).
+- PLAY TODAY'S CHALLENGE; "gauntlet" demoted to flavor copy; share text says "daily challenge".
+- "⭐ MAKE THEM THE STAR" (was STAR THEM).
+
 ## [1.0 (build 9)] — 2026-07-04 · pre-beta polish (first 60 seconds)
 
 **Added**

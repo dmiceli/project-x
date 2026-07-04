@@ -77,6 +77,9 @@
     background:var(--panel);color:var(--ink);border:1.5px solid var(--dim);
     border-radius:10px;font-size:17px;font-weight:600;cursor:pointer;padding:10px}
   button.primary{background:var(--gold);color:#191010;border-color:var(--gold);font-size:19px}
+  /* D-019: long CTAs wrap deliberately — bold action line + small detail line */
+  button .sub{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-top:2px;line-height:1.3}
+  button.primary .sub{color:#5a4510}
   button.back{border-color:transparent;color:var(--dim);margin-top:18px}
   button:disabled{opacity:.45;cursor:default}
   button[aria-pressed="true"]{border-color:var(--good);color:var(--good)}
@@ -133,6 +136,22 @@
   .card .propart{float:right;width:66px;height:66px;margin:0 0 4px 8px;
     background:#140e0b;border:1px solid #3a2a22;border-radius:8px}
   .card .counters{color:var(--gold);font-size:12px;margin-top:4px}
+  /* D-022: the production slip — home stats get a quiet frame: panel + film
+     sprocket rails (echoes the prints chip), gold scene number. Subtle on
+     purpose; it's a slate line, not a billboard. */
+  #homeStats{position:relative;background:var(--panel);border:1px solid #3a2a22;
+    border-radius:8px;padding:9px 22px;max-width:min(360px,90vw);margin:10px auto 18px;
+    font-size:13px;line-height:1.6}
+  #homeStats::before,#homeStats::after{content:'';position:absolute;top:4px;bottom:4px;
+    width:5px;border-radius:2px;
+    background:repeating-linear-gradient(to bottom,#3a2c22 0 4px,transparent 4px 9px)}
+  #homeStats::before{left:7px}
+  #homeStats::after{right:7px}
+  #homeStats b{color:var(--gold)}
+  /* D-021: inline stat-link (wallet → shop) — overrides the block button base */
+  button.linky{display:inline;width:auto;min-height:0;margin:0;padding:0 2px;
+    background:none;border:none;color:var(--gold);font-size:inherit;font-weight:700;
+    text-decoration:underline dotted;cursor:pointer}
   /* D-009: wallet chip — the shop headline */
   #propWallet{display:inline-block;border:1.5px solid var(--gold);border-radius:999px;
     padding:8px 18px;color:var(--ink);font-size:16px}
@@ -181,12 +200,17 @@
   #gameBar button{width:150px;margin:0}
 
   /* ---- achievement / info toast (aria-live announces it) ---- */
+  /* D-017: hidden state must clear the safe-area offset too — translateY(-120%)
+     left tall toasts peeking under the clock; opacity+pointer-events make the
+     hidden toast truly gone (it has an undo onclick that could steal taps) */
   #toast{position:fixed;top:max(16px,var(--sat,env(safe-area-inset-top)));left:50%;
-    transform:translateX(-50%) translateY(-120%);transition:transform .25s ease;
+    transform:translateX(-50%) translateY(calc(-100% - var(--sat,16px) - 24px));
+    opacity:0;pointer-events:none;
+    transition:transform .25s ease,opacity .25s ease;
     background:var(--panel);border:1.5px solid var(--gold);color:var(--gold);
     padding:12px 22px;border-radius:12px;font-weight:700;font-size:15px;z-index:20;
     max-width:86vw;text-align:center}
-  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
   @media (prefers-reduced-motion: reduce){ #toast{transition:none} }
 
   /* ---- interstitial celebration cards (genre moves, cast unlocks) ---- */
@@ -205,7 +229,9 @@
 <section id="scr-home" class="screen active" aria-label="TAKE 47 home">
   <div class="wall" id="wallRow" aria-hidden="true"></div>
   <h1>TAKE 47</h1>
-  <p class="tag">a stunt double's life</p>
+  <!-- Tagline (Dan-approved 2026-07-04): activates the title's joke. The App
+       Store SUBTITLE stays keyword-bearing and separate (MARKETING.md). -->
+  <p class="tag">the first 46 didn't land.</p>
   <button id="btnPlay" class="primary ticket">ACTION!</button>
   <p class="stats" id="homeStats"></p>
   <p class="grouplabel">ON THE LOT</p>
@@ -248,7 +274,9 @@
   <p class="stats" id="dailyInfo"></p>
   <!-- D-015: buttons/instructions say "challenge"; "gauntlet" stays as flavor -->
   <button id="btnDailyPlay" class="primary">PLAY TODAY'S CHALLENGE</button>
-  <button id="btnDailyAd">🍿 EXTRA ATTEMPT (ad · 3/3 left today)</button>
+  <button id="btnDailyAd">🍿 EXTRA ATTEMPT<span class="sub">watch an ad · 3/3 left today</span></button>
+  <!-- D-020 (Dan): share lives where the result lives -->
+  <button id="btnDailyShare" style="display:none">📣 SHARE TODAY'S RESULT</button>
   <button class="back" data-to="home">← BACK</button>
 </section>
 
@@ -281,8 +309,8 @@
   <button id="tglMotion" aria-pressed="false">REDUCE MOTION: OFF</button>
   <button id="tglNotif" aria-pressed="false">🌙 MIDNIGHT REMINDER: OFF</button>
   <!-- D-015: "RESHOOT FROM SCENE 1" read as a scary wipe AND collided with the
-       Reel's harmless reshoots (cold-reader find) -->
-  <button id="btnReset">🔄 START OVER (back to Scene 1 — your record is kept)</button>
+       Reel's harmless reshoots (cold-reader find); D-019 two-line CTA -->
+  <button id="btnReset">🔄 START OVER<span class="sub">back to Scene 1 — your record is kept</span></button>
   <button id="btnRestore" disabled>RESTORE PURCHASES (App Store build)</button>
   <a href="../PRIVACY.md" target="_blank" rel="noopener">Privacy policy</a>
   <p class="stats" id="verLine">TAKE 47</p>
@@ -1696,10 +1724,9 @@ function update(dt){
 
   if (state === 'coldopen') {
     // one-time silent cold open (Dan): slate drops, claps, the director calls
-    // ACTION!, and the very first thing a new player does is flip. No audio —
-    // iOS hasn't unlocked it yet, so it plays as the silent-film beat it is.
-    // Reduce-motion: static slate, shorter hold. Any tap skips (input handler).
-    if (stateT >= (S.set.rm ? 1.4 : 2.3)) { S.reveals.coldOpen = 1; persist(); state = 'ready'; stateT = 0; }
+    // ACTION! — then the scene HOLDS until the player taps (D-016: the timer
+    // version blew past first-time users; the tap IS the confirmation, and
+    // the very first thing a new player does is answer the director).
     return;                                                // stage holds still for the slate
   }
 
@@ -2282,17 +2309,25 @@ function draw(){
     ctx.fillStyle = '#ffd166';
     ctx.fillText((mode === 'reshoot' ? 'RESHOOT · T' : 'TAKE ') + takesScene, 20, 88);
   }
-  // — prints ticket chip —
-  ctx.fillStyle = 'rgba(10,7,5,0.82)';
-  ctx.beginPath(); ctx.roundRect(306, 34, 84, 26, 13); ctx.fill();
-  ctx.fillStyle = '#2e6b4f'; ctx.strokeStyle = '#6ee7b7'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.roundRect(314, 40, 24, 14, 3); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#191010';
-  for (let py = 0; py < 3; py++) { ctx.fillRect(328, 41 + py * 4, 2, 2); }   // perforation
-  ctx.fillStyle = '#6ee7b7';
-  ctx.beginPath(); ctx.arc(320, 47, 2.5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#e8d5b5'; ctx.font = 'bold 15px system-ui, sans-serif';
-  ctx.fillText(String(S.prints), 344, 52);
+  // — prints chip: a strip of FILM, not a battery (D-020 — the old green
+  //   rounded pill sat in the battery corner and read exactly like one) —
+  ctx.fillStyle = 'rgba(10,7,5,0.88)';
+  ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(304, 34, 86, 30, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#3a2c22';                       // sprocket holes, both rails
+  for (let px = 0; px < 6; px++) {
+    ctx.fillRect(309 + px * 14, 37, 5, 4);
+    ctx.fillRect(309 + px * 14, 57, 5, 4);
+  }
+  // D-023 (Dan): the chip showed LIFETIME prints (S.prints) while home showed
+  // the spendable wallet — one currency, one number, everywhere: wallet().
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffd166'; ctx.font = 'bold 15px system-ui, sans-serif';
+  const pStr = String(wallet());
+  const pw = ctx.measureText(pStr).width;
+  ctx.fillText(pStr, 312, 54);
+  ctx.fillStyle = '#a08b72'; ctx.font = 'bold 8px system-ui, sans-serif';
+  ctx.fillText('PRINTS', 312 + pw + 6, 53);
   // D-008: an active prop must be VISIBLE (standing rule) — persistent chip in
   // the lower letterbox band for the whole take, not just a fading popup...
   if (activeItem && (state === 'ready' || state === 'air')) {
@@ -2390,9 +2425,16 @@ function draw(){
       ctx.beginPath(); ctx.moveTo(80, 474); ctx.lineTo(70, 496); ctx.lineTo(100, 474); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#191010'; ctx.font = 'bold 22px Georgia, serif'; ctx.textAlign = 'center';
       ctx.fillText('ACTION!', 135, 460);
+      // D-016: the scene waits for the player — pulsing invitation (static
+      // under reduce-motion; pulse is 0.5Hz-ish, far under the 3Hz flash rule)
+      ctx.globalAlpha = rm ? 1 : 0.65 + 0.35 * Math.sin(t * 3);
+      ctx.fillStyle = '#ffd166'; ctx.font = 'bold 18px system-ui, sans-serif';
+      ctx.fillText('🎬 TAP TO ROLL', W / 2, 640);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = '#a08b72'; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('tap to skip ahead', W / 2, 660);
     }
-    ctx.fillStyle = '#a08b72'; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('tap to skip', W / 2, 660);
   }
   if (state === 'ready') {
     // prompts live above the tallest platform + character (y < 430 zone)
@@ -2429,8 +2471,11 @@ function draw(){
       ctx.fillText('CUT!', W / 2, 305);
     }
     ctx.fillStyle = '#e8d5b5'; ctx.font = '15px system-ui, sans-serif';
-    // the lesson: how far off upright was that? (angle crashes only)
-    if (lastMiss !== null) {
+    // the lesson: how far off upright was that? (angle crashes only — and
+    // NOT on the daily's final life: the report moment outranks the lecture,
+    // and the two used to collide on screen. D-018.)
+    const dailyOver = mode === 'daily' && dLives <= 0;
+    if (lastMiss !== null && !dailyOver) {
       ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 15px system-ui, sans-serif';
       ctx.fillText('↺ missed upright by ' + lastMiss + '°', W / 2, 352);
       ctx.fillStyle = '#e8d5b5'; ctx.font = '15px system-ui, sans-serif';
@@ -2449,14 +2494,11 @@ function draw(){
       ctx.fillStyle = '#6ee7b7';
       ctx.fillText('TAP TO KEEP SHOOTING', W / 2, 420);
     } else {
-      // D-005 DAILIES REPORT: the wrap screen is the daily's shareable moment
-      ctx.fillText('🎬 DAILIES REPORT — ' + dailyMod().name, W / 2, 328);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui, sans-serif';
-      ctx.fillText('Scenes cleared: ' + (dStep - 1) + '   Best today: ' + S.daily.todayBest, W / 2, 362);
-      ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = '#e8d5b5';
-      ctx.fillText('All-time record: ' + S.daily.best + '   ·   New slate at midnight 🌙', W / 2, 390);
-      ctx.fillStyle = '#6ee7b7';
-      ctx.fillText('TAP TO CONTINUE — SHARE YOUR REPORT BELOW', W / 2, 424);
+      // D-018: the HTML DAILIES REPORT card carries all the stats one tap
+      // later — the canvas keeps the moment clean instead of duplicating it
+      ctx.fillText("THAT'S A WRAP ON TODAY", W / 2, 345);
+      ctx.fillStyle = '#6ee7b7'; ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText('🎬 TAP FOR YOUR DAILIES REPORT', W / 2, 395);
     }
   }
   if (flash > 0 && !S.set.rm) { ctx.fillStyle = 'rgba(248,113,113,' + (flash * 0.25) + ')'; ctx.fillRect(0, 0, W, H); }
@@ -2477,7 +2519,7 @@ function buildShareCard(){
   c.fillStyle = '#f87171'; c.font = 'bold 150px Georgia, serif';
   c.fillText('BEAT THIS.', 500, 340);
   c.fillStyle = '#e8d5b5'; c.font = '44px system-ui, sans-serif';
-  if (mode === 'daily') {
+  if ((shareKind || mode) === 'daily') {
     // D-005: the gimmick IS the taunt — "you crashed under MY conditions"
     c.fillText('TODAY\'S GAUNTLET · ' + dailyMod().name + ' · SCENES CLEARED', 500, 500);
     c.fillStyle = '#fff'; c.font = 'bold 190px system-ui, sans-serif';
@@ -2503,15 +2545,19 @@ function buildShareCard(){
   c.fillText('— the director', 500, 1005);
   c.fillStyle = '#ffd166'; c.font = 'bold 64px Georgia, serif';
   c.fillText('TAKE 47', 500, 1140);
+  // the tagline lands the title's joke on strangers (Dan-approved lockup)
+  c.fillStyle = '#e8d5b5'; c.font = 'italic 30px Georgia, serif';
+  c.fillText('the first 46 didn’t land.', 500, 1178);
   // the link lives ON the image — screenshots and re-shares keep it playable
   c.fillStyle = '#a08b72'; c.font = '34px system-ui, sans-serif';
-  c.fillText('play: dmiceli.github.io/project-x/app', 500, 1205);
+  c.fillText('play: dmiceli.github.io/project-x/app', 500, 1218);
   return s;
 }
 // Challenge text travels WITH the image so the recipient can actually play —
 // a taunt without a link is a dead end.
+let shareKind = null;   // D-020: daily-screen share forces the daily variant
 function shareText(){
-  if (mode === 'daily') {
+  if ((shareKind || mode) === 'daily') {
     // Wordle-grid share (NEXT-10 #2): spoiler-free, same slate worldwide.
     // 🟩 perfect · 🟨 clean · 🟥 crash — capped so long runs stay one line
     const grid = dailyGrid.slice(0, 14).join('') + (dailyGrid.length > 14 ? '…' : '');
@@ -2610,8 +2656,16 @@ function revealRules(){
 }
 function refreshHome(){
   const tomorrow = S.furthest >= 3 ? '  ·  New daily & call sheet at midnight 🌙' : '';
-  $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  Wallet: ' + wallet() + ' prints' +
+  // D-021 (Dan): the wallet stat is a shortcut to the shop once prints exist.
+  // (The IN-GAME chip stays untappable by design: the canvas is one big
+  // button — tap = jump/lock — and a hot corner would cause misjumps.)
+  const hasPrints = (S.prints + (S.printsSpent || 0)) > 0;
+  $('homeStats').innerHTML = '<b>SCENE ' + S.scene + '</b>  ·  ' + S.takes + ' lifetime takes  ·  ' +
+    (hasPrints ? '<button class="linky" id="walletLink">Wallet: ' + wallet() + ' prints</button>'
+               : 'Wallet: ' + wallet() + ' prints') +
     (S.furthest > S.scene ? '  ·  Record: Scene ' + S.furthest : '') + tomorrow;
+  const wl = $('walletLink');
+  if (wl) wl.onclick = () => showScreen('props');
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
   // the poster wall shows the CAREER, not placeholders (Dan QA finding):
   // last wrap · now showing · coming soon
@@ -2706,12 +2760,14 @@ function refreshHome(){
   $('btnDailyPlay').disabled = left <= 0;
   const adsLeft = DAILY_AD_MAX - S.daily.adExtras;      // D-004: visible cap
   $('btnDailyAd').disabled = adsLeft <= 0;
-  $('btnDailyAd').textContent = adsLeft > 0
-    ? '🍿 EXTRA ATTEMPT (ad · ' + adsLeft + '/' + DAILY_AD_MAX + ' left today)'
-    : '🍿 NO MORE EXTRAS TODAY — back at midnight 🌙';
+  $('btnDailyAd').innerHTML = adsLeft > 0               // D-019: clean two-line CTA
+    ? '🍿 EXTRA ATTEMPT<span class="sub">watch an ad · ' + adsLeft + '/' + DAILY_AD_MAX + ' left today</span>'
+    : '🍿 NO MORE EXTRAS TODAY<span class="sub">new slate at midnight 🌙</span>';
   // D-005: today's gimmick on the daily screen (same slate worldwide)
   const dm = dailyMod();
   $('dailyMod').innerHTML = '<b>TODAY\'S GIMMICK · ' + dm.name + '</b><br>' + dm.quip;
+  // D-020: share appears once today's result exists
+  $('btnDailyShare').style.display = (S.daily.date === todayStr() && S.daily.used > 0) ? '' : 'none';
   // cast + wardrobe (variant chips bought with print wallet)
   const cl = $('castList'); cl.innerHTML = '';
   for (const cst of COSTUMES) {
@@ -2805,6 +2861,10 @@ function refreshHome(){
 $('btnPlay').onclick = () => { ac(); playCampaign(); };
 $('btnDaily').onclick = () => showScreen('daily');
 $('btnDailyPlay').onclick = () => { ac(); playDaily(); };
+$('btnDailyShare').onclick = async () => {   // D-020: share from the daily screen
+  shareKind = 'daily';
+  try { await shareCard(); } finally { shareKind = null; }
+};
 $('btnDailyAd').onclick = () => {
   // REWARDED-AD PLACEHOLDER: real SDK arrives in Phase 5; same flow, real ad.
   // D-004 hardening: cap enforced HERE too, not only via the disabled state —
@@ -2833,12 +2893,12 @@ let resetArmed = false;
 $('btnReset').onclick = () => {
   if (!resetArmed) {
     resetArmed = true;
-    $('btnReset').textContent = '⚠️ SURE? Progress resets, record kept — tap again';
-    setTimeout(() => { resetArmed = false; $('btnReset').textContent = '🔄 START OVER (back to Scene 1 — your record is kept)'; }, 3000);
+    $('btnReset').innerHTML = '⚠️ SURE?<span class="sub">progress resets, record kept — tap again to confirm</span>';
+    setTimeout(() => { resetArmed = false; $('btnReset').innerHTML = '🔄 START OVER<span class="sub">back to Scene 1 — your record is kept</span>'; }, 3000);
     return;
   }
   resetArmed = false;
-  $('btnReset').textContent = '🔄 START OVER (back to Scene 1 — your record is kept)';
+  $('btnReset').innerHTML = '🔄 START OVER<span class="sub">back to Scene 1 — your record is kept</span>';
   resetProgress();
   refreshHome();
 };

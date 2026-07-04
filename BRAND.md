@@ -89,3 +89,7 @@ The six set-sky families are official brand extensions (all dusk-muted = the dea
 **Two tiers found.** On-brand (keep): prop card art, cast rig portraits, poster-wall set art, drawn prints-ticket HUD chip, slate/gimmick chips. Generic (replace): shelf buttons (🎬🎭📦📽️), footrow (🖼🏆📤⚙️), 🏠 HOME. Inline emoji inside toast copy (🧵 🌭 🍿 etc.) are voice, not iconography — keep.
 
 **Proposal:** unified drawn set in the prop-art language (palette + outline + supersample), 9 glyphs: HOME = director's chair ("47" on the back), DAILY = slate, CAST = comedy/tragedy masks, PROPS = stenciled crate, REEL = projector w/ beam, POSTERS = framed one-sheet, HIGHLIGHTS = trophy (weakest — iterate), SHARE = director's megaphone, SETTINGS = lens aperture. Review sheet: assets/icon-system-proposal.png (84/44/28px). Implementation = runtime canvas glyphs via the propIconURL pattern (uiIconURL), aria labels unchanged. Register: D-014.
+
+## Tagline (locked 2026-07-04)
+
+**"the first 46 didn't land."** — always lowercase, always with the period, always paired with the TAKE 47 lockup (it's the punchline; the title is the setup). Never used as the App Store subtitle (that slot is for search keywords). Options considered: "it's take 47. nail it already." and "tap. flip. crash. repeat." — see assets/tagline-options.png.
