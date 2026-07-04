@@ -2,6 +2,26 @@
 
 One entry per build that reaches a phone (TestFlight or App Store). Newest first. Format loosely follows [Keep a Changelog](https://keepachangelog.com): Added / Changed / Fixed / Removed. User-facing release notes live in `releases/`; this file is the engineering truth.
 
+## [1.0 (build 9)] — 2026-07-04 · pre-beta polish (first 60 seconds)
+
+**Added**
+- One-time cold open on fresh saves: slate drop + clap, "ACTION!" bubble, straight into the guided first take — no menu before the first flip. Skippable; reduce-motion variant.
+- First-ever-landing celebration card ("THAT'S A KEEPER") that also introduces the lot.
+- DAILIES REPORT as a real interstitial card: gimmick kicker, record callout, 📣 SHARE on-card (keepOpen), exits to the daily screen (`after` route in the card engine).
+- Real iOS haptics via the Taptic engine (light=lock, medium=landing, heavy×2=crash).
+- New app icon ("A1 WHOA") in the asset catalog + web touch icons.
+
+**Fixed**
+- D-012: FOG OF WAR keeps the cart landing marker (fairness), hides only the arc.
+- D-005 scale bugs: GALE WARNING now on the real wind scale (×1.6 / ±12 crosswind); BUDGET CUTS also tightens landing tolerance (×0.82, 10° floor) so it bites on non-cart steps. Sweep: 120 dates × 12 steps, all bounds hold.
+- D-002 follow-up: env() confirmed dead in WKWebView on-device; inset fallback upgraded to an 11-class device-width table (16 Pro Max 62pt … SE 20pt).
+- D-013: HTML overlay screens vertically centered on tall phones (auto-margin pseudo pair; long lists still scroll).
+- Wardrobe: ALL unowned colorways are preview-first, buy-second (D-006 follow-up); preview persists while deciding.
+
+**Notes**
+- IPA 3.77→1.11 MB: old grain-heavy icon PNGs replaced by flat design.
+- Pages deploy for this commit flaked GitHub-side ("try again later"); re-run triggered. TestFlight unaffected (Codemagic pulls the repo directly).
+
 ## [1.0 (build 8)] — 2026-07-04 · first-night fix batch
 
 **Added**

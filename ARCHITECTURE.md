@@ -18,7 +18,7 @@ Everything is `app/index.html` — one file a browser (and later the Capacitor i
 - **Game engine** — a small state machine (diagram below) plus simple projectile physics. Landings are judged by body angle at the *exact* sub-frame instant of ground contact.
 - **Economy & systems** — prints (earned only), props (consumables with scene-relevance gating), wardrobe, call sheet, achievements, mercy. One invariant everywhere: **assistance never PRINTS, money never buys progress.**
 - **Audio** — synthesized live from oscillators and filtered noise ("deadpan foley, cartoon heart"). No audio files exist.
-- **Save** — one versioned localStorage blob (`t47_save_v1`), written after anything meaningful, with legacy migration. Phase 5 hard gate: move to Capacitor Preferences (iOS can purge WebView storage).
+- **Save** — one versioned localStorage blob (`t47_save_v1`), written after anything meaningful, with legacy migration. The Phase 5 hard gate SHIPPED (build 7): every persist() also mirrors the blob to Capacitor Preferences, and boot restores it if iOS purged WebView storage (pure no-op in browsers).
 - **QA Test Mode** — hidden panel (Settings → 5 taps on the version line) that sets test-prerequisite states. Hard gate: stripped before App Store submission.
 
 ## The game loop

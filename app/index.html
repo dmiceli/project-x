@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  TAKE 47 — v0.9 beta (full game; becomes the Capacitor web root in Phase 5)
+  TAKE 47 — beta (full game; the Capacitor web root — on TestFlight as 1.0 builds 7+)
 
   Architecture: single-file. Canvas renders gameplay only; all menus/settings
   are real HTML buttons (VoiceOver/keyboard accessible). Systems, in file
@@ -20,9 +20,10 @@
 
   PRIVACY: fully offline. One localStorage key holds all game state; no
   network requests, no analytics, no identifiers, no third-party code.
-  Share uses the native sheet, user-initiated only. (Ad SDK arrives in
-  Phase 5 behind Capacitor; see PRIVACY.md. Save moves to Capacitor
-  Preferences in Phase 5 — hard gate, see STATUS watch list.)
+  Share uses the native sheet, user-initiated only. Native services are
+  Apple-operated only (Capacitor Preferences save mirror w/ purge-restore —
+  the Phase 5 hard gate, shipped build 7; Taptic haptics, build 9). Ad SDK
+  still to come — see PRIVACY.md.
 
   ACCESSIBILITY: outcomes pair color with text labels (never color alone);
   reduce-motion kills shake/flash, calms FTUE pulses, and skips the gag-lamp
@@ -859,8 +860,7 @@ const sfx = {
                    tone(1976, 1976, 0.12, 'sine', 0.12, 0.14); },                             // coin glint
   bounce:  () => tone(220, 520, 0.22, 'sine', 0.14)                                           // the one honest boing
 };
-// Haptics: web vibrate where it exists (Android); iOS gets Capacitor Haptics in Phase 5.
-// Real iOS haptics (approved big win, Phase 5): route through the Taptic
+// Haptics (shipped build 9): route through the Taptic
 // engine when the Capacitor shell provides it; web keeps navigator.vibrate
 // (Android browsers). Grammar: light = lock tap, medium = landings/rewards,
 // heavy ×2 = crashes (arrays are our crash patterns). Same toggle governs all.

@@ -6,11 +6,9 @@ Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgot
 - Characters 7–8: Robot Double, Grandma
 - Slow-mo replay of spectacular crashes (crash-comedy amplifier)
 - More director quips; quip packs per scene range
-- Haptics polish pass (light tap on lock, thud on crash)
 
 ## From overnight research (2026-07-02, see TRENDS.md / THEME.md)
 - Cosmetic character IAP (premium skins, no progression impact) — hybrid-casual data says IAP is where revenue lives if retention proves out.
-- Scene genres (sets change genre every ~10-15 scenes: western, sci-fi, noir...) — **Dan decision pending: v1 art scope vs flagship 1.1 update.** See THEME.md.
 - Quip packs per director archetype / genre block.
 - Facade-fall homage scene ("The Nail") as a milestone BIG STUNT.
 
@@ -25,9 +23,9 @@ Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgot
 
 ## Deferred process items
 - Third-party analytics: reconsider before public launch only if TestFlight feedback is insufficient (decided 2026-07-02: Apple built-in only for v1).
-- Home poster-wall thumbnails could reflect actually wrapped sets (live data, not decorative)
 
 *(Removed as shipped/promoted, 2026-07-03 maintenance: Game Center leaderboard → Phase 5 via BIG-WINS; in-game face pass → shipped; per-set floor accents → shipped with the six-set background rollout.)*
+*(Removed as shipped, 2026-07-04 maintenance: haptics polish pass → real Taptic haptics, build 9; scene-genre sets → shipped full in v1 (six sets, Dan 2026-07-03); live poster-wall career data → shipped in express-QA fixes + D-003 thumbnails.)*
 
 - **Native safe-area inset plugin (post-beta hardening):** env(safe-area-inset-*) is confirmed dead in our WKWebView (build-8 on-device evidence, D-002). Take 9 ships a per-device-width inference table — correct for all current iPhones but a maintenance liability as new models appear. Adopt a native inset source (e.g. a Capacitor safe-area plugin) once the beta settles; drop the table then.
 

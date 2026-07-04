@@ -82,3 +82,10 @@ The six set-sky families are official brand extensions (all dusk-muted = the dea
 - Any future set or hazard color gets run through this audit (script pattern in session scratchpad; thresholds above) before shipping.
 
 **Art-direction verdict:** warm set-black base + muted dusk sets + single warm accents = deadpan-with-heart, as intended. Brighter hazard colors are consistent with the direction — a too-green rubber suit and a too-gray foam windscreen ARE film-set jokes, and readability-first is a standing rule.
+
+
+## Iconography audit (2026-07-04 overnight, Dan-requested — AWAITING VERDICT)
+
+**Two tiers found.** On-brand (keep): prop card art, cast rig portraits, poster-wall set art, drawn prints-ticket HUD chip, slate/gimmick chips. Generic (replace): shelf buttons (🎬🎭📦📽️), footrow (🖼🏆📤⚙️), 🏠 HOME. Inline emoji inside toast copy (🧵 🌭 🍿 etc.) are voice, not iconography — keep.
+
+**Proposal:** unified drawn set in the prop-art language (palette + outline + supersample), 9 glyphs: HOME = director's chair ("47" on the back), DAILY = slate, CAST = comedy/tragedy masks, PROPS = stenciled crate, REEL = projector w/ beam, POSTERS = framed one-sheet, HIGHLIGHTS = trophy (weakest — iterate), SHARE = director's megaphone, SETTINGS = lens aperture. Review sheet: assets/icon-system-proposal.png (84/44/28px). Implementation = runtime canvas glyphs via the propIconURL pattern (uiIconURL), aria labels unchanged. Register: D-014.

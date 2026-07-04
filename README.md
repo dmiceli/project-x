@@ -23,6 +23,7 @@ Everything lives in this repo, organized in five groups. **Start here, then foll
 | | [BACKLOG.md](BACKLOG.md) | Post-v1 parking lot (ideas go here, not into v1) | **every session** |
 | | [EXPLORATIONS.md](EXPLORATIONS.md) | Design studies with options + verdicts | per study |
 | | [BIG-WINS.md](BIG-WINS.md) | The five MVP success levers + status | on status change |
+| | [NEXT-10.md](NEXT-10.md) | Researched pre-launch roadmap: 10 must-haves + the 3 kill-risks | on verdicts |
 | **Brand & Art** | [BRAND.md](BRAND.md) | Palette, copy registers, set palettes, a11y color rules | on identity change |
 | | [THEME.md](THEME.md) | Movie-set lore + IP guardrails | stable |
 | | [ART-RESEARCH.md](ART-RESEARCH.md) | The layered-background pattern + per-set plans | stable |
@@ -31,6 +32,7 @@ Everything lives in this repo, organized in five groups. **Start here, then foll
 | | [BETA-READINESS.md](BETA-READINESS.md) | The calibrated (5/10 rigor) gate list to TestFlight | per gate |
 | | [QA-PLAN.md](QA-PLAN.md) | Structured test sessions w/ Test Mode steps | per session plan |
 | | [DEFECTS.md](DEFECTS.md) | Defect register: report → root cause → fix → verified | **on every report** |
+| | [COLD-READ.md](COLD-READ.md) | Zero-context copy audit: claims verified, triaged, ⚑ verdicts | per audit |
 | | `tools/` | `render_docs_diagrams.py` (regenerates the diagrams) | with diagrams |
 | **Launch** | [PIPELINE.md](PIPELINE.md) | The no-Mac build runbook (Capacitor + Codemagic) | Phase 5 |
 | | [CHANGELOG.md](CHANGELOG.md) | Engineering changelog, one entry per shipped build | per build |
