@@ -12,8 +12,14 @@ workflows:
     environment:
       xcode: latest
       node: 22       # Capacitor 8 CLI hard-requires Node >= 22 (build #3 lesson)
-      vars:
-        BUNDLE_ID: com.dmiceli.take47
+      # automatic signing via the ASC integration: Codemagic creates AND stores
+      # the distribution certificate + App Store profile itself — no private
+      # key secret needed. (Builds #1/#2 only failed on this path because the
+      # integration was misnamed at the time; build #4 showed the script path
+      # needs a CERTIFICATE_PRIVATE_KEY secret we'd rather not manage.)
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.dmiceli.take47
     triggering:
       events: []                 # manual "Start new build" while we stabilize;
                                  # switch to push-triggered once the first build is green
@@ -22,16 +28,8 @@ workflows:
         script: npm ci
       - name: Sync web game into the iOS shell
         script: npx cap sync ios
-      - name: Fetch or CREATE signing files via App Store Connect
-        # first build on a fresh Apple account: --create makes the distribution
-        # certificate + App Store provisioning profile through the API key.
-        # (The environment ios_signing block only FETCHES already-stored files —
-        # that's what failed builds #1/#2 before any step ran.)
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-          keychain add-certificates
-          xcode-project use-profiles
+      - name: Apply signing profiles to the Xcode project
+        script: xcode-project use-profiles
       - name: Stamp build number
         script: |
           cd ios/App
