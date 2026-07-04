@@ -62,6 +62,12 @@
     padding:max(24px,var(--sat,env(safe-area-inset-top))) 24px max(24px,var(--sab,env(safe-area-inset-bottom)));
     overflow-y:auto;z-index:10}
   .screen.active{display:flex}
+  /* D-013: center short screens vertically (home sat pinned to safe-top with
+     the spare height pooled below). The auto-margin pseudo pair collapses to
+     zero when content overflows, so long lists (cast, props) still scroll
+     normally from the top. */
+  .screen::before{content:'';margin-top:auto}
+  .screen::after{content:'';margin-bottom:auto}
   h1{font-family:Georgia,serif;color:var(--gold);font-size:52px;margin:40px 0 0;letter-spacing:2px}
   h2{font-family:Georgia,serif;color:var(--gold);font-size:30px;margin:16px 0 12px}
   .tag{color:var(--dim);margin:4px 0 28px;font-size:15px}
@@ -479,12 +485,17 @@ function dailyParams(step){
 // physics, no new art. a11y: gimmicks change difficulty, never readability;
 // FOG dims scenery but never HUD/text, and no gimmick adds flashing.
 const DAILY_MODS = [
+  // scale notes (D-005 sweep findings): mech.wind is °/s² and runs 10–18 on
+  // wind scenes — a gale must live on that scale or it's invisible; BUDGET
+  // CUTS must also cut the landing window, because mats only exist on cart
+  // steps and a gimmick that usually does nothing is a hollow gimmick.
   {id:'gale',   name:'GALE WARNING',  quip:'The wind-machine guy is showing off today.',
-    apply: p => { p.mech.wind = (p.mech.wind || 0) + 1.4; }},
+    apply: p => { p.mech.wind = p.mech.wind ? p.mech.wind * 1.6 : (p.om > 0 ? -12 : 12); }},
   {id:'wire',   name:'WIRE WORK',     quip:'Low gravity. The insurance guy loves it.',
     apply: p => { p.mech.grav = Math.min(p.mech.grav || 1, 0.62); }},
-  {id:'budget', name:'BUDGET CUTS',   quip:'The mat shrank. Nobody is saying why.',
-    apply: p => { const c = (p.matL + p.matR) / 2; p.matL = c - 38; p.matR = c + 38; }},
+  {id:'budget', name:'BUDGET CUTS',   quip:'Smaller mat, stricter judge. Nobody is saying why.',
+    apply: p => { const c = (p.matL + p.matR) / 2; p.matL = c - 38; p.matR = c + 38;
+                  p.tol = Math.max(10 * Math.PI / 180, p.tol * 0.82); }},
   {id:'mirror', name:'MIRROR MODE',   quip:'The director wants it "the other way." All of it.',
     apply: p => { p.om = -p.om; }},
   {id:'fog',    name:'FOG OF WAR',    quip:'The fog machine jammed open. Shoot anyway.',
@@ -559,7 +570,15 @@ function measureInsets(){
   SAFE_B = parseFloat(cs.paddingBottom) || 0;
   probe.remove();
   if (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'ios' && SAFE_T === 0){
-    SAFE_T = 47; SAFE_B = 34;   // typical Face-ID iPhone; verify via QA panel
+    // env() is DEAD in this WKWebView (proven on-device: Dan's 16 Pro Max
+    // reported 0 and rode the old flat fallback). Until a native inset plugin
+    // earns its place post-beta, infer from the logical viewport — one row per
+    // iPhone width class. Unknown tall phones get the conservative middle;
+    // squat aspect (<2:1) means a home-button phone: 20/0.
+    const wpx = Math.round(window.innerWidth), tall = window.innerHeight / window.innerWidth >= 2;
+    const TOPS = {440: 62, 430: 59, 428: 47, 414: 48, 402: 62, 393: 59, 390: 47, 375: 44, 360: 59};
+    if (!tall) { SAFE_T = 20; SAFE_B = 0; }
+    else { SAFE_T = TOPS[wpx] || 47; SAFE_B = 34; }
   }
   // hand the resolved values to CSS (toast, prop belt, overlay padding)
   document.documentElement.style.setProperty('--sat', SAFE_T + 'px');
@@ -744,12 +763,15 @@ function buyOrSelectVariant(id, idx){
   if (ownedIdx(id).includes(idx)) {
     S.variants[id] = idx; persist(); toast('Wardrobe: ' + v.name);
   } else if (wallet() >= v.price) {
-    if (v.price >= 15 && wardrobeArm !== id + ':' + idx) {   // ≥15 prints: confirm
+    // ALL unowned colorways are two-tap (Dan, D-006 follow-up): first tap
+    // dresses the card portrait as a preview, second tap buys. The old
+    // instant-buy+undo survives only in the Prop Department, where there's
+    // nothing to preview.
+    if (wardrobeArm !== id + ':' + idx) {
       wardrobeArm = id + ':' + idx;
-      toast('🧵 ' + v.name + ' costs ' + v.price + ' prints — tap again to confirm', 4200);
-      refreshHome();
-      return;
-    }
+      toast('🧵 ' + v.name + ' — previewing. ' + v.price + ' prints; tap again to buy', 4200);
+      return;                       // no refreshHome: it would rebuild the card
+    }                               // and wipe the preview the player is judging
     wardrobeArm = null;
     S.printsSpent += v.price;
     S.ownedVariants[id] = ownedIdx(id).concat([idx]);
@@ -838,7 +860,22 @@ const sfx = {
   bounce:  () => tone(220, 520, 0.22, 'sine', 0.14)                                           // the one honest boing
 };
 // Haptics: web vibrate where it exists (Android); iOS gets Capacitor Haptics in Phase 5.
-function haptic(ms){ if (S.set.haptics && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+// Real iOS haptics (approved big win, Phase 5): route through the Taptic
+// engine when the Capacitor shell provides it; web keeps navigator.vibrate
+// (Android browsers). Grammar: light = lock tap, medium = landings/rewards,
+// heavy ×2 = crashes (arrays are our crash patterns). Same toggle governs all.
+const capHaptics = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) || null;
+function haptic(ms){
+  if (!S.set.haptics) return;
+  const H = capHaptics();
+  if (H) {
+    const heavy = Array.isArray(ms);
+    try {
+      H.impact({style: heavy ? 'HEAVY' : (ms <= 15 ? 'LIGHT' : 'MEDIUM')});
+      if (heavy) setTimeout(() => { try { H.impact({style: 'HEAVY'}); } catch (e) {} }, 90);
+    } catch (e) {}
+  } else if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+}
 
 // ========== director quips (archetypes per THEME.md) ==========
 const QUIPS = [
@@ -1209,15 +1246,19 @@ function evaluateLanding(){
 // the player must tap through — Dan's feedback: milestones were getting lost
 // in the gameplay chaos. Cards queue so unlock + set-change both show.
 function queueCard(cfg){ cardQueue.push(cfg); }
+let lastCardAfter = null;   // optional exit route for the final card in a queue
 function showNextCard(){
   const el = document.getElementById('interstitial');
   if (!cardQueue.length) {
     el.classList.remove('active');
-    state = 'ready'; stateT = 0;
+    if (lastCardAfter) {               // e.g. DAILIES REPORT exits to the daily
+      const f = lastCardAfter; lastCardAfter = null; f();   // screen, not 'ready'
+    } else { state = 'ready'; stateT = 0; }
     return;
   }
   state = 'card';
   const cfg = cardQueue.shift();
+  if (cfg.after) lastCardAfter = cfg.after;
   document.getElementById('cardKicker').textContent = cfg.kicker || '';
   document.getElementById('cardIcon').textContent = cfg.icon || '🎬';
   document.getElementById('cardTitle').textContent = cfg.title;
@@ -1228,7 +1269,8 @@ function showNextCard(){
     const b = document.createElement('button');
     b.textContent = btn.label;
     if (btn.primary) b.className = 'primary';
-    b.onclick = () => { if (btn.action) btn.action(); showNextCard(); };
+    // keepOpen: the SHARE button acts without dismissing the card
+    b.onclick = () => { if (btn.action) btn.action(); if (!btn.keepOpen) showNextCard(); };
     bb.appendChild(b);
   }
   el.classList.add('active');
@@ -1260,6 +1302,15 @@ function advance(){
     csEvent('advance');
     if (params.big) csEvent('big');
     addPopup('SCENE ' + (S.scene - 1) + ' COMPLETE', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
+    // the FIRST-EVER landing gets celebrated hard (first-win, per D1 research)
+    // — this card is also where a cold-open player learns the lot exists
+    if (!S.reveals.firstLanding) {
+      S.reveals.firstLanding = 1;
+      queueCard({kicker: "THAT'S A KEEPER", icon: '🎬', title: 'FIRST LANDING',
+        body: 'Scene 1, take ' + S.takes + '. The director pretends not to be impressed. ' +
+              'You\'re on the crew now — the HOME button (after any cut) opens the whole lot: daily gauntlet, cast, props, your poster wall.',
+        buttons: [{label: '🎬 KEEP ROLLING', primary: true}]});
+    }
     for (const cst of fresh) {
       queueCard({kicker: 'NEW CAST MEMBER', icon: cst.icon, title: cst.name,
         body: cst.bio + ' — Surviving ' + cst.unlock + ' scenes earned their respect. Put them in the spotlight?',
@@ -1309,10 +1360,24 @@ function afterCrash(){
         toast('🎞️ Personal best — +' + pay + ' print' + (pay > 1 ? 's' : '') +
               (modActive('golden') ? ' (GOLDEN HOUR ×2)' : ''));
       }
+      const newAllTime = cleared > S.daily.best;
       S.daily.todayBest = Math.max(S.daily.todayBest, cleared);
       S.daily.best = Math.max(S.daily.best, cleared);
       persist();
       gameBar(true);                   // attempt over: share/home offered
+      // DAILIES REPORT card (Dan-approved): the flagship loop wraps on a real
+      // card with the share CTA living ON it, not buried in the bottom bar
+      const dm = dailyMod();
+      queueCard({kicker: 'DAILIES REPORT · ' + dm.name, icon: '🎬',
+        title: cleared + (cleared === 1 ? ' SCENE' : ' SCENES') + ' IN THE CAN',
+        body: 'Today\'s best: ' + S.daily.todayBest + '  ·  All-time: ' + S.daily.best +
+              (newAllTime ? '  — NEW RECORD' : '') +
+              '. Same gauntlet, same gimmick, whole world. New slate at midnight 🌙',
+        buttons: [
+          {label: '📣 SHARE THE REPORT', action: () => shareCard(), keepOpen: true},
+          {label: 'WRAP FOR TODAY', primary: true}
+        ],
+        after: () => { gameBar(false); popups = []; ragdoll = []; showScreen('daily'); }});
     }
   } else {
     gameBar(true);
@@ -1326,6 +1391,9 @@ function retry(){
       p = freshPlayer();
       popups = []; ragdoll = [];
       state = 'ready';
+    } else if (cardQueue.length) {     // DAILIES REPORT card owns the exit
+      popups = []; ragdoll = [];
+      showNextCard();
     } else { showScreen('daily'); state = 'home'; }
     return;
   }
@@ -1400,6 +1468,9 @@ function resetProgress(){                            // "Reshoot from Scene 1"
 // ========== canvas input (gameplay only; menus are HTML) ==========
 function onTap(){
   ac();
+  if (state === 'coldopen') {           // cold open is skippable, always
+    S.reveals.coldOpen = 1; persist(); state = 'ready'; stateT = 0; return;
+  }
   if (state === 'ready') startJump();
   else if (state === 'air' && !p.locked) {
     if (p.spun < MIN_SPIN) {           // no flip, no trick — reject the early lock
@@ -1438,6 +1509,15 @@ function update(dt){
   p.squash = Math.max(0, p.squash - dt * 4);
 
   if (state !== 'home' && state !== 'card') mechT += dt;   // scene clock (hazards animate even pre-jump)
+
+  if (state === 'coldopen') {
+    // one-time silent cold open (Dan): slate drops, claps, the director calls
+    // ACTION!, and the very first thing a new player does is flip. No audio —
+    // iOS hasn't unlocked it yet, so it plays as the silent-film beat it is.
+    // Reduce-motion: static slate, shorter hold. Any tap skips (input handler).
+    if (stateT >= (S.set.rm ? 1.4 : 2.3)) { S.reveals.coldOpen = 1; persist(); state = 'ready'; stateT = 0; }
+    return;                                                // stage holds still for the slate
+  }
 
   if (state === 'ready' && params.mech.cart) {             // the cart carries you until you jump
     p.x = (armedItem === 'chock') ? p.x : cartX(mechT);    // chock: cart holds still
@@ -1756,18 +1836,22 @@ function drawMechanics(){
     ctx.strokeRect(params.matL, GROUND, params.matR - params.matL, 6);
     // live trajectory preview (Dan: launch timing must be AIMED, not guessed) —
     // dotted arc + landing marker track the cart in real time; launch on green.
-    // FOG OF WAR gimmick (D-005): the preview is exactly what the fog takes.
-    if (state === 'ready' && !modActive('fog')) {
+    // FOG OF WAR (D-012): fog degrades INFORMATION, never FAIRNESS — the arc
+    // vanishes in the haze but the landing marker survives, because cart
+    // timing being aimed is a fairness ruling, not a hint.
+    if (state === 'ready') {
       const vx = (params.matL + params.matR) / 2 - 110;
       const pvx = vx / params.T + ((armedItem === 'chock') ? 0 : cartVx(mechT));
       const pvy = -grav() * params.T / 2;
       const landX = p.x + pvx * params.T;
       const onMat = landX >= params.matL && landX <= params.matR;
-      ctx.fillStyle = 'rgba(232,213,181,0.5)';
-      for (let k = 1; k <= 10; k++) {
-        const t = params.T * k / 10;
-        const dx = p.x + pvx * t, dy = (GROUND) + pvy * t + 0.5 * grav() * t * t;
-        ctx.beginPath(); ctx.arc(dx, dy - 22, 2.5, 0, Math.PI * 2); ctx.fill();
+      if (!modActive('fog')) {
+        ctx.fillStyle = 'rgba(232,213,181,0.5)';
+        for (let k = 1; k <= 10; k++) {
+          const t = params.T * k / 10;
+          const dx = p.x + pvx * t, dy = (GROUND) + pvy * t + 0.5 * grav() * t * t;
+          ctx.beginPath(); ctx.arc(dx, dy - 22, 2.5, 0, Math.PI * 2); ctx.fill();
+        }
       }
       // marker: green ring on the mat, red X off it (color + shape, never color alone)
       if (onMat) {
@@ -2083,6 +2167,48 @@ function draw(){
     ctx.fillStyle = '#ffd166';
     ctx.beginPath(); ctx.roundRect(13, 392 - ph * 184, 26, 10, 4); ctx.fill();
     drawPrompt('Release to launch!', 660, '#ffd166');
+  }
+  if (state === 'coldopen') {
+    // — the one-time cold open: slate drops + claps, director calls ACTION! —
+    const t = stateT, rm = S.set.rm;
+    ctx.fillStyle = 'rgba(10,6,4,0.55)'; ctx.fillRect(0, 0, W, H);   // dim the stage
+    // slate: eases in from above (or just sits, reduce-motion)
+    const drop = rm ? 1 : Math.min(1, t / 0.5);
+    const ease = 1 - (1 - drop) * (1 - drop);
+    const sy = -160 + ease * 400;                       // rests at y≈240
+    ctx.save();
+    ctx.translate(W / 2, sy);
+    ctx.fillStyle = '#151009'; ctx.strokeStyle = '#0a0705'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(-120, -30, 240, 120, 8); ctx.fill(); ctx.stroke();
+    // clapper jaw: open, then CLAPS shut at t=0.9 (static-closed if rm)
+    const jaw = rm ? 0 : Math.max(0, Math.min(0.5, (0.9 - t) * 1.4));
+    ctx.save();
+    ctx.translate(-120, -30); ctx.rotate(-jaw);
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 ? '#e8d5b5' : '#151009';
+      ctx.beginPath();
+      ctx.moveTo(i * 40, 0); ctx.lineTo(i * 40 + 40, 0); ctx.lineTo(i * 40 + 28, -22); ctx.lineTo(i * 40 - 12, -22);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = '#e8d5b5'; ctx.textAlign = 'center';
+    ctx.font = 'bold 26px Georgia, serif';
+    ctx.fillText('TAKE 47', 0, 8);
+    ctx.font = 'bold 14px system-ui, sans-serif'; ctx.fillStyle = '#a08b72';
+    ctx.fillText('SCENE 1  ·  TAKE 1', 0, 34);
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText('DIR: “someone expendable”', 0, 56);
+    ctx.restore();
+    // the call: speech bubble off the director once the slate has clapped
+    if (rm || t >= 1.3) {
+      ctx.fillStyle = '#f3e6cd'; ctx.strokeStyle = '#0a0705'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.roundRect(60, 430, 150, 44, 10); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(80, 474); ctx.lineTo(70, 496); ctx.lineTo(100, 474); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#191010'; ctx.font = 'bold 22px Georgia, serif'; ctx.textAlign = 'center';
+      ctx.fillText('ACTION!', 135, 460);
+    }
+    ctx.fillStyle = '#a08b72'; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('tap to skip', W / 2, 660);
   }
   if (state === 'ready') {
     // prompts live above the tallest platform + character (y < 430 zone)
@@ -2478,7 +2604,7 @@ function refreshHome(){
   // settings labels
   $('tglSound').textContent = 'SOUND: ' + (S.set.sound ? 'ON' : 'OFF');
   $('tglSound').setAttribute('aria-pressed', String(!!S.set.sound));
-  $('tglHaptics').textContent = 'HAPTICS: ' + (S.set.haptics ? 'ON' : 'OFF') + ' (phone builds)';
+  $('tglHaptics').textContent = 'HAPTICS: ' + (S.set.haptics ? 'ON' : 'OFF') + (capHaptics() ? '' : ' (phone builds)');
   $('tglHaptics').setAttribute('aria-pressed', String(!!S.set.haptics));
   $('tglMotion').textContent = 'REDUCE MOTION: ' + (S.set.rm ? 'ON' : 'OFF');
   $('tglMotion').setAttribute('aria-pressed', String(!!S.set.rm));
@@ -3059,6 +3185,15 @@ try { $('verLine').textContent = 'TAKE 47  ·  v' + VERSION; } catch (e) {}
 
 resize();
 refreshHome();
+// FIRST 60 SECONDS (Dan-approved): a truly fresh save never sees a menu —
+// the slate drops, the director calls ACTION!, and the first thing a new
+// player ever does is flip. Existing saves get the flag stamped, no replay.
+if (!S.reveals.coldOpen) {
+  if (S.takes === 0 && S.scene === 1) {
+    playCampaign();
+    state = 'coldopen'; stateT = 0;
+  } else { S.reveals.coldOpen = 1; persist(); }
+}
 requestAnimationFrame(frame);
 </script>
 </body>

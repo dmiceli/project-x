@@ -118,9 +118,16 @@
 
 - 2026-07-04 (late night): **🎬 TAKE 47 IS ON TESTFLIGHT.** Checklist A–C done by Dan (name "TAKE 47" was available ✓; ASC API key; Codemagic integration `take47-asc-key`). First build session took 7 takes, on-brand: #1/#2 empty signing vault + misnamed integration; #3 Capacitor CLI needs Node 22; #4 script-flow `--create` can't mint a cert without a private-key secret; #5 proved the automatic path *also* only fetches (vault still empty); #6 **signing solved** — cert generated in Codemagic's vault via the integration (UI button, no key material handled), App Store profile created at developer.apple.com + fetched into the vault → IPA built & signed, Apple upload check bounced portrait-only-without-fullscreen (90474); #7 after `UIRequiresFullScreen` → **uploaded, processed, "Ready to Submit."** Internal group **"Crew"** created (automatic distribution ON = every green build auto-lands on testers); Dan invited. Total cost: ~12 of 500 free build minutes. Known noise: Codemagic's post-upload "App Store distribution" step shows red even though the upload succeeded — investigate log on next build.
 
-## Next steps
-1. **Dan: accept the TestFlight invite** (email → TestFlight app → install TAKE 47) and play the real thing on-device: launch, splash/icon, save survives app kill, feel vs. the Pages build.
-2. Wrapper features now that the pipeline is proven: real haptics → Game Center leaderboard → reset notification (approved wins).
-3. Pipeline housekeeping: diagnose the red post-processing step; flip codemagic.yaml to push-triggered once stable; fix its stale "creates and stores" comment (it only fetches — the vault does the storing); update PIPELINE.md failure table.
-4. QA-panel strip gate before *submission* (panel stays through TestFlight).
-5. Beta-parallel: store-conversion kit ("the fail is the ad"); schedule the cold playtest volunteer; pre-submission full QA (VoiceOver pass + dedicated copy read).
+- 2026-07-04 (overnight, the TestFlight-night session): **beta live-triage + fix batch shipped as build 8 same night** — 12 register defects (D-001..D-012), 10 fixed in build 8, icon (D-001, final "A1 WHOA" design approved through 4 iterations) and fog/cart fairness (D-012, self-found) queued for build 9. Daily gimmick system approved & shipped. New post-push verification gate (browser fetch + real-engine parse + live runtime smoke) replaced the untrustworthy sandbox mount. Retrospective held: collaboration critique both directions (Dan: invite my design pushback more — acknowledged; me: ask "least confident?" regularly — adopted); CASE-STUDY.md created as weekly artifact (scheduled task, Sundays) with numbers table + two brand charts. Release-records rule now fully practiced (this build-8 entry initially missed, caught by session audit).
+
+## Next steps (morning of 2026-07-04 — friends & family soft beta in the evening; NOT a hard deadline)
+1. **Dan device readout on build 8** (gates everything): QA panel inset line, letterbox look, sound, share sheet, feel. *Back up save via QA panel first.*
+2. **Dan, ~15 min in ASC:** Test Information (beta description + feedback email) → external group "Friends & Family" + public link → submit current build to Beta App Review (first-version review is one-time; clears the path for build 9 in the same version). Pages home-screen link = guaranteed evening fallback.
+3. Claude batch 1 — feel: wire real Capacitor haptics (calls already exist) · D-012 fog/cart fix · headless gimmick-difficulty sweep across dates.
+4. Claude batch 2 — first 60 seconds: fresh save goes straight into Scene 1's guided take, home revealed after the first landing (celebrated hard) · wardrobe unowned chips → two-tap preview-then-buy (pending Dan design verdict) · DAILIES REPORT as proper HTML card (stretch).
+5. Reset notification (opt-in, asked after a completed daily) — brings testers back Tuesday.
+6. Cold-player copy audit + full QA (VoiceOver + dedicated copy read) on the Pages build.
+7. Push → browser verification gate → **Take 9** (carries new icon) → Dan express on-device verify (QA-panel steps supplied per rule).
+8. Publish PRIVACY.md as a Pages page (beta review may want a URL; App Store will).
+9. Beta kit: two-line welcome text, public link, plan to watch 1–2 people play in person.
+Parked: Game Center (post-beta), music loop, holiday garnish, difficulty smoothing (wait for cold data), poster-wall art on share cards.

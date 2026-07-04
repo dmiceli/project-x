@@ -28,3 +28,7 @@ Ideas deliberately kept OUT of v1.0 so scope stays fixed. Nothing here is forgot
 - Home poster-wall thumbnails could reflect actually wrapped sets (live data, not decorative)
 
 *(Removed as shipped/promoted, 2026-07-03 maintenance: Game Center leaderboard → Phase 5 via BIG-WINS; in-game face pass → shipped; per-set floor accents → shipped with the six-set background rollout.)*
+
+- **Native safe-area inset plugin (post-beta hardening):** env(safe-area-inset-*) is confirmed dead in our WKWebView (build-8 on-device evidence, D-002). Take 9 ships a per-device-width inference table — correct for all current iPhones but a maintenance liability as new models appear. Adopt a native inset source (e.g. a Capacitor safe-area plugin) once the beta settles; drop the table then.
+
+- **Wardrobe accessories (Dan, 2026-07-04):** beyond colorways — hats, capes, glasses, props-as-costume for the cast. The portrait renderer (D-006) makes previews free; the rig's acc slot (pony/bun/glasses/grayhair) is the natural attachment point. Post-v1: pairs well with earned-only economy and Golden Take rewards.
