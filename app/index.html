@@ -108,7 +108,12 @@
   .shelf{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:min(360px,92vw)}
   .shelf button{display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:6px;width:80px;min-height:96px;margin:0;font-size:12px;border-radius:10px;padding:8px 2px}
-  .shelf button .em{font-size:26px}
+  .shelf button .em{font-size:26px;line-height:1}
+  /* D-014: drawn glyphs slot into the emoji boxes; sizes match their tier */
+  .em img{width:28px;height:28px;object-fit:contain;display:block;margin:0 auto}
+  .fem{display:inline-block;width:15px;height:15px;line-height:1;vertical-align:-2px}
+  .fem img{width:15px;height:15px;object-fit:contain}
+  #propWallet img,.chips-select img{width:16px;height:16px;object-fit:contain;vertical-align:-3px}
   .footrow{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;margin-top:14px;
     border-top:1px solid #3a2a22;padding-top:8px;width:min(360px,92vw)}
   .footrow button{display:inline-block;width:auto;min-height:44px;margin:0;
@@ -205,17 +210,19 @@
   <p class="stats" id="homeStats"></p>
   <p class="grouplabel">ON THE LOT</p>
   <div class="shelf" role="group" aria-label="On the lot">
-    <button id="btnDaily"><span class="em" aria-hidden="true">🎬</span>DAILY</button>
-    <button id="btnCast"><span class="em" aria-hidden="true">🎭</span>CAST</button>
-    <button id="btnProps"><span class="em" aria-hidden="true">📦</span>PROPS</button>
-    <button id="btnReel"><span class="em" aria-hidden="true">📽️</span>REEL</button>
+    <!-- D-014: data-ico spans are swapped for drawn glyphs at boot; the emoji
+         stays as a graceful fallback if canvas rendering ever fails -->
+    <button id="btnDaily"><span class="em" data-ico="daily" aria-hidden="true">🎬</span>DAILY</button>
+    <button id="btnCast"><span class="em" data-ico="cast" aria-hidden="true">🎭</span>CAST</button>
+    <button id="btnProps"><span class="em" data-ico="props" aria-hidden="true">📦</span>PROPS</button>
+    <button id="btnReel"><span class="em" data-ico="reel" aria-hidden="true">📽️</span>REEL</button>
   </div>
   <div id="csList" aria-label="Today's call sheet"></div>
   <nav class="footrow" aria-label="More">
-    <button id="btnPosters">🖼️ POSTERS</button>
-    <button id="btnTrophies">🏆 HIGHLIGHTS</button>
-    <button id="btnShareHome">📤 SHARE</button>
-    <button id="btnSettings">⚙️ SETTINGS</button>
+    <button id="btnPosters"><span class="fem" data-ico="posters" aria-hidden="true">🖼️</span> POSTERS</button>
+    <button id="btnTrophies"><span class="fem" data-ico="awards" aria-hidden="true">🏆</span> AWARDS</button>
+    <button id="btnShareHome"><span class="fem" data-ico="share" aria-hidden="true">📤</span> SHARE</button>
+    <button id="btnSettings"><span class="fem" data-ico="settings" aria-hidden="true">⚙️</span> SETTINGS</button>
   </nav>
 </section>
 
@@ -239,7 +246,8 @@
   <!-- D-005: the call slate — today's seeded gimmick, same for everyone -->
   <p class="stats" id="dailyMod" style="border:1.5px solid var(--gold);border-radius:10px;padding:10px 14px;color:var(--gold)"></p>
   <p class="stats" id="dailyInfo"></p>
-  <button id="btnDailyPlay" class="primary">SHOOT TODAY'S GAUNTLET</button>
+  <!-- D-015: buttons/instructions say "challenge"; "gauntlet" stays as flavor -->
+  <button id="btnDailyPlay" class="primary">PLAY TODAY'S CHALLENGE</button>
   <button id="btnDailyAd">🍿 EXTRA ATTEMPT (ad · 3/3 left today)</button>
   <button class="back" data-to="home">← BACK</button>
 </section>
@@ -260,7 +268,8 @@
 </section>
 
 <section id="scr-trophies" class="screen" aria-label="Achievements">
-  <h2>HIGHLIGHT REEL</h2>
+  <!-- D-015: was HIGHLIGHT REEL — collided with THE REEL (cold-reader find) -->
+  <h2>THE AWARDS SHELF</h2>
   <div id="trophyList"></div>
   <button class="back" data-to="home">← BACK</button>
 </section>
@@ -270,7 +279,10 @@
   <button id="tglSound" aria-pressed="true">SOUND: ON</button>
   <button id="tglHaptics" aria-pressed="true">HAPTICS: ON (phone builds)</button>
   <button id="tglMotion" aria-pressed="false">REDUCE MOTION: OFF</button>
-  <button id="btnReset">🔄 RESHOOT FROM SCENE 1</button>
+  <button id="tglNotif" aria-pressed="false">🌙 MIDNIGHT REMINDER: OFF</button>
+  <!-- D-015: "RESHOOT FROM SCENE 1" read as a scary wipe AND collided with the
+       Reel's harmless reshoots (cold-reader find) -->
+  <button id="btnReset">🔄 START OVER (back to Scene 1 — your record is kept)</button>
   <button id="btnRestore" disabled>RESTORE PURCHASES (App Store build)</button>
   <a href="../PRIVACY.md" target="_blank" rel="noopener">Privacy policy</a>
   <p class="stats" id="verLine">TAKE 47</p>
@@ -303,7 +315,7 @@
 </div>
 <div id="gameBar">
   <button id="btnShare" class="primary">📤 SHARE</button>
-  <button id="btnHome">🏠 HOME</button>
+  <button id="btnHome"><span class="fem" data-ico="home" aria-hidden="true">🏠</span> HOME</button>
 </div>
 <div id="propBar" aria-label="Prop belt"></div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -700,6 +712,124 @@ function propIconURL(id){
   }
   return (propArtCache[id] = cnv.toDataURL());
 }
+
+// D-014 (Dan-approved): unified UI icon system in the prop-art language.
+// Ten glyphs replace the generic emoji tier (shelf, footrow, HOME, prints).
+// Same palette + outline voice as the prop cards; cached data URLs; the
+// emoji in the HTML stay as fallback if canvas ever fails.
+const uiIconCache = {};
+function uiIconURL(name){
+  if (uiIconCache[name]) return uiIconCache[name];
+  if (typeof document.createElement !== 'function') return '';
+  const cnv = document.createElement('canvas');
+  cnv.width = 132; cnv.height = 132;
+  const c = cnv.getContext('2d');
+  c.scale(2.2, 2.2);                               // 60-unit logical space
+  const O = '#16100c', GOLD = '#ffd166', OCH = '#e0b04a', DIM = '#a08b72', CREAM = '#e8d5b5';
+  const rr = (x, y, w, h, f, r) => { c.fillStyle = f; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.roundRect(x, y, w, h, r || 3); c.fill(); c.stroke(); };
+  const dot = (x, y, r, f, ol) => { c.fillStyle = f;
+    c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    if (ol !== false) { c.strokeStyle = O; c.lineWidth = 2; c.stroke(); } };
+  const ln = (x0, y0, x1, y1, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
+  const poly = (pts, f) => { c.fillStyle = f; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.closePath(); c.fill(); c.stroke(); };
+  if (name === 'home') {                 // director's chair, "47" on the back
+    ln(14, 14, 26, 46, '#7a5a30', 4); ln(46, 14, 34, 46, '#7a5a30', 4);
+    ln(46, 14, 26, 46, '#7a5a30', 4); ln(14, 14, 34, 46, '#7a5a30', 4);
+    rr(12, 14, 36, 11, OCH);
+    c.fillStyle = O; c.font = 'bold 8px system-ui, sans-serif'; c.textAlign = 'center';
+    c.fillText('47', 30, 22.5);
+    ln(10, 48, 50, 48, DIM, 3);
+  } else if (name === 'daily') {         // the slate, jaw ajar: a fresh day
+    rr(12, 24, 36, 22, '#241515');
+    poly([[12, 24], [48, 24], [44, 14], [8, 14]], GOLD);
+    for (let i = 0; i < 3; i++) ln(14 + i * 12, 23, 20 + i * 12, 15, O, 3);
+    ln(16, 34, 40, 34, CREAM, 2); ln(16, 40, 32, 40, DIM, 2);
+  } else if (name === 'cast') {          // comedy + tragedy masks
+    c.fillStyle = CREAM; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(22, 28, 12, 15, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = '#b8923f';
+    c.beginPath(); c.ellipse(40, 34, 11, 13, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    dot(18, 24, 2.2, O, false); dot(26, 24, 2.2, O, false);
+    c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.arc(22, 30, 5.5, 0.2, Math.PI - 0.2); c.stroke();          // smile
+    dot(36, 31, 1.9, O, false); dot(44, 31, 1.9, O, false);
+    c.beginPath(); c.arc(40, 44, 5, Math.PI + 0.2, -0.2); c.stroke();           // frown
+  } else if (name === 'props') {         // stenciled crate
+    rr(12, 18, 36, 28, '#7a5a30');
+    ln(12, 26, 48, 26, O, 2); ln(20, 18, 20, 46, O, 2); ln(40, 18, 40, 46, O, 2);
+    c.fillStyle = GOLD; c.font = 'bold 7px system-ui, sans-serif'; c.textAlign = 'center';
+    c.fillText('PROPS', 30, 39);
+  } else if (name === 'reel') {          // projector, beam on
+    c.fillStyle = 'rgba(255,209,102,0.28)';
+    c.beginPath(); c.moveTo(38, 26); c.lineTo(56, 18); c.lineTo(56, 40); c.lineTo(38, 34); c.closePath(); c.fill();
+    dot(20, 16, 8, '#3a2c22'); dot(33, 16, 6, '#3a2c22');
+    dot(20, 16, 2.5, DIM, false);
+    rr(12, 22, 26, 16, '#241515'); dot(38, 30, 5, GOLD);
+  } else if (name === 'posters') {       // framed one-sheet w/ star
+    rr(16, 10, 28, 40, '#241515', 2);
+    c.strokeStyle = GOLD; c.lineWidth = 3;
+    c.beginPath(); c.roundRect(16, 10, 28, 40, 2); c.stroke();
+    c.fillStyle = GOLD;
+    c.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const ang = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? 4 : 9;
+      c[k ? 'lineTo' : 'moveTo'](30 + rad * Math.cos(ang), 29 + rad * Math.sin(ang));
+    }
+    c.closePath(); c.fill();
+    ln(22, 44, 38, 44, DIM, 2);
+  } else if (name === 'awards') {        // trophy v2: bold cup, star, no fuss
+    c.fillStyle = GOLD; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(19, 12); c.lineTo(41, 12);
+    c.bezierCurveTo(41, 30, 34, 34, 30, 34);
+    c.bezierCurveTo(26, 34, 19, 30, 19, 12); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.arc(16, 18, 5, Math.PI * 0.4, Math.PI * 1.6); c.stroke();   // handles
+    c.beginPath(); c.arc(44, 18, 5, -Math.PI * 0.6, Math.PI * 0.6); c.stroke();
+    ln(30, 34, 30, 42, GOLD, 5);
+    rr(20, 42, 20, 6, '#7a5a30');
+    c.fillStyle = O;
+    c.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const ang = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? 2.4 : 5.5;
+      c[k ? 'lineTo' : 'moveTo'](30 + rad * Math.cos(ang), 21 + rad * Math.sin(ang));
+    }
+    c.closePath(); c.fill();
+  } else if (name === 'share') {         // director's megaphone, word out
+    poly([[14, 26], [34, 16], [34, 44], [14, 34]], OCH);
+    rr(10, 26, 6, 8, '#7a5a30');
+    ln(40, 22, 48, 18, GOLD, 3); ln(42, 30, 52, 30, GOLD, 3); ln(40, 38, 48, 42, GOLD, 3);
+  } else if (name === 'settings') {      // lens aperture
+    dot(30, 30, 17, '#241515');
+    dot(30, 30, 10, '#0c0906');
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3;
+      ln(30 + 10 * Math.cos(a), 30 + 10 * Math.sin(a),
+         30 + 16 * Math.cos(a + 0.35), 30 + 16 * Math.sin(a + 0.35), GOLD, 2.5);
+    }
+  } else {                               // prints: the film-print ticket (Dan,
+    rr(8, 20, 44, 20, '#2e6b4f', 6);     // #1-adjacent) — matches the HUD chip
+    c.strokeStyle = '#6ee7b7'; c.lineWidth = 2;
+    c.beginPath(); c.roundRect(8, 20, 44, 20, 6); c.stroke();
+    c.fillStyle = '#191010';
+    for (let py = 0; py < 4; py++) { c.fillRect(30, 22 + py * 4.4, 3, 2.6); }   // perforation
+    dot(18, 30, 4, '#6ee7b7', false);
+    c.fillStyle = CREAM; c.font = 'bold 9px system-ui, sans-serif'; c.textAlign = 'center';
+    c.fillText('1', 43, 33.5);
+  }
+  return (uiIconCache[name] = cnv.toDataURL());
+}
+// swap the generic emoji tier for drawn glyphs (emoji remain as fallback)
+function applyUiIcons(){
+  try {
+    document.querySelectorAll('[data-ico]').forEach(el => {
+      el.innerHTML = '<img src="' + uiIconURL(el.dataset.ico) + '" alt="">';
+    });
+  } catch (e) { /* emoji fallback stands */ }
+}
 let lastBuy = null;                   // {id, price, at}: 4s undo window (Dan pick B)
 function buyItem(id){
   const it = ITEMS.find(x => x.id === id);
@@ -865,6 +995,34 @@ const sfx = {
 // (Android browsers). Grammar: light = lock tap, medium = landings/rewards,
 // heavy ×2 = crashes (arrays are our crash patterns). Same toggle governs all.
 const capHaptics = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) || null;
+
+// Midnight call-sheet reminder (approved big win #2): a LOCAL notification —
+// no push server, no ATT, nothing leaves the device. Permission is asked
+// in-context (a button on the DAILIES REPORT card, offered once), never at
+// first launch. Web builds: no-op with an honest toast.
+const capNotif = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
+async function enableMidnightCall(){
+  const N = capNotif();
+  if (!N) { toast('Reminders live in the phone app'); return; }
+  try {
+    const perm = await N.requestPermissions();
+    if (!perm || perm.display !== 'granted') { toast('Notifications are off — enable in iOS Settings if you change your mind'); return; }
+    await N.schedule({notifications: [{
+      id: 47,
+      title: 'TAKE 47 — new slate on the lot 🌙',
+      body: 'Fresh daily challenge and call sheet are waiting. The director got here early.',
+      schedule: {on: {hour: 0, minute: 5}}
+    }]});
+    S.set.notif = 1; persist(); refreshHome();
+    toast('🌙 Midnight reminder is ON (Settings to turn off)');
+  } catch (e) { toast('Could not schedule the reminder'); }
+}
+async function disableMidnightCall(){
+  const N = capNotif();
+  try { if (N) await N.cancel({notifications: [{id: 47}]}); } catch (e) {}
+  S.set.notif = 0; persist(); refreshHome();
+  toast('Midnight reminder is OFF');
+}
 function haptic(ms){
   if (!S.set.haptics) return;
   const H = capHaptics();
@@ -956,6 +1114,9 @@ let mode = 'campaign';               // campaign | daily | reshoot
 let state = 'home';                  // + 'card' while an interstitial is up
 let dStep = 1;                       // daily: current gauntlet step
 let dLives = 3;                      // daily: crashes left in this attempt
+// NEXT-10 #2 (Wordle lesson): per-take emoji record of the daily attempt —
+// 🟩 perfect, 🟨 clean, 🟥 crash. Spoiler-free, thread-friendly, worldwide-comparable.
+let dailyGrid = [];
 let rScene = 1;                      // reshoot: which completed scene
 let crashKind = 'full';              // full ragdoll vs near-miss stumble
 let slowmoT = 0;                     // brief slow-motion on spectacular crashes
@@ -1167,6 +1328,12 @@ function evaluateLanding(){
       perfectStreak++;
       dirMood = 'clap'; dirMoodT = 2.2;              // even HE has to admit it
       S.prints++;
+      // D-015: the FIRST print introduces the currency explicitly — the cold
+      // reader couldn't tell "PRINT the verb" pays "prints the noun"
+      if (!S.reveals.printIntro) {
+        S.reveals.printIntro = 1;
+        toast('🎞️ +1 PRINT — a perfect landing earns the studio\'s currency. Spend it in the Prop Department.', 5000);
+      }
       if (mode !== 'daily') S.printed[currentSceneNo()] = 1;   // collection flag (posters)
       S.bestStreak = Math.max(S.bestStreak, perfectStreak);
       confetti(p.x, GROUND - 40);
@@ -1187,6 +1354,12 @@ function evaluateLanding(){
       perfectStreak = 0;
       // never locking the spin is a legit (gutsy) strategy — name it when it works
       addVerdict(assisted && off <= PERFECT_RAD ? 'CLEAN (ASSISTED)' : (!p.locked ? 'RODE IT OUT!' : pick(CLEAN_WORDS)), '#6ee7b7');
+      // D-015: teach clean-vs-perfect at the FIRST clean landing, not in a
+      // parenthetical after a failed print (cold-reader find)
+      if (!S.reveals.cleanLesson && !assisted) {
+        S.reveals.cleanLesson = 1;
+        toast('CLEAN moves you on — only a PERFECT landing PRINTS the scene (and pays).', 5000);
+      }
       sfx.land();
       csEvent('clean');
     }
@@ -1315,7 +1488,7 @@ function advance(){
       queueCard({kicker: 'NEW CAST MEMBER', icon: cst.icon, title: cst.name,
         body: cst.bio + ' — Surviving ' + cst.unlock + ' scenes earned their respect. Put them in the spotlight?',
         buttons: [
-          {label: '⭐ STAR THEM', primary: true, action: () => { S.selected = cst.id; persist(); }},
+          {label: '⭐ MAKE THEM THE STAR', primary: true, action: () => { S.selected = cst.id; persist(); }},
           {label: 'KEEP CURRENT'}
         ]});
     }
@@ -1332,6 +1505,7 @@ function advance(){
   } else {
     dStep++;
     csEvent('daily');
+    dailyGrid.push(wasPerfect ? '🟩' : '🟨');
     addPopup('SCENE ' + (dStep - 1) + ' IN THE CAN', W / 2, 300, wasPerfect ? '#ffd166' : '#6ee7b7', 24);
   }
   refreshParams();
@@ -1350,6 +1524,7 @@ function afterCrash(){
                                        // CUT screen so it can't be tapped past blind
   if (mode === 'daily') {
     dLives--;
+    dailyGrid.push('🟥');
     if (dLives <= 0) {
       const cleared = dStep - 1;
       // daily pays on personal best: +1 print per scene of improvement (un-farmable)
@@ -1373,10 +1548,18 @@ function afterCrash(){
         body: 'Today\'s best: ' + S.daily.todayBest + '  ·  All-time: ' + S.daily.best +
               (newAllTime ? '  — NEW RECORD' : '') +
               '. Same gauntlet, same gimmick, whole world. New slate at midnight 🌙',
-        buttons: [
-          {label: '📣 SHARE THE REPORT', action: () => shareCard(), keepOpen: true},
-          {label: 'WRAP FOR TODAY', primary: true}
-        ],
+        buttons: (() => {
+          const btns = [
+            {label: '📣 SHARE THE REPORT', action: () => shareCard(), keepOpen: true},
+            {label: 'WRAP FOR TODAY', primary: true}
+          ];
+          // the one-time, in-context notification offer (never at first launch)
+          if (!S.set.notifAsked && capNotif()) {
+            S.set.notifAsked = 1;
+            btns.splice(1, 0, {label: '🌙 REMIND ME AT MIDNIGHT', action: () => enableMidnightCall()});
+          }
+          return btns;
+        })(),
         after: () => { gameBar(false); popups = []; ragdoll = []; showScreen('daily'); }});
     }
   } else {
@@ -1449,6 +1632,7 @@ function playDaily(){
   mode = 'daily';
   dStep = 1;
   dLives = 3;
+  dailyGrid = [];                       // NEXT-10 #2: Wordle-style share grid
   refreshParams();
   perfectStreak = 0;
   p = freshPlayer();
@@ -2327,9 +2511,15 @@ function buildShareCard(){
 // Challenge text travels WITH the image so the recipient can actually play —
 // a taunt without a link is a dead end.
 function shareText(){
-  return mode === 'daily'
-    ? 'TAKE 47 daily gauntlet: I cleared ' + S.daily.todayBest + ' scenes. Your move: ' + GAME_URL
-    : 'I\'m stuck on Scene ' + S.scene + ' of TAKE 47 (' + S.takes + ' takes so far). Beat that: ' + GAME_URL;
+  if (mode === 'daily') {
+    // Wordle-grid share (NEXT-10 #2): spoiler-free, same slate worldwide.
+    // 🟩 perfect · 🟨 clean · 🟥 crash — capped so long runs stay one line
+    const grid = dailyGrid.slice(0, 14).join('') + (dailyGrid.length > 14 ? '…' : '');
+    return 'TAKE 47 · ' + todayStr() + ' · ' + dailyMod().name + '\n' +
+           (grid || '🟥') + ' — ' + S.daily.todayBest + ' scene' + (S.daily.todayBest === 1 ? '' : 's') + '\n' +
+           'Your move: ' + GAME_URL;
+  }
+  return 'I\'m stuck on Scene ' + S.scene + ' of TAKE 47 (' + S.takes + ' takes so far). Beat that: ' + GAME_URL;
 }
 async function shareCard(){
   try {
@@ -2419,7 +2609,7 @@ function revealRules(){
   ];
 }
 function refreshHome(){
-  const tomorrow = S.furthest >= 3 ? '  ·  New gauntlet & call sheet at midnight 🌙' : '';
+  const tomorrow = S.furthest >= 3 ? '  ·  New daily & call sheet at midnight 🌙' : '';
   $('homeStats').textContent = 'Scene ' + S.scene + '  ·  ' + S.takes + ' lifetime takes  ·  Wallet: ' + wallet() + ' prints' +
     (S.furthest > S.scene ? '  ·  Record: Scene ' + S.furthest : '') + tomorrow;
   $('btnPlay').textContent = 'ACTION! — SCENE ' + S.scene;
@@ -2579,7 +2769,8 @@ function refreshHome(){
   }
   // prop department shop
   // D-009: the wallet is the shop's headline, not a lost stat line
-  $('propWallet').innerHTML = '🎞️ <b>' + wallet() + '</b> prints in the wallet';
+  // (D-014: drawn print-ticket glyph — Dan's #1-adjacent request)
+  $('propWallet').innerHTML = '<img src="' + uiIconURL('prints') + '" alt=""> <b>' + wallet() + '</b> prints in the wallet';
   const plist = $('propList'); plist.innerHTML = '';
   // D-008: each prop declares WHAT it counters, so "why would I use this
   // here?" is answered on the card, not discovered mid-take
@@ -2595,7 +2786,7 @@ function refreshHome(){
       '<p class="counters">🎬 for ' + COUNTERS[it.id] + '</p>';
     const buy = document.createElement('button');
     buy.className = 'chips-select';
-    buy.textContent = 'BUY — ' + it.price + '🎞️';
+    buy.innerHTML = 'BUY — ' + it.price + ' <img src="' + uiIconURL('prints') + '" alt="prints">';
     buy.disabled = wallet() < it.price;
     buy.onclick = () => buyItem(it.id);
     div.appendChild(buy);
@@ -2608,6 +2799,8 @@ function refreshHome(){
   $('tglHaptics').setAttribute('aria-pressed', String(!!S.set.haptics));
   $('tglMotion').textContent = 'REDUCE MOTION: ' + (S.set.rm ? 'ON' : 'OFF');
   $('tglMotion').setAttribute('aria-pressed', String(!!S.set.rm));
+  $('tglNotif').textContent = '🌙 MIDNIGHT REMINDER: ' + (S.set.notif ? 'ON' : 'OFF') + (capNotif() ? '' : ' (phone builds)');
+  $('tglNotif').setAttribute('aria-pressed', String(!!S.set.notif));
 }
 $('btnPlay').onclick = () => { ac(); playCampaign(); };
 $('btnDaily').onclick = () => showScreen('daily');
@@ -2635,16 +2828,17 @@ $('btnSettings').onclick = () => showScreen('settings');
 $('tglSound').onclick = () => { S.set.sound = S.set.sound ? 0 : 1; persist(); refreshHome(); };
 $('tglHaptics').onclick = () => { S.set.haptics = S.set.haptics ? 0 : 1; persist(); refreshHome(); };
 $('tglMotion').onclick = () => { S.set.rm = S.set.rm ? 0 : 1; persist(); refreshHome(); };
+$('tglNotif').onclick = () => { S.set.notif ? disableMidnightCall() : enableMidnightCall(); };
 let resetArmed = false;
 $('btnReset').onclick = () => {
   if (!resetArmed) {
     resetArmed = true;
     $('btnReset').textContent = '⚠️ SURE? Progress resets, record kept — tap again';
-    setTimeout(() => { resetArmed = false; $('btnReset').textContent = '🔄 RESHOOT FROM SCENE 1'; }, 3000);
+    setTimeout(() => { resetArmed = false; $('btnReset').textContent = '🔄 START OVER (back to Scene 1 — your record is kept)'; }, 3000);
     return;
   }
   resetArmed = false;
-  $('btnReset').textContent = '🔄 RESHOOT FROM SCENE 1';
+  $('btnReset').textContent = '🔄 START OVER (back to Scene 1 — your record is kept)';
   resetProgress();
   refreshHome();
 };
@@ -3185,6 +3379,7 @@ try { $('verLine').textContent = 'TAKE 47  ·  v' + VERSION; } catch (e) {}
 
 resize();
 refreshHome();
+applyUiIcons();                       // D-014: drawn glyphs replace emoji tier
 // FIRST 60 SECONDS (Dan-approved): a truly fresh save never sees a menu —
 // the slate drops, the director calls ACTION!, and the first thing a new
 // player ever does is flip. Existing saves get the flag stamped, no replay.
