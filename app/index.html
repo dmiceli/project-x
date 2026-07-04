@@ -117,6 +117,14 @@
   /* D-006: rig-rendered portraits on cast cards (and colorway previews) */
   .card .portrait{float:right;width:64px;height:78px;margin:0 0 4px 8px;
     background:#140e0b;border:1px solid #3a2a22;border-radius:8px}
+  /* D-010: hand-drawn prop art, prominent (emoji read generic — Dan) */
+  .card .propart{float:right;width:66px;height:66px;margin:0 0 4px 8px;
+    background:#140e0b;border:1px solid #3a2a22;border-radius:8px}
+  .card .counters{color:var(--gold);font-size:12px;margin-top:4px}
+  /* D-009: wallet chip — the shop headline */
+  #propWallet{display:inline-block;border:1.5px solid var(--gold);border-radius:999px;
+    padding:8px 18px;color:var(--ink);font-size:16px}
+  #propWallet b{color:var(--gold);font-size:19px}
   .chips{margin-top:8px}
   .chips button{display:inline-block;width:auto;min-height:34px;margin:2px 4px 2px 0;
     padding:4px 10px;font-size:12px;border-radius:16px}
@@ -150,6 +158,9 @@
   #propBar.active{display:flex}
   #propBar button{width:auto;min-height:48px;margin:0;padding:6px 12px;font-size:13px;border-radius:12px}
   #propBar button.armed{border-color:var(--gold);color:var(--gold)}
+  /* D-008: hazard-counter leads in gold; generic helpers sit back */
+  #propBar button.counter{border-color:var(--gold)}
+  #propBar button.generic{opacity:.72}
 
   /* ---- in-game bottom bar (share/home on the CUT screen) ---- */
   #gameBar{position:fixed;left:0;right:0;bottom:max(14px,var(--sab,env(safe-area-inset-bottom)));
@@ -190,7 +201,7 @@
     <button id="btnDaily"><span class="em" aria-hidden="true">🎬</span>DAILY</button>
     <button id="btnCast"><span class="em" aria-hidden="true">🎭</span>CAST</button>
     <button id="btnProps"><span class="em" aria-hidden="true">📦</span>PROPS</button>
-    <button id="btnReel"><span class="em" aria-hidden="true">🎞️</span>REEL</button>
+    <button id="btnReel"><span class="em" aria-hidden="true">📽️</span>REEL</button>
   </div>
   <div id="csList" aria-label="Today's call sheet"></div>
   <nav class="footrow" aria-label="More">
@@ -222,7 +233,7 @@
   <p class="stats" id="dailyMod" style="border:1.5px solid var(--gold);border-radius:10px;padding:10px 14px;color:var(--gold)"></p>
   <p class="stats" id="dailyInfo"></p>
   <button id="btnDailyPlay" class="primary">SHOOT TODAY'S GAUNTLET</button>
-  <button id="btnDailyAd">🎞️ EXTRA ATTEMPT (ad · 3/3 left today)</button>
+  <button id="btnDailyAd">🍿 EXTRA ATTEMPT (ad · 3/3 left today)</button>
   <button class="back" data-to="home">← BACK</button>
 </section>
 
@@ -264,7 +275,7 @@
     <button id="qaBackup">💾 Back up save</button>
     <button id="qaRestoreSave">⏪ Restore backed-up save</button>
     <button id="qaScene">🎬 Jump to scene…</button>
-    <button id="qaPrints">🖨 +50 prints</button>
+    <button id="qaPrints">🎞️ +50 prints</button>
     <button id="qaProps">📦 +1 of every prop</button>
     <button id="qaMercy">🩹 Arm mercy (next crash = 7th)</button>
     <button id="qaFtue">🐣 Reset FTUE + reveals</button>
@@ -480,7 +491,9 @@ const DAILY_MODS = [
     apply: null},                          // draw-level: scenery dimmed, no aim preview
   {id:'golden', name:'GOLDEN HOUR',   quip:'Magic light. Every print pays double.',
     apply: null},                          // payout-level: daily PB prints ×2
-  {id:'crank',  name:'OVERCRANKED',   quip:'Camera runs fast; so does your spin.',
+  // film-accurate: UNDERcranking the camera = fast, frantic playback
+  // (overcranking would be slow-mo — that's the Slow-Mo Rig's job)
+  {id:'crank',  name:'UNDERCRANKED',  quip:'Somebody cranked the camera slow. Playback runs fast — so does your spin.',
     apply: p => { p.om *= 1.22; }}
 ];
 function dailyMod(){
@@ -609,6 +622,64 @@ const ITEMS = [
 let armedItem = null;                 // chosen on the ready screen
 let activeItem = null;                // consumed; in effect for the current take
 function itemCount(id){ return S.items[id] || 0; }
+
+// D-010: prop card art — hand-drawn in the game's outlined style (Dan: the
+// emoji read generic/soulless). Same palette as the set; cached data URLs.
+const propArtCache = {};
+function propIconURL(id){
+  if (propArtCache[id]) return propArtCache[id];
+  if (typeof document.createElement !== 'function') return '';
+  const cnv = document.createElement('canvas');
+  cnv.width = 132; cnv.height = 132;              // 2× a 66px card slot
+  const c = cnv.getContext('2d');
+  c.scale(2.2, 2.2);                               // 60-unit logical space
+  const O = '#16100c', GOLD = '#ffd166', OCH = '#e0b04a', DIM = '#a08b72';
+  const oq = (x, y, w, h, f) => { c.fillStyle = f; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.roundRect(x, y, w, h, 2); c.fill(); c.stroke(); };
+  const dot = (x, y, r, f) => { c.fillStyle = f; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.stroke(); };
+  const ln = (x0, y0, x1, y1, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
+  if (id === 'slowmo') {                 // high-speed camera: body, lens, twin mags
+    dot(22, 16, 9, DIM); dot(38, 16, 9, DIM);      // film magazines
+    oq(12, 22, 36, 22, '#3a2c22');
+    dot(48, 33, 8, '#241515'); dot(48, 33, 4, GOLD);          // lens
+    ln(8, 52, 20, 44, GOLD, 2); ln(14, 56, 26, 48, GOLD, 2);  // speed streaks
+  } else if (id === 'chock') {           // wedge jammed under a cart wheel
+    dot(36, 30, 14, '#3a2c22'); dot(36, 30, 5, DIM);          // wheel + hub
+    c.fillStyle = OCH; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(10, 46); c.lineTo(30, 46); c.lineTo(30, 32); c.closePath(); c.fill(); c.stroke();
+    ln(6, 47, 54, 47, DIM, 2);                                // floor
+  } else if (id === 'windbreak') {       // umbrella shielding against streaks
+    c.fillStyle = OCH; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.arc(34, 26, 18, Math.PI, 0); c.closePath(); c.fill(); c.stroke();
+    ln(34, 26, 34, 50, O, 3); ln(34, 50, 40, 52, O, 3);       // shaft + handle
+    ln(6, 18, 14, 18, DIM, 2); ln(4, 28, 12, 28, DIM, 2); ln(7, 38, 13, 38, DIM, 2);  // blocked gusts
+  } else if (id === 'griptape') {        // taped X on the landing boards
+    oq(8, 36, 44, 12, '#2e4a6b');                             // the mat
+    ln(18, 30, 42, 52, '#e8d5b5', 5); ln(42, 30, 18, 52, '#e8d5b5', 5);  // tape X
+    ln(18, 30, 42, 52, DIM, 1); ln(42, 30, 18, 52, DIM, 1);   // tape texture
+  } else if (id === 'boombrake') {       // boom pole locked in a clamp
+    ln(10, 14, 48, 40, '#7a5a30', 4);                         // the boom
+    dot(48, 40, 6, '#8f8f98');                                // windscreen
+    oq(24, 20, 12, 14, GOLD);                                 // the clamp
+    ln(30, 34, 30, 52, O, 2);                                 // clamp post
+  } else if (id === 'trapdoor') {        // stage floor, door flung open
+    ln(4, 38, 56, 38, DIM, 4);                                // stage line
+    c.fillStyle = '#000'; c.strokeStyle = O; c.lineWidth = 2; // the DROP — big,
+    c.beginPath(); c.roundRect(17, 38, 28, 16, 2); c.fill(); c.stroke();  // black, obvious
+    c.save(); c.translate(17, 38); c.rotate(-1.15);
+    oq(-1, -6, 27, 7, OCH); c.restore();                      // door flung up
+    dot(17, 38, 3.4, GOLD);                                   // hinge
+    ln(30, 44, 33, 50, DIM, 2); ln(38, 43, 40, 49, DIM, 2);   // falling whoosh
+  } else {                               // launchrig: coiled spring, arrow up
+    for (let i = 0; i < 4; i++) ln(20, 48 - i * 6, 40, 45 - i * 6, GOLD, 2.6);  // coil
+    ln(30, 26, 30, 8, OCH, 4);                                // arrow shaft
+    c.fillStyle = OCH; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(30, 4); c.lineTo(23, 14); c.lineTo(37, 14); c.closePath(); c.fill(); c.stroke();
+  }
+  return (propArtCache[id] = cnv.toDataURL());
+}
 let lastBuy = null;                   // {id, price, at}: 4s undo window (Dan pick B)
 function buyItem(id){
   const it = ITEMS.find(x => x.id === id);
@@ -617,7 +688,7 @@ function buyItem(id){
     S.items[id] = itemCount(id) + 1;
     lastBuy = {id: id, price: it.price, at: performance.now()};
     persist();
-    toast(it.icon + ' ' + it.name + ' — ' + it.price + '🖨 · TAP HERE TO UNDO', 4200);
+    toast(it.icon + ' ' + it.name + ' — ' + it.price + '🎞️ · TAP HERE TO UNDO', 4200);
   } else toast('Need ' + (it.price - wallet()) + ' more prints for ' + it.name);
   refreshHome();
 }
@@ -1235,7 +1306,7 @@ function afterCrash(){
       if (delta > 0) {
         const pay = modActive('golden') ? delta * 2 : delta;   // D-005 GOLDEN HOUR
         S.prints += pay;
-        toast('🖨 Personal best — +' + pay + ' print' + (pay > 1 ? 's' : '') +
+        toast('🎞️ Personal best — +' + pay + ' print' + (pay > 1 ? 's' : '') +
               (modActive('golden') ? ' (GOLDEN HOUR ×2)' : ''));
       }
       S.daily.todayBest = Math.max(S.daily.todayBest, cleared);
@@ -1954,6 +2025,26 @@ function draw(){
   ctx.beginPath(); ctx.arc(320, 47, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#e8d5b5'; ctx.font = 'bold 15px system-ui, sans-serif';
   ctx.fillText(String(S.prints), 344, 52);
+  // D-008: an active prop must be VISIBLE (standing rule) — persistent chip in
+  // the lower letterbox band for the whole take, not just a fading popup...
+  if (activeItem && (state === 'ready' || state === 'air')) {
+    const it = ITEMS.find(x => x.id === activeItem);
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    const label = '● PROP ACTIVE: ' + it.name.toUpperCase() + ' — ' + it.desc.toUpperCase();
+    ctx.fillStyle = 'rgba(10,7,5,0.85)';
+    const lw2 = ctx.measureText(label).width;
+    ctx.beginPath(); ctx.roundRect(12, 636, lw2 + 16, 22, 4); ctx.fill();
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillText(label, 20, 651);
+    // ...and Slow-Mo gets the overcranked-camera look: film-gate bars (static,
+    // reduce-motion safe) so ×0.7 spin FEELS like a camera trick, not nothing
+    if (activeItem === 'slowmo') {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, 0, W, 14); ctx.fillRect(0, GROUND + 72, W, 14);
+      ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.fillText('⏱ 120 FPS', W - 68, 10);
+    }
+  }
   ctx.textAlign = 'center';
   // — stunt-condition tags: compact, text-labeled (a11y), out of the flight path —
   const badges = [];
@@ -2150,12 +2241,21 @@ function refreshPropBar(){
   bar.classList.toggle('active', show);
   if (!show) { bar.innerHTML = ''; return; }
   bar.innerHTML = '';
-  for (const it of ITEMS) {
-    if (itemCount(it.id) === 0 || !propRelevant(it.id)) continue;
+  // D-008: the belt is ADVICE, not a prompt — the prop that counters THIS
+  // scene's hazard leads with a ★ and gold; generic helpers trail, dimmed.
+  // (Dan mid-boom-scene was nudged toward Slow-Mo, which can't park a boom.)
+  const HAZARD_COUNTER = {cart: 'chock', wind: 'windbreak', boom: 'boombrake', arm: 'trapdoor'};
+  const counterId = Object.keys(HAZARD_COUNTER).find(k => params.mech[k]) ?
+    HAZARD_COUNTER[Object.keys(HAZARD_COUNTER).find(k => params.mech[k])] : null;
+  const list = ITEMS.filter(it => itemCount(it.id) > 0 && propRelevant(it.id))
+    .sort((a, b) => (b.id === counterId) - (a.id === counterId));
+  for (const it of list) {
+    const isCounter = it.id === counterId;
     const b = document.createElement('button');
-    b.className = armedItem === it.id ? 'armed' : '';
-    b.textContent = it.icon + ' ' + it.name + ' ×' + itemCount(it.id) + (armedItem === it.id ? ' ✓' : '');
+    b.className = (armedItem === it.id ? 'armed ' : '') + (isCounter ? 'counter' : 'generic');
+    b.textContent = (isCounter ? '★ ' : '') + it.icon + ' ' + it.name + ' ×' + itemCount(it.id) + (armedItem === it.id ? ' ✓' : '');
     b.setAttribute('aria-pressed', String(armedItem === it.id));
+    b.setAttribute('aria-label', it.name + (isCounter ? ', counters this scene\'s hazard' : ', general helper'));
     b.onclick = () => armItem(it.id);
     bar.appendChild(b);
   }
@@ -2185,7 +2285,7 @@ function revealRules(){
   return [
     ['btnDaily',     S.furthest >= 3,               '🎬 Daily Challenge'],
     ['btnShareHome', S.furthest >= 5,               null],
-    ['btnReel',      S.furthest >= 11,              '🎞️ The Reel'],
+    ['btnReel',      S.furthest >= 11,              '📽️ The Reel'],
     ['btnPosters',   S.furthest >= 11,              '🖼️ The Poster Wall'],
     ['btnProps',     S.prints >= 1,                 '📦 The Prop Department'],
     ['btnCast',      S.unlocked.length > 1,         '🎭 The Cast'],
@@ -2253,7 +2353,7 @@ function refreshHome(){
     const left = document.createElement('span');
     left.textContent = (S.cs.done[i] ? '✓ ' : '☐ ') + gDef.text + ' (' + Math.min(S.cs.prog[i], gDef.n) + '/' + gDef.n + ')';
     const pay = document.createElement('span');
-    pay.className = 'pay'; pay.textContent = '+2🖨';
+    pay.className = 'pay'; pay.textContent = '+2🎞️';
     row.appendChild(left); row.appendChild(pay);
     cs.appendChild(row);
   });
@@ -2291,8 +2391,8 @@ function refreshHome(){
   const adsLeft = DAILY_AD_MAX - S.daily.adExtras;      // D-004: visible cap
   $('btnDailyAd').disabled = adsLeft <= 0;
   $('btnDailyAd').textContent = adsLeft > 0
-    ? '🎞️ EXTRA ATTEMPT (ad · ' + adsLeft + '/' + DAILY_AD_MAX + ' left today)'
-    : '🎞️ NO MORE EXTRAS TODAY — back at midnight 🌙';
+    ? '🍿 EXTRA ATTEMPT (ad · ' + adsLeft + '/' + DAILY_AD_MAX + ' left today)'
+    : '🍿 NO MORE EXTRAS TODAY — back at midnight 🌙';
   // D-005: today's gimmick on the daily screen (same slate worldwide)
   const dm = dailyMod();
   $('dailyMod').innerHTML = '<b>TODAY\'S GIMMICK · ' + dm.name + '</b><br>' + dm.quip;
@@ -2322,7 +2422,7 @@ function refreshHome(){
         const c = document.createElement('button');
         const own = ownedIdx(cst.id).includes(idx);
         const active = (S.variants[cst.id] || 0) === idx;
-        c.textContent = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + '🖨'));
+        c.textContent = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + '🎞️'));
         c.setAttribute('aria-label', v.name + (own ? (active ? ', worn' : ', owned') : ', costs ' + v.price + ' prints; tap to preview'));
         c.onclick = () => {
           // D-006: EVERY unowned tap previews on the card portrait first —
@@ -2352,15 +2452,24 @@ function refreshHome(){
     tl.appendChild(div);
   }
   // prop department shop
-  const pw = $('propWallet'); pw.textContent = 'Wallet: ' + wallet() + ' prints';
+  // D-009: the wallet is the shop's headline, not a lost stat line
+  $('propWallet').innerHTML = '🎞️ <b>' + wallet() + '</b> prints in the wallet';
   const plist = $('propList'); plist.innerHTML = '';
+  // D-008: each prop declares WHAT it counters, so "why would I use this
+  // here?" is answered on the card, not discovered mid-take
+  const COUNTERS = {chock: 'ROLLING CART scenes', windbreak: 'WIND MACHINE scenes',
+    boombrake: 'BOOM MIC scenes', trapdoor: 'RUBBER ARM scenes',
+    slowmo: 'any scene (slower spin)', griptape: 'any scene (kinder landing)',
+    launchrig: 'any scene (aimed launch)'};
   for (const it of ITEMS) {
     const div = document.createElement('div');
     div.className = 'card';
-    div.innerHTML = '<span class="who">' + it.icon + '</span><h3>' + it.name + '  ×' + itemCount(it.id) + '</h3><p>' + it.desc + '</p>';
+    div.innerHTML = '<img class="propart" alt="" src="' + propIconURL(it.id) + '">' +
+      '<h3>' + it.name + '  ×' + itemCount(it.id) + '</h3><p>' + it.desc + '</p>' +
+      '<p class="counters">🎬 for ' + COUNTERS[it.id] + '</p>';
     const buy = document.createElement('button');
     buy.className = 'chips-select';
-    buy.textContent = 'BUY — ' + it.price + '🖨';
+    buy.textContent = 'BUY — ' + it.price + '🎞️';
     buy.disabled = wallet() < it.price;
     buy.onclick = () => buyItem(it.id);
     div.appendChild(buy);
@@ -2384,7 +2493,7 @@ $('btnDailyAd').onclick = () => {
   // 3/day limit is visible to players and to App Review.
   if (S.daily.adExtras >= DAILY_AD_MAX) return;
   const b = $('btnDailyAd');
-  b.disabled = true; b.textContent = '🎞️ AD PLAYING (placeholder)…';
+  b.disabled = true; b.textContent = '🍿 AD PLAYING (placeholder)…';
   setTimeout(() => {
     S.daily.adExtras++; persist();
     refreshHome();
