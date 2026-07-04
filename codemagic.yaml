@@ -11,7 +11,7 @@ workflows:
       app_store_connect: take47-asc-key
     environment:
       xcode: latest
-      node: 20
+      node: 22       # Capacitor 8 CLI hard-requires Node >= 22 (build #3 lesson)
       vars:
         BUNDLE_ID: com.dmiceli.take47
     triggering:
