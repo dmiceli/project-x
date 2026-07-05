@@ -2,6 +2,18 @@
 
 One entry per build that reaches a phone (TestFlight or App Store). Newest first. Format loosely follows [Keep a Changelog](https://keepachangelog.com): Added / Changed / Fixed / Removed. User-facing release notes live in `releases/`; this file is the engineering truth.
 
+## [1.0 (build 12)] — 2026-07-04 · design-review batch (Dan's "final round" findings)
+
+**Added**
+- D-025: poster wall rebuilt as real one-sheets — 2:3 set-art crops, framed, ten-star printed strip, gold frame + glow + DIRECTOR'S CUT ribbon when gilded.
+- D-028: the Reel regrouped as a filmography — set headers with mini art and per-set printed counts / gild hooks.
+- D-024: icon policy (all-or-none per group, BRAND.md) + six new drawn glyphs (foley horn, buzzing phone, motion frame, crescent, rewind-to-1, retro TV); settings all-glyph; gameBar SHARE megaphone; ad-break card art; cast-unlock cards show real portraits.
+- D-026: `.slip` extracted; daily stats get the subtle production-slip variant.
+- D-027: chip state system (worn=gold fill / owned=solid / unowned=dashed price) + SELECT promoted to primary.
+
+**Process**
+- Design review gate codified in CLAUDE.md after Dan caught an unpresented batch: visuals are staged for review (live-tab injection) BEFORE any push, every time.
+
 ## [1.0 (build 11)] — 2026-07-04 · beta feedback batch 1 (auto-shipped, unattended)
 
 Shipped by the `take47-ship-take11` scheduled task after Dan's approval and push (commit 2d8c7e7). Pipeline 3m 10s, App.ipa uploaded to ASC.
