@@ -31,6 +31,7 @@ Everything lives in this repo, organized in five groups. **Start here, then foll
 | **Quality** | [ARCHITECTURE.md](ARCHITECTURE.md) | Code map, diagrams, invariants | on structural change |
 | | [BETA-READINESS.md](BETA-READINESS.md) | The calibrated (5/10 rigor) gate list to TestFlight | per gate |
 | | [QA-PLAN.md](QA-PLAN.md) | Structured test sessions w/ Test Mode steps | per session plan |
+| | [BETA-KIT.md](BETA-KIT.md) | Invite paths, tester message, watch-them-play protocol | beta phase |
 | | [DEFECTS.md](DEFECTS.md) | Defect register: report → root cause → fix → verified | **on every report** |
 | | [COLD-READ.md](COLD-READ.md) | Zero-context copy audit: claims verified, triaged, ⚑ verdicts | per audit |
 | | `tools/` | `render_docs_diagrams.py` (regenerates the diagrams) | with diagrams |

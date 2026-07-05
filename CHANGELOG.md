@@ -2,6 +2,15 @@
 
 One entry per build that reaches a phone (TestFlight or App Store). Newest first. Format loosely follows [Keep a Changelog](https://keepachangelog.com): Added / Changed / Fixed / Removed. User-facing release notes live in `releases/`; this file is the engineering truth.
 
+## [1.0 (build 13)] — 2026-07-05 · icon-polish corrections (Dan on-device)
+
+Commit 0098ec4. Pipeline ~2m30s, App.ipa uploaded to ASC. Design corrections staged for Dan's review pre-push.
+
+**Fixed**
+- D-029: the drawn prints glyph was still using the retired battery-green palette — recolored to the film-strip identity (dark stock, gold border, sprockets, "47"); propagates to BUY buttons, wallet chip, wardrobe price tags, RESTORE row. New drawn walk-of-fame STAR glyph on MAKE THEM THE STAR (card buttons now render innerHTML).
+- D-030: settings glyphs upsized to 22px; haptics + reduce-motion redrawn bold (thick zigzag buzz; heavy speed-bars chasing a solid dot) for on-device legibility.
+- D-031: locked-cast portrait silhouettes contained — `.card` gets flow-root clearfix + min-height so every cast card holds its portrait at uniform height.
+
 ## [1.0 (build 12)] — 2026-07-04 · design-review batch (Dan's "final round" findings)
 
 **Added**
