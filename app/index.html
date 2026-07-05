@@ -116,6 +116,9 @@
   .em img{width:28px;height:28px;object-fit:contain;display:block;margin:0 auto}
   .fem{display:inline-block;width:15px;height:15px;line-height:1;vertical-align:-2px}
   .fem img{width:15px;height:15px;object-fit:contain}
+  /* D-030: settings rows have room — glyphs earn legibility at 22px */
+  #scr-settings .fem{width:22px;height:22px;vertical-align:-5px}
+  #scr-settings .fem img{width:22px;height:22px}
   #propWallet img,.chips-select img{width:16px;height:16px;object-fit:contain;vertical-align:-3px}
   .footrow{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;margin-top:14px;
     border-top:1px solid #3a2a22;padding-top:8px;width:min(360px,92vw)}
@@ -123,7 +126,9 @@
     padding:8px 10px;font-size:12px;border:none;background:transparent;color:var(--dim)}
 
   .card{width:min(340px,88vw);background:var(--panel);border:1px solid #3a2a22;
-    border-radius:12px;padding:12px 16px;margin:6px auto;text-align:left}
+    border-radius:12px;padding:12px 16px;margin:6px auto;text-align:left;
+    display:flow-root;min-height:96px}  /* D-031: contain floated portraits;
+                                           uniform height incl. locked cards */
   .card h3{margin:0 0 2px;font-size:16px;color:var(--ink)}
   .card p{margin:0;font-size:13px;color:var(--dim)}
   .card.locked{opacity:.5}
@@ -869,17 +874,17 @@ function uiIconURL(name){
       c.strokeStyle = GOLD; c.lineWidth = 2.5;
       c.beginPath(); c.arc(30, 30, 8 + k * 6, -0.7, 0.7); c.stroke();
     }
-  } else if (name === 'haptics') {       // phone mid-buzz
-    rr(22, 12, 16, 30, '#241515', 4);
-    dot(30, 37, 1.6, DIM, false);
+  } else if (name === 'haptics') {       // phone mid-buzz — D-030: BOLD reads
+    rr(21, 10, 18, 34, '#241515', 4);    // at 22px; thin arcs didn't
+    dot(30, 38, 2, DIM, false);
     for (const s of [-1, 1]) {
-      c.strokeStyle = GOLD; c.lineWidth = 2.5;
-      c.beginPath(); c.arc(30 + s * 16, 27, 5, s < 0 ? Math.PI * 0.6 : -Math.PI * 0.4, s < 0 ? Math.PI * 1.4 : Math.PI * 0.4); c.stroke();
+      const x = 30 + s * 15;
+      c.strokeStyle = GOLD; c.lineWidth = 4; c.lineCap = 'round'; c.lineJoin = 'round';
+      c.beginPath(); c.moveTo(x, 17); c.lineTo(x + s * 5, 24); c.lineTo(x - s * 2, 30); c.lineTo(x + s * 4, 37); c.stroke();
     }
-  } else if (name === 'motion') {        // a frame outrunning its speed lines
-    rr(26, 18, 20, 20, '#241515', 3);
-    ln(10, 22, 22, 22, DIM, 2.5); ln(6, 28, 22, 28, DIM, 2.5); ln(10, 34, 22, 34, DIM, 2.5);
-    dot(36, 28, 4, GOLD);
+  } else if (name === 'motion') {        // D-030: solid dot outrunning bold bars
+    for (let k = 0; k < 3; k++) ln(8, 22 + k * 8, 26 - k * 4, 22 + k * 8, DIM, 4.5);
+    dot(38, 30, 9, GOLD);
   } else if (name === 'moon') {          // the midnight slate change
     c.fillStyle = GOLD;
     c.beginPath(); c.arc(30, 30, 13, 0, Math.PI * 2); c.fill();
@@ -897,15 +902,26 @@ function uiIconURL(name){
     rr(17, 20, 20, 18, '#241515', 3);
     dot(42, 25, 2.2, GOLD, false); dot(42, 33, 2.2, DIM, false);
     ln(20, 46, 24, 42, O, 3); ln(40, 46, 36, 42, O, 3);          // legs
-  } else {                               // prints: the film-print ticket (Dan,
-    rr(8, 20, 44, 20, '#2e6b4f', 6);     // #1-adjacent) — matches the HUD chip
-    c.strokeStyle = '#6ee7b7'; c.lineWidth = 2;
-    c.beginPath(); c.roundRect(8, 20, 44, 20, 6); c.stroke();
-    c.fillStyle = '#191010';
-    for (let py = 0; py < 4; py++) { c.fillRect(30, 22 + py * 4.4, 3, 2.6); }   // perforation
-    dot(18, 30, 4, '#6ee7b7', false);
-    c.fillStyle = CREAM; c.font = 'bold 9px system-ui, sans-serif'; c.textAlign = 'center';
-    c.fillText('1', 43, 33.5);
+  } else if (name === 'star') {          // walk-of-fame star (D-029)
+    c.fillStyle = GOLD; c.strokeStyle = O; c.lineWidth = 2;
+    c.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const ang = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? 7.5 : 17;
+      c[k ? 'lineTo' : 'moveTo'](30 + rad * Math.cos(ang), 31 + rad * Math.sin(ang));
+    }
+    c.closePath(); c.fill(); c.stroke();
+  } else {                               // prints: film-strip ticket — D-029:
+    // matches the (de-greened) HUD chip: dark stock, gold border, sprockets
+    rr(8, 18, 44, 24, '#191010', 5);
+    c.strokeStyle = GOLD; c.lineWidth = 2.5;
+    c.beginPath(); c.roundRect(8, 18, 44, 24, 5); c.stroke();
+    c.fillStyle = '#3a2c22';
+    for (let px = 0; px < 4; px++) {     // sprocket holes, both rails
+      c.fillRect(13 + px * 10, 21, 4, 3.4);
+      c.fillRect(13 + px * 10, 35.6, 4, 3.4);
+    }
+    c.fillStyle = GOLD; c.font = 'bold 10px system-ui, sans-serif'; c.textAlign = 'center';
+    c.fillText('47', 30, 33.5);
   }
   return (uiIconCache[name] = cnv.toDataURL());
 }
@@ -1532,7 +1548,7 @@ function showNextCard(){
   bb.innerHTML = '';
   for (const btn of cfg.buttons) {
     const b = document.createElement('button');
-    b.textContent = btn.label;
+    b.innerHTML = btn.label;             // D-029: labels may carry drawn glyphs
     if (btn.primary) b.className = 'primary';
     // keepOpen: the SHARE button acts without dismissing the card
     b.onclick = () => { if (btn.action) btn.action(); if (!btn.keepOpen) showNextCard(); };
@@ -1580,7 +1596,7 @@ function advance(){
       queueCard({kicker: 'NEW CAST MEMBER', iconImg: portraitURL(cst.id, 0, false), title: cst.name,
         body: cst.bio + ' — Surviving ' + cst.unlock + ' scenes earned their respect. Put them in the spotlight?',
         buttons: [
-          {label: '⭐ MAKE THEM THE STAR', primary: true, action: () => { S.selected = cst.id; persist(); }},
+          {label: ico('star') + 'MAKE THEM THE STAR', primary: true, action: () => { S.selected = cst.id; persist(); }},
           {label: 'KEEP CURRENT'}
         ]});
     }
@@ -2884,7 +2900,8 @@ function refreshHome(){
         const own = ownedIdx(cst.id).includes(idx);
         const active = (S.variants[cst.id] || 0) === idx;
         c.className = active ? 'worn' : (own ? 'owned' : 'pricetag');   // D-027
-        c.textContent = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + '🎞️'));
+        // D-029: the price tag carries the drawn currency, same as the shop
+        c.innerHTML = v.name + (active ? ' ✓' : (own ? '' : ' · ' + v.price + ' <img src="' + uiIconURL('prints') + '" alt="prints" style="width:14px;height:14px;vertical-align:-2px">'));
         c.setAttribute('aria-label', v.name + (own ? (active ? ', worn' : ', owned') : ', costs ' + v.price + ' prints; tap to preview'));
         c.onclick = () => {
           // D-006: EVERY unowned tap previews on the card portrait first —
